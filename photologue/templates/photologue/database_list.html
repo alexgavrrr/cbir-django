@@ -1,0 +1,28 @@
+{% extends "photologue/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "All Databases" %}{% endblock %}
+
+{% block content %}
+
+    <div class="row col-lg-12">
+        <h1 class="page-header">{% trans "All databases" %}</h1>
+    </div>
+
+    {% if object_list %}
+        {% for database in object_list %}
+            <div class="row col-lg-12">
+                <h2><a href="{{ database.get_absolute_url }}">{{ database.title }}</a></h2>
+                <p class="muted"><small>{% trans "Published" %} {{ database.date_added }}</small></p>
+                {% if database.description %}<p>{{ database.description|safe }}</p>{% endif %}
+                <p>TODO: Insert some pictures</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="row col-lg-12">{% trans "No databases were found" %}.</div>
+    {% endif %}
+
+    <!--TODO: Research how paginator works-->
+    <!--include "photologue/includes/paginator.html"-->
+
+{% endblock %}

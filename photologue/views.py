@@ -1,11 +1,18 @@
+import logging
 from django.http import HttpResponse
 from django.shortcuts import render
 
 from django.urls import reverse
 from django.views.generic import ListView, DetailView
 
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
+
+from . import forms
 from . import models
 
+
+logger = logging.getLogger('photologue.views')
 
 class DatabaseListView(ListView):
     model = models.Database
@@ -25,7 +32,23 @@ database_detail_view = DatabaseDetailView.as_view()
 
 def database_create_view(request):
     method = request.method
-    return HttpResponse(f'Create database. Method {method}')
+    context = {}
+    debug_info = f'Method {method}'
+    context['debug_info'] = debug_info
+    logger = logging.getLogger('photologue.database.create')
+
+    if method == 'POST':
+        form = forms.DatabaseForm(request.POST)
+        if form.is_valid():
+            database = form.save(commit=False)
+            logger.info(f'Database object submitted by user: {database}')
+            database.save()
+            return HttpResponseRedirect(reverse('photologue:database_list'))
+    else:
+        form = forms.DatabaseForm()
+
+    context['form'] = form
+    return render(request, 'photologue/database_create.html', context)
 
 
 # class PhotoDetailView(DetailView):
