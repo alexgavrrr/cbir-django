@@ -32,10 +32,11 @@
             <li class="home"><a href="/">Home</a></li>
             <li class="galleries dropdown">
                 <a data-target="#" href="" class="dropdown-toggle" data-toggle="dropdown">
-                    Gallery views<b class="caret"></b>
+                    Database<b class="caret"></b>
                 </a>
                 <ul class="dropdown-menu">
-                    <li class="sub-page"><a href="{% url 'photologue:database_list' %}">List views</a></li>
+                    <li class="sub-page"><a href="{% url 'photologue:database_list' %}">List of databases</a></li>
+                    <li class="sub-page"><a href="{% url 'photologue:database_create' %}">Create database</a></li>
                 </ul>
             </li>
         </ul>

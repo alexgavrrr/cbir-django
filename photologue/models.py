@@ -167,11 +167,8 @@ class Database(models.Model):
         # TODO: return self.events
         return []
 
-    def __str__(self):
-        return self.title
 
-
-class Event(models.Model):
+class Folder(models.Model):
     date_added = models.DateTimeField(_('date published'),
                                       default=now)
     title = models.CharField(_('title'),
@@ -187,11 +184,14 @@ class Event(models.Model):
                                         max_length=FILE_FIELD_MAX_LENGTH,
                                         upload_to=get_storage_path,
                                         blank=True)
-    query = models.ImageField('query',
-                              max_length=IMAGE_FIELD_MAX_LENGTH,
-                              upload_to=get_storage_path,
-                              blank=True)
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
+
+
+class Event(Folder):
+    query = models.ImageField('query',
+                              max_length=IMAGE_FIELD_MAX_LENGTH,
+                              upload_to=get_storage_path,
+                              blank=True)
