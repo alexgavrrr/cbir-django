@@ -1,6 +1,5 @@
 import logging
 import os
-import unicodedata
 from inspect import isclass
 
 from PIL import (Image,
@@ -10,9 +9,7 @@ from PIL import (Image,
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import models
-from django.template.defaultfilters import slugify
 from django.urls import reverse
-from django.utils.encoding import force_text
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 
@@ -113,11 +110,6 @@ IMAGE_FILTERS_HELP_TEXT = _('Chain multiple filters using the following pattern 
 size_method_map = {}
 
 
-# def get_storage_path(instance, filename):
-#     fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
-#     database = 'photos'
-#     return os.path.join(CONTENT_DIR, database, fn)
-
 def get_storage_path_for_description_file_of_database(instance, filename):
     database = instance.slug
     return os.path.join(CONTENT_DIR, database, 'database_all', 'database.txt')
@@ -130,9 +122,7 @@ def get_storage_path_for_description_file_of_event(instance, filename):
 
 
 def get_storage_path_for_description_file_of_database_photo(instance, filename):
-    # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.database.slug
-
     name, ext = filename.split()
     image_name, image_ext = instance.image.name.split()
 
@@ -151,10 +141,8 @@ def get_storage_path_for_description_file_of_database_photo(instance, filename):
 
 
 def get_storage_path_for_description_file_of_event_photo(instance, filename):
-    # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.database.slug
     event = instance.slug
-
     name, ext = filename.split()
     image_name, image_ext = instance.image.name.split()
 
@@ -173,7 +161,6 @@ def get_storage_path_for_description_file_of_event_photo(instance, filename):
 
 
 def get_storage_path_for_image(instance, filename):
-    # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     if isinstance(instance, DatabasePhoto):
         database = instance.database.slug
         folder = 'database_all'
@@ -206,8 +193,6 @@ class Database(models.Model):
                                         max_length=FILE_FIELD_MAX_LENGTH,
                                         upload_to=get_storage_path_for_description_file_of_database,
                                         blank=True)
-
-    # events
 
     class Meta:
         ordering = ['-date_added']
@@ -271,11 +256,9 @@ class Event(models.Model):
 
     def save(self):
         if not self.description_file:
-            logger.info('No description file')
             path = get_storage_path_for_description_file_of_database(self, filename=None)
             if not self.description:
                 self.description = f'{self.title}\n{self.slug}'
-            logger.info(f'Generate file: {path} with content: {self.description}')
             self.description_file.save(path, ContentFile(self.description))
         super().save()
 
@@ -287,7 +270,6 @@ class ImageModel(models.Model):
 
 
 class DatabasePhoto(ImageModel):
-    # title is not needed
     slug = models.SlugField('slug',
                             unique=True, )
     description = models.TextField('description',
@@ -306,7 +288,6 @@ class DatabasePhoto(ImageModel):
 
 
 class EventPhoto(ImageModel):
-    # title is not needed
     slug = models.SlugField('slug',
                             unique=False, )
     description = models.TextField('description',

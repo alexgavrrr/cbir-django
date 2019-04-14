@@ -20,8 +20,8 @@ class DatabaseForm(ModelForm):
 
 class EventForm(ModelForm):
     query_photos = forms.ImageField(required=False,
-                              label='query photos',
-                              widget=forms.ClearableFileInput(attrs={'multiple': True}))
+                                    label='query photos',
+                                    widget=forms.ClearableFileInput(attrs={'multiple': True}))
     query_photos_from_database = forms.ModelMultipleChoiceField(DatabasePhoto.objects.all(),
                                                                 required=False,
                                                                 label='query photos from database')
