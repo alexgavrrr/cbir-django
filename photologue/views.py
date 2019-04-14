@@ -27,7 +27,14 @@ database_list_view = DatabaseListView.as_view()
 class DatabaseDetailView(DetailView):
     model = models.Database
     template_name = 'photologue/database_detail.html'
-    queryset = models.Database.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        logger.info(f'kwargs: {kwargs}')
+        events = models.Event.objects.filter(database=kwargs['object'].pk)
+        logger.info(f'events: {events}')
+        context['events'] = events
+        return context
 
 database_detail_view = DatabaseDetailView.as_view()
 
@@ -83,9 +90,13 @@ def database_create_view(request):
     return render(request, 'photologue/database_create.html', context)
 
 
-# class PhotoDetailView(DetailView):
-#     model = models.Photo
-#     template_name = 'photologue/photo_detail.html'
-#     queryset = models.Photo.objects.all()
-#
-# photo_detail_view = PhotoDetailView.as_view()
+class EventDetailView(DetailView):
+    model = models.Event
+    template_name = 'photologue/event_detail.html'
+    queryset = models.Event.objects.all()  # TODO: Ensure that it is fine or fix this.
+
+event_detail_view = EventDetailView.as_view()
+
+
+def event_create_view(request):
+    return HttpResponse('Create new event')

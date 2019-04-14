@@ -9,5 +9,8 @@ urlpatterns = [
     path('database/', views.database_list_view, name='database_list'),
     path('database/create/', views.database_create_view, name='database_create'),
     path('database/<slug:slug>/', views.database_detail_view, name='database_detail'),
-    # path('photo/<slug:slug>', views.photo_detail_view, name='photo_detail'),
+
+    path('event/create/', views.event_create_view, name='event_create'),
+    path('event/<slug:slug>/', views.event_detail_view, name='event_detail'),
+
 ]

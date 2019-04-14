@@ -9,7 +9,24 @@
         <h1 class="page-header">{{ database.title }}</h1>
         <p class="muted"><small>{% trans "Published" %} {{ database.date_added }}</small></p>
         {% if database.description %}{{ database.description|safe }}{% endif %}
-        <p>TODO: Insert events</p>
+
+        <div>
+            <a href="{% url 'photologue:event_create' %}">
+                Create new event
+            </a>
+        </div>
+
+        {% if events %}
+            {% for event in events %}
+                <a href="{{ event.get_absolute_url }}">
+                    <p>{{ event.title }} </p>
+                </a>
+            {% endfor %}
+
+        {% else %}
+            <p>No events yet</p>
+        {% endif %}
+
         <div><a href="{% url 'photologue:database_list' %}" class="btn btn-default">{% trans "View all databases" %}</a></div>
 	</div>
 
