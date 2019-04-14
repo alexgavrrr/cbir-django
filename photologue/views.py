@@ -51,20 +51,9 @@ def database_create_view(request):
         if form.is_valid():
             database = form.save(commit=False)
             logger.info(f'Database object submitted by user: {database}')
-
-            # if database.description_file:
-            #     logger.info(f'There is description file:\n{database.description_file} - {database.description_file.file.name}')
-            # else:
-            #     logger.info(f'There is NO description file')
-
             database.save()
 
-            # logger.info(f'After save There is description file:\n'
-            #               f'{database.description_file} - {database.description_file.file.name}')
-
-            # TODO: Creare database photos from request.FILES
             logger.info(f"files count: {len(request.FILES.getlist('photos'))}")
-
             count = 1
             for file_image in request.FILES.getlist('photos'):
                 logger.info(f"file_image: {file_image}\n"
