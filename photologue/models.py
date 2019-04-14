@@ -16,7 +16,7 @@ from django.utils.encoding import force_text
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 
-logger = logging.getLogger('image_storage.models')
+logger = logging.getLogger('photologue.models')
 
 # Default limit for gallery.latest
 LATEST_LIMIT = 10

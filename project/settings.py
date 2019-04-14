@@ -149,7 +149,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'image_storage': {
+        'photologue': {
             # Default (suitable for dev) is to log to console.
             'handlers': ['console'],
             'level': 'DEBUG',
@@ -168,7 +168,7 @@ LOGGING = {
 # Don't display logging messages to console during unit test runs.
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     LOGGING['loggers']['']['handlers'] = ['null']
-    LOGGING['loggers']['image_storage']['handlers'] = ['null']
+    LOGGING['loggers']['photologue']['handlers'] = ['null']
 
 # Uncomment this for Amazon S3 file storage
 # from example_storages.settings_s3boto import *
