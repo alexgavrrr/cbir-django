@@ -1,5 +1,10 @@
 import logging
+import os
+from pathlib import Path
+import shutil
 
+from django.core.files import File
+from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -7,6 +12,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import ListView, DetailView
 
+from project.settings import MEDIA_ROOT
 from . import forms
 from . import models
 
@@ -201,8 +207,42 @@ def event_create_view(request):
             event.database = database
             event.save()
 
-            logger.info(f"files count: {len(request.FILES.getlist('photos'))}")
+            # Handling images chosen from existing ones in a database
+            query_photos_from_database = form.cleaned_data.get('query_photos_from_database')
+            logger.info(f'query_photos_from_database: {query_photos_from_database}')
+
             count_event_photo = 1
+            for query_photo_from_database in query_photos_from_database:
+                while True:
+                    event_photo_slug = f'{event.slug}-{count_event_photo}'
+                    if models.EventPhoto.objects.filter(slug=event_photo_slug).exists():
+                        count_event_photo += 1
+                        continue
+                    break
+
+                event_photo = models.EventPhoto(slug=event_photo_slug,
+                                                event=event,
+                                                is_query=True,
+                                                # description=...,
+                                                # description_file=...,
+                                                database_photo=query_photo_from_database,)
+                event_photo_path = models.get_storage_path_for_image(
+                        event_photo,
+                        filename=Path(query_photo_from_database.image.name).name)
+                logger.info(f'AAAAAAAA. event_photo_path: {event_photo_path}')
+                event_photo.image = event_photo_path
+
+                path_to_ready_file = os.path.join(MEDIA_ROOT, query_photo_from_database.image.name)
+                logger.info(f'path_to_ready_file: {path_to_ready_file}')
+                shutil.copyfile(path_to_ready_file, os.path.join(MEDIA_ROOT, event_photo_path))
+
+                # with open(path_to_ready_file, 'rb') as fin:
+                #     event_photo.image.save(event_photo_path, ContentFile('sdfvfvdfsccccc'))
+
+                event_photo.save()
+
+            # Handling new uploaded images
+            logger.info(f"files count: {len(request.FILES.getlist('query_photos'))}")
             for file_image in request.FILES.getlist('query_photos'):
                 logger.info(f"file_image: {file_image}\n"
                             f"type(file_image): {type(file_image)}\n"

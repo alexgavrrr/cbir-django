@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import ModelForm
 
-from .models import Database, Event
+from .models import Database, Event, DatabasePhoto
 
 FILE_MAX_LENGTH = 100
 
@@ -22,6 +22,9 @@ class EventForm(ModelForm):
     query_photos = forms.ImageField(required=False,
                               label='query photos',
                               widget=forms.ClearableFileInput(attrs={'multiple': True}))
+    query_photos_from_database = forms.ModelMultipleChoiceField(DatabasePhoto.objects.all(),
+                                                                required=False,
+                                                                label='query photos from database')
 
     class Meta:
         model = Event
