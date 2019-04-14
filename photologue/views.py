@@ -16,6 +16,7 @@ from . import models
 
 logger = logging.getLogger('photologue.views')
 
+
 class DatabaseListView(ListView):
     model = models.Database
     template_name = 'photologue/database_list.html'
@@ -27,12 +28,11 @@ database_list_view = DatabaseListView.as_view()
 class DatabaseDetailView(DetailView):
     model = models.Database
     template_name = 'photologue/database_detail.html'
+    context_object_name = 'database'
 
     def get_context_data(self, **kwargs):
-        context = {}
-        logger.info(f'kwargs: {kwargs}')
-        events = models.Event.objects.filter(database=kwargs['object'].pk)
-        logger.info(f'events: {events}')
+        context = super().get_context_data(**kwargs)
+        events = models.Event.objects.filter(database=context['database'].pk)
         context['events'] = events
         return context
 
@@ -93,7 +93,16 @@ def database_create_view(request):
 class EventDetailView(DetailView):
     model = models.Event
     template_name = 'photologue/event_detail.html'
-    queryset = models.Event.objects.all()  # TODO: Ensure that it is fine or fix this.
+    context_object_name = 'event'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        all_photos = models.EventPhoto.objects.filter(event=context['event'])
+        query_photos = all_photos.filter(is_query=True)
+        result_photos = all_photos.filter(is_query=False)
+        context['result_photos'] = result_photos
+        context['query_photos'] = query_photos
+        return context
 
 event_detail_view = EventDetailView.as_view()
 
