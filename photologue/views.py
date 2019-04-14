@@ -69,7 +69,7 @@ def database_create_view(request):
                                                       image=file_image)
                 database_photo.save()
 
-            return HttpResponseRedirect(reverse('photologue:database_list'))
+            return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
     else:
         form = forms.DatabaseForm()
 
@@ -137,7 +137,7 @@ def database_edit_view(request, slug):
                                                       image=file_image)
                 database_photo.save()
 
-            return HttpResponseRedirect(reverse('photologue:database_list'))
+            return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
         else:
             logger.info('Validation not successful')
     else:
@@ -167,5 +167,57 @@ class EventDetailView(DetailView):
 event_detail_view = EventDetailView.as_view()
 
 
+# def event_create_view(request):
+#     return HttpResponse('Create new event')
 def event_create_view(request):
-    return HttpResponse('Create new event')
+    method = request.method
+    context = {}
+    debug_info = f'Method {method}'
+    context['debug_info'] = debug_info
+    logger = logging.getLogger('photologue.event.create')
+
+    logger.info(f'post: {request.POST}')
+    logger.info(f'get: {request.GET}')
+
+    database_slug = request.GET.get('database')
+    logger.info(f'Database slug: {database_slug}')
+    database = get_object_or_404(models.Database, slug=database_slug)
+    context['database'] = database
+
+    if method == 'POST':
+        form = forms.EventForm(request.POST, request.FILES)
+        if form.is_valid():
+            event = form.save(commit=False)
+            logger.info(f'Event object submitted by user: {event}')
+            event.database = database
+            event.save()
+
+            logger.info(f"files count: {len(request.FILES.getlist('photos'))}")
+            count = 1
+            for file_image in request.FILES.getlist('query_photos'):
+                logger.info(f"file_image: {file_image}\n"
+                            f"type(file_image): {type(file_image)}\n"
+                            f"file_image.name: {file_image.name}\n")
+                while True:
+                    slug = f'{event.slug}-{count}'
+                    if models.EventPhoto.objects.filter(slug=slug).exists():
+                        count += 1
+                        continue
+                    break
+
+                event_photo = models.EventPhoto(slug=slug,
+                                                event=event,
+                                                is_query=True,
+                                                image=file_image,)
+                event_photo.save()
+
+            return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
+    else:
+        # logger.info('GET. Preparing database inital value for form')
+        # database = request.GET.get('database')
+        # logger.info(f'database: {database}; type(database): {type(database)}')
+        # form = forms.EventForm(initial={'database': 1})
+        form = forms.EventForm()
+
+    context['form'] = form
+    return render(request, 'photologue/event_create.html', context)

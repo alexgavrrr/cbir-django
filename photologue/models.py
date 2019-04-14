@@ -147,8 +147,13 @@ def get_storage_path_for_description_file_of_event_photo(instance, filename):
 
 def get_storage_path_for_image(instance, filename):
     # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
-    database = instance.database.slug
-    folder = f'{database}_all'
+    if isinstance(instance, DatabasePhoto):
+        database = instance.database.slug
+        folder = f'{database}_all'
+    elif isinstance(instance, EventPhoto):
+        database = instance.event.database.slug
+        folder = instance.event.slug
+
     return os.path.join(CONTENT_DIR, database, folder, filename)
 
 
