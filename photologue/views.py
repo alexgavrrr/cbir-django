@@ -1,21 +1,14 @@
 import logging
 
-from django.core.exceptions import ValidationError
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
-from django.template.defaultfilters import slugify
-from django.forms.models import model_to_dict
-
-
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import ListView, DetailView
 
-from django.http import HttpResponseRedirect
-from django.shortcuts import render
-
 from . import forms
 from . import models
-
 
 logger = logging.getLogger('photologue.views')
 
@@ -24,6 +17,7 @@ class DatabaseListView(ListView):
     model = models.Database
     template_name = 'photologue/database_list.html'
     paginate_by = 20
+
 
 database_list_view = DatabaseListView.as_view()
 
@@ -38,6 +32,7 @@ class DatabaseDetailView(DetailView):
         events = models.Event.objects.filter(database=context['database'].pk)
         context['events'] = events
         return context
+
 
 database_detail_view = DatabaseDetailView.as_view()
 
@@ -145,8 +140,6 @@ def database_edit_view(request, slug):
             return HttpResponseRedirect(reverse('photologue:database_list'))
         else:
             logger.info('Validation not successful')
-
-
     else:
         logger.info('GET')
         form = forms.DatabaseForm(instance=database)
@@ -169,6 +162,7 @@ class EventDetailView(DetailView):
         context['result_photos'] = result_photos
         context['query_photos'] = query_photos
         return context
+
 
 event_detail_view = EventDetailView.as_view()
 

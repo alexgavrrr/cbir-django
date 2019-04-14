@@ -1,12 +1,12 @@
-from django.db import models
 from django import forms
 from django.forms import ModelForm
 
-from .models import Database, DatabasePhoto
+from .models import Database
 
 FILE_MAX_LENGTH = 100
 
 file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
+
 
 class DatabaseForm(ModelForm):
     lol_field = forms.CharField(required=False,

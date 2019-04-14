@@ -1,30 +1,20 @@
 import logging
 import os
-import random
 import unicodedata
-from datetime import datetime
 from inspect import isclass
-from io import BytesIO
 
-import exifread
 from PIL import (Image,
                  ImageFile,
                  ImageFilter,
                  )
-from django.conf import settings
-from django.contrib.sites.models import Site
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.urls import reverse
-from django.utils.encoding import force_text, smart_str, filepath_to_uri
-from django.utils.functional import curry
-from django.utils.safestring import mark_safe
+from django.utils.encoding import force_text
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
-from sortedm2m.fields import SortedManyToManyField
-
 
 logger = logging.getLogger('image_storage.models')
 
@@ -133,11 +123,13 @@ def get_storage_path_for_description_file_of_database(instance, filename):
     database = instance.slug
     return os.path.join(CONTENT_DIR, database, fn)
 
+
 def get_storage_path_for_description_file_of_event(instance, filename):
     fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.database.slug
     event = instance.slug
     return os.path.join(CONTENT_DIR, database, event, fn)
+
 
 def get_storage_path_for_description_file_of_database_photo(instance, filename):
     fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
@@ -145,11 +137,13 @@ def get_storage_path_for_description_file_of_database_photo(instance, filename):
     folder = f'{database}_all'
     return os.path.join(CONTENT_DIR, database, folder, fn)
 
+
 def get_storage_path_for_description_file_of_event_photo(instance, filename):
     fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.database.slug
     event = instance.slug
     return os.path.join(CONTENT_DIR, database, event, fn)
+
 
 def get_storage_path_for_image(instance, filename):
     # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
@@ -179,7 +173,6 @@ class Database(models.Model):
                                         blank=True)
 
     # events
-
 
     class Meta:
         ordering = ['-date_added']
@@ -250,9 +243,6 @@ class Photo(ImageModel):
     date_added = models.DateTimeField(_('date added'),
                                       default=now)
 
-
-
-
     class Meta:
         ordering = ['-date_added']
         get_latest_by = 'date_added'
@@ -275,7 +265,7 @@ class Photo(ImageModel):
 class DatabasePhoto(ImageModel):
     # title is not needed
     slug = models.SlugField('slug',
-                            unique=True,)
+                            unique=True, )
     description = models.TextField('description',
                                    blank=True)
 
@@ -294,7 +284,7 @@ class DatabasePhoto(ImageModel):
 class EventPhoto(ImageModel):
     # title is not needed
     slug = models.SlugField('slug',
-                            unique=False,)
+                            unique=False, )
     description = models.TextField('description',
                                    blank=True)
 
@@ -305,7 +295,7 @@ class EventPhoto(ImageModel):
                                         blank=True)
 
     is_query = models.BooleanField('is_query',
-                                   default=False,)
+                                   default=False, )
     event = models.ForeignKey(to=Event,
                               on_delete=models.CASCADE)
     database_photo = models.ForeignKey(to=DatabasePhoto,
