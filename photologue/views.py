@@ -1,7 +1,10 @@
 import logging
+
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.template.defaultfilters import slugify
+from django.forms.models import model_to_dict
 
 
 from django.urls import reverse
@@ -77,6 +80,80 @@ def database_create_view(request):
 
     context['form'] = form
     return render(request, 'photologue/database_create.html', context)
+
+
+def database_edit_view(request, slug):
+    method = request.method
+    context = {}
+    debug_info = f'Method {method}'
+    context['debug_info'] = debug_info
+    database = get_object_or_404(models.Database, slug=slug)
+    context['database_old'] = database
+    logger = logging.getLogger('photologue.database.edit')
+
+    if method == 'POST':
+        logger.info('POST')
+        form = forms.DatabaseForm(request.POST, request.FILES, instance=database)
+
+        logger.info(f'form.errors: {form.errors}')
+        for index_error, error in enumerate(form.errors):
+            logger.info(f'{index_error} error: {error} type(error): {type(error)}')
+
+        logger.info(f'form.cleaned_data: {form.cleaned_data}')
+        logger.info(f'form.has_changed: {form.has_changed()}')
+        logger.info(f'form.changed_data: {form.changed_data}')
+
+        validation_successful = True
+
+        if 'slug' in form.changed_data or 'title' in form.changed_data:
+            validation_successful = False
+            message = f'slug or title is changed wihich is bad'
+            logger.info(message)
+
+            if 'slug' in form.changed_data:
+                form.add_error('slug', 'Can not modify slug')
+            if 'title' in form.changed_data:
+                form.add_error('title', 'Can not modify title')
+
+        # ... next validation steps
+
+        if validation_successful:
+            logger.info('Validation successful')
+            logger.info('Updating model instance from form instsance')
+            database = form.save(commit=False)
+            logger.info(f'database from form: {database}; database.pk: {database.pk}; database.slug: {database.slug}')
+            database.save()
+
+            logger.info(f"Images count to upload: {len(request.FILES.getlist('photos'))}")
+            count = 1
+            for file_image in request.FILES.getlist('photos'):
+                # logger.info(f"file_image: {file_image}\n"
+                #             f"type(file_image): {type(file_image)}\n"
+                #             f"file_image.name: {file_image.name}\n")
+                while True:
+                    slug = f'{database.slug}-{count}'
+                    if models.DatabasePhoto.objects.filter(slug=slug).exists():
+                        count += 1
+                        continue
+                    break
+
+                database_photo = models.DatabasePhoto(slug=slug,
+                                                      database=database,
+                                                      image=file_image)
+                database_photo.save()
+
+            return HttpResponseRedirect(reverse('photologue:database_list'))
+        else:
+            logger.info('Validation not successful')
+
+
+    else:
+        logger.info('GET')
+        form = forms.DatabaseForm(instance=database)
+
+    context['form'] = form
+    context['database'] = database
+    return render(request, 'photologue/database_edit.html', context)
 
 
 class EventDetailView(DetailView):

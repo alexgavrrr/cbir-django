@@ -1,0 +1,22 @@
+{% extends "photologue/base.html" %}
+{% load i18n %}
+
+{% block title %}Edit database{% endblock %}
+
+{% block content %}
+
+<div class="row col-lg-12">
+    <h1 class="page-header">{% trans "Edit database" %} {{database}} </h1>
+</div><p>Debug info: {{debug_info}}</p>
+
+{% if form.is_multipart %}
+    <form enctype="multipart/form-data" method="post" action="">
+{% else %}
+    <form method="post" action="">
+{% endif %}
+        {% csrf_token %}
+{{ form.as_p }}
+        <input type="submit" value="Submit">
+</form>
+
+{% endblock content %}
