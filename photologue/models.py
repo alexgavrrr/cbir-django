@@ -123,10 +123,39 @@ IMAGE_FILTERS_HELP_TEXT = _('Chain multiple filters using the following pattern 
 size_method_map = {}
 
 
-def get_storage_path(instance, filename):
+# def get_storage_path(instance, filename):
+#     fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
+#     database = 'photos'
+#     return os.path.join(CONTENT_DIR, database, fn)
+
+def get_storage_path_for_description_file_of_database(instance, filename):
     fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
-    database = 'photos'
+    database = instance.slug
     return os.path.join(CONTENT_DIR, database, fn)
+
+def get_storage_path_for_description_file_of_event(instance, filename):
+    fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
+    database = instance.database.slug
+    event = instance.slug
+    return os.path.join(CONTENT_DIR, database, event, fn)
+
+def get_storage_path_for_description_file_of_database_photo(instance, filename):
+    fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
+    database = instance.database.slug
+    folder = f'{database}_all'
+    return os.path.join(CONTENT_DIR, database, folder, fn)
+
+def get_storage_path_for_description_file_of_event_photo(instance, filename):
+    fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
+    database = instance.database.slug
+    event = instance.slug
+    return os.path.join(CONTENT_DIR, database, event, fn)
+
+def get_storage_path_for_image(instance, filename):
+    # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
+    database = instance.database.slug
+    folder = f'{database}_all'
+    return os.path.join(CONTENT_DIR, database, folder, filename)
 
 
 ####################################################################
@@ -138,12 +167,16 @@ class Database(models.Model):
     title = models.CharField(_('title'),
                              max_length=250,
                              unique=True)
-    slug = models.SlugField(_('title slug'),
+    slug = models.SlugField(_('slug'),
                             unique=True,
                             max_length=250,
                             help_text=_('A "slug" is a unique URL-friendly title for an object.'))
     description = models.TextField(_('description'),
                                    blank=True)
+    description_file = models.FileField('description_file',
+                                        max_length=FILE_FIELD_MAX_LENGTH,
+                                        upload_to=get_storage_path_for_description_file_of_database,
+                                        blank=True)
 
     # events
 
@@ -168,13 +201,13 @@ class Database(models.Model):
         return []
 
 
-class Folder(models.Model):
+class Event(models.Model):
     date_added = models.DateTimeField(_('date published'),
                                       default=now)
     title = models.CharField(_('title'),
                              max_length=250,
                              unique=True)
-    slug = models.SlugField(_('title slug'),
+    slug = models.SlugField(_('slug'),
                             unique=True,
                             max_length=250,
                             help_text=_('A "slug" is a unique URL-friendly title for an object.'))
@@ -182,16 +215,99 @@ class Folder(models.Model):
                                    blank=True)
     description_file = models.FileField('description_file',
                                         max_length=FILE_FIELD_MAX_LENGTH,
-                                        upload_to=get_storage_path,
+                                        upload_to=get_storage_path_for_description_file_of_event,
                                         blank=True)
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
+
+    # query = models.ImageField('query',
+    #                           max_length=IMAGE_FIELD_MAX_LENGTH,
+    #                           upload_to=get_storage_path_for_query_of_event,
+    #                           blank=True)
 
     def __str__(self):
         return self.title
 
 
-class Event(Folder):
-    query = models.ImageField('query',
+class ImageModel(models.Model):
+    image = models.ImageField('image',
                               max_length=IMAGE_FIELD_MAX_LENGTH,
-                              upload_to=get_storage_path,
-                              blank=True)
+                              upload_to=get_storage_path_for_image)
+
+
+class Photo(ImageModel):
+    title = models.CharField(_('title'),
+                             max_length=250,
+                             unique=True)
+    slug = models.SlugField(_('slug'),
+                            unique=True,
+                            max_length=250,
+                            help_text=_('A "slug" is a unique URL-friendly title for an object.'))
+    caption = models.TextField(_('caption'),
+                               blank=True)
+    date_added = models.DateTimeField(_('date added'),
+                                      default=now)
+
+
+
+
+    class Meta:
+        ordering = ['-date_added']
+        get_latest_by = 'date_added'
+        verbose_name = _("photo")
+        verbose_name_plural = _("photos")
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        # TODO
+        if self.slug is None:
+            self.slug = slugify(self.title)
+        super(Photo, self).save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('photologue:pl-photo', args=[self.slug])
+
+
+class DatabasePhoto(ImageModel):
+    # title is not needed
+    slug = models.SlugField('slug',
+                            unique=True,)
+    description = models.TextField('description',
+                                   blank=True)
+
+    # TODO: Find out whether description file is needed for database photo
+    description_file = models.FileField('description_file',
+                                        max_length=FILE_FIELD_MAX_LENGTH,
+                                        upload_to=get_storage_path_for_description_file_of_database_photo,
+                                        blank=True)
+
+    database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.slug} from {self.database}'
+
+
+class EventPhoto(ImageModel):
+    # title is not needed
+    slug = models.SlugField('slug',
+                            unique=False,)
+    description = models.TextField('description',
+                                   blank=True)
+
+    # TODO: Find out whether description file is needed for database photo
+    description_file = models.FileField('description_file',
+                                        max_length=FILE_FIELD_MAX_LENGTH,
+                                        upload_to=get_storage_path_for_description_file_of_event_photo,
+                                        blank=True)
+
+    is_query = models.BooleanField('is_query',
+                                   default=False,)
+    event = models.ForeignKey(to=Event,
+                              on_delete=models.CASCADE)
+    database_photo = models.ForeignKey(to=DatabasePhoto,
+                                       on_delete=models.SET_NULL,
+                                       null=True)
+
+    def __str__(self):
+        return f'{self.slug} from {self.event}'
