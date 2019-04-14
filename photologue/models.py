@@ -212,11 +212,6 @@ class Event(models.Model):
                                         blank=True)
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
 
-    # query = models.ImageField('query',
-    #                           max_length=IMAGE_FIELD_MAX_LENGTH,
-    #                           upload_to=get_storage_path_for_query_of_event,
-    #                           blank=True)
-
     def __str__(self):
         return self.title
 
@@ -228,38 +223,6 @@ class ImageModel(models.Model):
     image = models.ImageField('image',
                               max_length=IMAGE_FIELD_MAX_LENGTH,
                               upload_to=get_storage_path_for_image)
-
-
-class Photo(ImageModel):
-    title = models.CharField(_('title'),
-                             max_length=250,
-                             unique=True)
-    slug = models.SlugField(_('slug'),
-                            unique=True,
-                            max_length=250,
-                            help_text=_('A "slug" is a unique URL-friendly title for an object.'))
-    caption = models.TextField(_('caption'),
-                               blank=True)
-    date_added = models.DateTimeField(_('date added'),
-                                      default=now)
-
-    class Meta:
-        ordering = ['-date_added']
-        get_latest_by = 'date_added'
-        verbose_name = _("photo")
-        verbose_name_plural = _("photos")
-
-    def __str__(self):
-        return self.title
-
-    def save(self, *args, **kwargs):
-        # TODO
-        if self.slug is None:
-            self.slug = slugify(self.title)
-        super(Photo, self).save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        return reverse('photologue:pl-photo', args=[self.slug])
 
 
 class DatabasePhoto(ImageModel):

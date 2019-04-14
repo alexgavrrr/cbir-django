@@ -9,9 +9,6 @@ file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': 
 
 
 class DatabaseForm(ModelForm):
-    lol_field = forms.CharField(required=False,
-                                label='Label for lol field',
-                                initial='lol-initial')
     photos = forms.ImageField(required=False,
                               label='photos',
                               widget=forms.ClearableFileInput(attrs={'multiple': True}))
