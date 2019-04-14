@@ -8,28 +8,33 @@
 	<div class="row col-lg-12">
         <h1 class="page-header">{{ event.title }}</h1>
         <p class="muted"><small>{% trans "Published" %} {{ event.date_added }}</small></p>
-        {% if event.description %}{{ event.description|safe }}{% endif %}
-
-        {% if query_photos %}
-                <p>Query photos</p>
-                {% for query in query_photos %}
-                    <p>{{ query.slug }} </p>
-                    <p>{{ query }}</p>
-                {% endfor %}
-        {% else %}
-            <p>No query photos</p>
+        {% if event.description %}
+            <h4>Description</h4>
+            <p style="text-indent: 3%">{{ event.description|safe }}</p>
         {% endif %}
 
+        <h4>Query photos</h4>
+        <ul>
+        {% if query_photos %}
+                {% for query in query_photos %}
+                    <li>{{ query }}</li>
+                {% endfor %}
+        {% else %}
+            No query photos
+        {% endif %}
+        </ul>
+
+        <h4>Result photos</h4>
+        <ul>
         {% if photos %}
-            <p>Result photos</p>
             {% for photo in photos %}
-                <p>{{ photo.slug }} </p>
-                <p>{{ photo }} </p>
+                <li>{{ photo }} </li>
                 <!--<img src="todo" class="todo" alt="{{ photo.slug }}">-->
             {% endfor %}
         {% else %}
-            <p>No result photos</p>
+            No result photos
         {% endif %}
+        </ul>
 
         <div><a href="{% url 'photologue:database_detail' event.database.slug %}" class="btn btn-default">{% trans "View all events in database" %}</a></div>
 	</div>
