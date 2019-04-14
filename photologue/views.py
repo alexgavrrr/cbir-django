@@ -202,30 +202,46 @@ def event_create_view(request):
             event.save()
 
             logger.info(f"files count: {len(request.FILES.getlist('photos'))}")
-            count = 1
+            count_event_photo = 1
             for file_image in request.FILES.getlist('query_photos'):
                 logger.info(f"file_image: {file_image}\n"
                             f"type(file_image): {type(file_image)}\n"
                             f"file_image.name: {file_image.name}\n")
+
                 while True:
-                    slug = f'{event.slug}-{count}'
-                    if models.EventPhoto.objects.filter(slug=slug).exists():
-                        count += 1
+                    event_photo_slug = f'{event.slug}-{count_event_photo}'
+                    if models.EventPhoto.objects.filter(slug=event_photo_slug).exists():
+                        count_event_photo += 1
                         continue
                     break
 
-                event_photo = models.EventPhoto(slug=slug,
+                database_photo_slug_base = f'{database.slug}-{event_photo_slug}'
+                count_database_photo = 1
+                while True:
+                    database_photo_slug = f'{database_photo_slug_base}-{count_database_photo}'
+                    if models.DatabasePhoto.objects.filter(slug=database_photo_slug).exists():
+                        count_database_photo += 1
+                        continue
+                    break
+
+                database_photo = models.DatabasePhoto(slug=database_photo_slug,
+                                                      database=database,
+                                                      # description=...,
+                                                      # description_file=...,
+                                                      image=file_image)
+                database_photo.save()
+
+                event_photo = models.EventPhoto(slug=event_photo_slug,
                                                 event=event,
                                                 is_query=True,
+                                                # description=...,
+                                                # description_file=...,
+                                                database_photo=database_photo,
                                                 image=file_image,)
                 event_photo.save()
 
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
     else:
-        # logger.info('GET. Preparing database inital value for form')
-        # database = request.GET.get('database')
-        # logger.info(f'database: {database}; type(database): {type(database)}')
-        # form = forms.EventForm(initial={'database': 1})
         form = forms.EventForm()
 
     context['form'] = form

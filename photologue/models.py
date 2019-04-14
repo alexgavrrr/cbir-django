@@ -119,29 +119,56 @@ size_method_map = {}
 #     return os.path.join(CONTENT_DIR, database, fn)
 
 def get_storage_path_for_description_file_of_database(instance, filename):
-    fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.slug
-    return os.path.join(CONTENT_DIR, database, fn)
+    return os.path.join(CONTENT_DIR, database, 'database_all', 'database.txt')
 
 
 def get_storage_path_for_description_file_of_event(instance, filename):
-    fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.database.slug
     event = instance.slug
-    return os.path.join(CONTENT_DIR, database, event, fn)
+    return os.path.join(CONTENT_DIR, database, event, 'event.txt')
 
 
 def get_storage_path_for_description_file_of_database_photo(instance, filename):
-    fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
+    # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.database.slug
-    folder = f'{database}_all'
-    return os.path.join(CONTENT_DIR, database, folder, fn)
+
+    name, ext = filename.split()
+    image_name, image_ext = instance.image.name.split()
+
+    error_message_parts = []
+    if ext != 'txt':
+        error_message_parts += [f'Extension must be .txt not {ext}']
+    if name != image_name:
+        error_message_parts += [f'Description file name and image name must be equal: {name} != {image_name}']
+    if error_message_parts:
+        error_message = '-'.join(['Bad name for description'] + error_message_parts)
+        logger.error(error_message)
+        raise ValueError(error_message)
+
+    fn = filename
+    return os.path.join(CONTENT_DIR, database, 'database_all', fn)
 
 
 def get_storage_path_for_description_file_of_event_photo(instance, filename):
-    fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
+    # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     database = instance.database.slug
     event = instance.slug
+
+    name, ext = filename.split()
+    image_name, image_ext = instance.image.name.split()
+
+    error_message_parts = []
+    if ext != 'txt':
+        error_message_parts += [f'Extension must be .txt not {ext}']
+    if name != image_name:
+        error_message_parts += [f'Description file name and image name must be equal: {name} != {image_name}']
+    if error_message_parts:
+        error_message = '-'.join(['Bad name for description'] + error_message_parts)
+        logger.error(error_message)
+        raise ValueError(error_message)
+
+    fn = filename
     return os.path.join(CONTENT_DIR, database, event, fn)
 
 
@@ -149,12 +176,15 @@ def get_storage_path_for_image(instance, filename):
     # fn = unicodedata.normalize('NFKD', force_text(filename)).encode('ascii', 'ignore').decode('ascii')
     if isinstance(instance, DatabasePhoto):
         database = instance.database.slug
-        folder = f'{database}_all'
+        folder = 'database_all'
     elif isinstance(instance, EventPhoto):
         database = instance.event.database.slug
         folder = instance.event.slug
 
-    return os.path.join(CONTENT_DIR, database, folder, filename)
+    # TODO: Should change fn?
+    fn = filename
+
+    return os.path.join(CONTENT_DIR, database, folder, fn)
 
 
 ####################################################################
@@ -204,6 +234,16 @@ class Database(models.Model):
         logger.info(f'events: {events}')
         return events
 
+    def save(self):
+        if not self.description_file:
+            logger.info('No description file')
+            path = get_storage_path_for_description_file_of_database(self, filename=None)
+            if not self.description:
+                self.description = f'{self.title}\n{self.slug}'
+            logger.info(f'Generate file: {path} with content: {self.description}')
+            self.description_file.save(path, ContentFile(self.description))
+        super().save()
+
 
 class Event(models.Model):
     date_added = models.DateTimeField(_('date published'),
@@ -228,6 +268,16 @@ class Event(models.Model):
 
     def get_absolute_url(self):
         return reverse('photologue:event_detail', args=[self.slug])
+
+    def save(self):
+        if not self.description_file:
+            logger.info('No description file')
+            path = get_storage_path_for_description_file_of_database(self, filename=None)
+            if not self.description:
+                self.description = f'{self.title}\n{self.slug}'
+            logger.info(f'Generate file: {path} with content: {self.description}')
+            self.description_file.save(path, ContentFile(self.description))
+        super().save()
 
 
 class ImageModel(models.Model):

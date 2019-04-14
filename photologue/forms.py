@@ -15,8 +15,7 @@ class DatabaseForm(ModelForm):
 
     class Meta:
         model = Database
-        fields = ['date_added', 'title', 'slug', 'description', 'description_file']
-        labels = {'description_file': 'Description file'}
+        fields = ['date_added', 'title', 'slug', 'description']
 
 
 class EventForm(ModelForm):
@@ -26,5 +25,4 @@ class EventForm(ModelForm):
 
     class Meta:
         model = Event
-        fields = ['date_added', 'title', 'slug', 'description', 'description_file']
-        labels = {'description_file': 'Description file'}
+        fields = ['date_added', 'title', 'slug', 'description']

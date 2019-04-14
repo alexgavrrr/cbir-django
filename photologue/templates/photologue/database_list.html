@@ -9,6 +9,12 @@
         <h1 class="page-header">{% trans "All databases" %}</h1>
     </div>
 
+    <h4>
+        <a href="{% url 'photologue:database_create' %}">
+            Create new database
+        </a>
+    </h4>
+
     {% if object_list %}
         {% for database in object_list %}
             <div class="row col-lg-12">
