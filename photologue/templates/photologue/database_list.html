@@ -14,8 +14,19 @@
             <div class="row col-lg-12">
                 <h2><a href="{{ database.get_absolute_url }}">{{ database.title }}</a></h2>
                 <p class="muted"><small>{% trans "Published" %} {{ database.date_added }}</small></p>
-                {% if database.description %}<p>{{ database.description|safe }}</p>{% endif %}
-                <p>TODO: Insert some pictures</p>
+                {% if database.description %}
+                    <h4>Description</h4>
+                    <p style="text-indent: 3%">{{ database.description|safe }}</p>
+                {% endif %}
+
+                <h4>Events</h4>
+                <ul>
+                {% for event in database.get_events %}
+                    <li>
+                        <a href="{{ event.get_absolute_url }}">{{ event.title }}</a>
+                    </li>
+                {% endfor %}
+                </ul>
             </div>
         {% endfor %}
     {% else %}

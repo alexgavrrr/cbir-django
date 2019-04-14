@@ -18,6 +18,15 @@ class DatabaseListView(ListView):
     template_name = 'photologue/database_list.html'
     paginate_by = 20
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+        # logger.info(f'Base context: {context}')
+        # events = None
+        # context['events'] = events
+        # logger.info(f'events: {events}')
+
 
 database_list_view = DatabaseListView.as_view()
 

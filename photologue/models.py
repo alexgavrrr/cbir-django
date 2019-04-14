@@ -19,7 +19,7 @@ from django.utils.translation import ugettext_lazy as _
 logger = logging.getLogger('image_storage.models')
 
 # Default limit for gallery.latest
-LATEST_LIMIT = None
+LATEST_LIMIT = 10
 
 # Number of random images from the gallery to display.
 SAMPLE_SIZE = 5
@@ -197,6 +197,12 @@ class Database(models.Model):
 
         # TODO: return self.events
         return []
+
+    def get_events(self, limit=10):
+        limit = limit or LATEST_LIMIT
+        events = Event.objects.filter(database=self)[:limit]
+        logger.info(f'events: {events}')
+        return events
 
 
 class Event(models.Model):
