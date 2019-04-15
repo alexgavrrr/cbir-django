@@ -173,3 +173,11 @@ def show(args):
 def evaluate(args):
     cbir_tests.start_evaluation.do_train_test(args.train_dir, args.test_dir, args.gt_dir,
                                               args.sample)
+
+def prepare_directory_structure(args):
+    persistent_state = args.persistent_state or cbir.PERSISTENT_STATE
+    databases = persistent_state / 'databases'
+    if not os.path.exists(persistent_state):
+        os.mkdir(persistent_state)
+    if not os.path.exists(databases):
+        os.mkdir(databases)

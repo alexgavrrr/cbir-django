@@ -50,6 +50,10 @@ def create_parser():
     evaluate_parser.add_argument('--test_dir', default=None)
     evaluate_parser.add_argument('--gt_dir', default=None)
 
+    prepare_directory_structure_parser = subparsers.add_parser('prepare_directory_structure', help='Prepare directory structure')
+    prepare_directory_structure_parser.add_argument('--persistent_state', required=False,
+                                                    help="Root directory for cbir's persistent_state")
+
     return parser
 
 

@@ -118,22 +118,34 @@ def database_edit_view(request, slug):
     return render(request, 'photologue/database_edit.html', context)
 
 
-class EventDetailView(DetailView):
-    model = models.Event
-    template_name = 'photologue/event_detail.html'
-    context_object_name = 'event'
+# class EventDetailView(DetailView):
+#     model = models.Event
+#     template_name = 'photologue/event_detail.html'
+#     context_object_name = 'event'
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         all_photos = models.EventPhoto.objects.filter(event=context['event'])
+#         query_photos = all_photos.filter(is_query=True)
+#         result_photos = all_photos.filter(is_query=False)
+#         context['result_photos'] = result_photos
+#         context['query_photos'] = query_photos
+#         return context
+# event_detail_view = EventDetailView.as_view()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        all_photos = models.EventPhoto.objects.filter(event=context['event'])
-        query_photos = all_photos.filter(is_query=True)
-        result_photos = all_photos.filter(is_query=False)
-        context['result_photos'] = result_photos
-        context['query_photos'] = query_photos
-        return context
+def event_detail_view(request, slug):
+    RESULT_PHOTOS_LIMIT = 10
+    context = {}
+    event = get_object_or_404(models.Event, slug=slug)
+    result_photos = event.init_if_needed_and_get_result_photos()
+    result_photos_truncated = result_photos[:RESULT_PHOTOS_LIMIT]
 
+    # TODO: HARDCODED. Fix it.
+    cbir_database_name = 'buildings'
 
-event_detail_view = EventDetailView.as_view()
+    context['result_photos'] = result_photos_truncated
+    context['query_photos'] = event.get_query_photos()
+    return render(request, 'photologue/event_detail.html', context)
 
 
 def event_create_view(request):

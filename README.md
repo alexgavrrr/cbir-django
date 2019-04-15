@@ -5,6 +5,8 @@ pipenv install
 python manage.py makemigrations
 python manage.py migrate
 
+python cbir_main.py prepare_cbir_directory_structure
+
 ## Development
 
 Reload from scratch command

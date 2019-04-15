@@ -1,6 +1,8 @@
+from argparse import Namespace
 import logging
 import os
 from inspect import isclass
+from pathlib import Path
 
 from PIL import (Image,
                  ImageFile,
@@ -12,6 +14,10 @@ from django.db import models
 from django.urls import reverse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
+
+import cbir
+import cbir.commands
+
 
 logger = logging.getLogger('photologue.models')
 
@@ -261,6 +267,61 @@ class Event(models.Model):
                 self.description = f'{self.title}\n{self.slug}'
             self.description_file.save(path, ContentFile(self.description))
         super().save()
+
+
+
+    def init_if_needed_and_get_result_photos(self):
+        result_photos = self.get_result_photos()
+        event_inited = len(result_photos) > 0
+        if not event_inited:
+            result_photos_names = self._do_search()
+            self.set_result_photos_from_names(result_photos_names)
+            result_photos = self.get_result_photos()
+        return result_photos
+
+
+    # def get_photos_from_basket(self, basket, cbir_database_name):
+    #     cbir_photos_location = cbir.DATABASES / cbir_database_name
+    #
+    #     def convert_full_path_to_photo_object_name(full_path, cbir_photos_location):
+    #         return Path('photologue') / 'photos' / Path(full_path).relative_to(cbir_photos_location)
+    #
+    #     photos = []
+    #     for full_path in basket:
+    #         photo_object_name = convert_full_path_to_photo_object_name(full_path, cbir_photos_location)
+    #         query_result = Photo.objects.filter(image__exact=photo_object_name)
+    #
+    #         if len(query_result) == 0:
+    #             photos += [None]
+    #         else:
+    #             photos += [query_result[0]]
+    #
+    #     return photos
+    def set_result_photos_from_names(self, result_photos_names):
+        return [EventPhoto.objects.first()]
+        # TODO
+
+    def get_result_photos(self):
+        return EventPhoto.objects.filter(event=self).filter(is_query=False)
+
+    def get_query_photos(self):
+        return EventPhoto.objects.filter(event=self).filter(is_query=True)
+
+    def _do_search(self):
+        args_for_search = Namespace()
+
+        # TODO: HARDCODED. Fix it.
+        args_for_search.database = 'buildings'
+
+        query_photos = self.get_query_photos()
+        if len(query_photos) == 0:
+            message = 'no query photos'
+            raise ValueError(message)
+        args_for_search.query = query_photos[0]
+        args_for_search.save = False
+
+        result_photos_names = cbir.commands.search(args_for_search, debug=False)
+        return result_photos_names
 
 
 class ImageModel(models.Model):
