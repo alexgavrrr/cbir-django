@@ -11,7 +11,7 @@ from cbir.legacy_utils import draw_result
 from cbir.session import Session
 from cbir import exceptions
 
-import tests.start_evaluation
+import cbir_tests.start_evaluation
 
 
 def _get_registered_databases():
@@ -171,5 +171,5 @@ def show(args):
 
 
 def evaluate(args):
-    tests.start_evaluation.do_train_test(args.train_dir, args.test_dir, args.gt_dir,
-                                         args.sample)
+    cbir_tests.start_evaluation.do_train_test(args.train_dir, args.test_dir, args.gt_dir,
+                                              args.sample)
