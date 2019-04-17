@@ -45,21 +45,6 @@ class VocabularyTree:
 
         return self
 
-    def build_inverted_index(self, data):
-        self.n_images = len(data)
-        for i, img in tqdm(enumerate(data), total=self.n_images):
-            for word in img:
-                pos = bisect_left(self.inverted_index[word][0], i)
-
-                if pos == len(self.inverted_index[word][0]):
-                    self.inverted_index[word][0].append(word)
-                    self.inverted_index[word][1].append(1)
-                elif self.inverted_index[word][0][pos] == i:
-                    self.inverted_index[word][1][pos] += 1
-                else:
-                    self.inverted_index[word][0].insert(pos, i)
-                    self.inverted_index[word][1].insert(pos, 1)
-
     def predict(self, data):
         if data.ndim == 1:
             data = data.reshape(1, -1)

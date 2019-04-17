@@ -23,9 +23,12 @@ class Storage:
         directory with photos.
     """
 
-    def __init__(self, storage_path, testing_path, training_path, des_type,
+    def __init__(self,
+                 storage_path, testing_path, training_path,
+                 des_type,
                  label="", max_keypoints=500, L=5, K=10,
-                 extensions=['jpg'], debug=False):
+                 extensions=['jpg'],
+                 debug=False):
         self.storage_path = storage_path
         self.test_path = testing_path
         self.training_path = training_path
@@ -596,12 +599,6 @@ class Storage:
             pickle.dump(params, f,
                         protocol=pickle.HIGHEST_PROTOCOL)
 
-    # def delete(self):
-    #     os.unlink(os.path.join(self.dir, 'bow.pkl'))
-    #     os.unlink(os.path.join(self.dir, 'inverted_index.pkl'))
-    #     os.unlink(os.path.join(self.dir, 'f_names.pkl'))
-    #     os.unlink(os.path.join(self.dir, 'params.pkl'))
-
     def show(self):
         pass
 
@@ -646,9 +643,6 @@ def main(storage_path, training_path, label):
 
 
 if __name__ == "__main__":
-    # main("./oxford/5k", "./oxford/5k", 'oxford')
-    # main("./paris/6k", "./paris/6k", 'paris')
-    # main("./test_storage", "./test_storage", '')
     main(
         '/Users/alexgavr/main/Developer/Data/Buildings/Revisited/datasets/roxford5k_sample/jpg',
         '/Users/alexgavr/main/Developer/Data/Buildings/Revisited/datasets/roxford5k_sample/jpg',

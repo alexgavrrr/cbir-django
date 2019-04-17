@@ -6,7 +6,6 @@ from cbir import DATABASES
 from cbir.utils import basic
 from cbir import photo_storage_inverted_file
 from cbir.legacy_utils import draw_result
-from cbir.session import Session
 
 import cbir_evaluation.start_evaluation
 
@@ -78,17 +77,7 @@ def add_images(args):
     """
 
 
-def reindex_database(args):
-    """
-
-    :param args.database:
-    :param args.path:
-
-    If there are no required parameters in args then they may be in cbir.CONFIG
-    """
-
-
-def search(args, debug=True):
+def search(args, debug=False):
     """
     :param args.database:
     :param args.cbir_index_name:
@@ -131,30 +120,13 @@ def search(args, debug=True):
                                                   debug=True)
 
     if not args.query:
-        args.query = input('Please enter path to query image...\n')
+        raise ValueError('No query provided')
     if not os.path.exists(args.query):
         message = f'File {args.query} does not exist'
         raise ValueError(message)
     if not basic.is_image(args.query):
         message = f'File {args.query} is not an image'
         raise ValueError(message)
-
-    # if args.save:
-    #     query_filename_text, extension = os.path.splitext(Path(args.query).name)
-    #     destination = Path(QUERIES) / query_filename_text
-    #
-    #     if os.path.exists(f'{destination}{extension}'):
-    #         destination_original = destination
-    #         attempt = 1
-    #         destination = f'{destination_original}_{attempt}'
-    #         while os.path.exists(f'{destination}{extension}'):
-    #             attempt += 1
-    #             destination = f'{destination_original}_{attempt}'
-    #
-    #     shutil.copyfile(args.query, f'{destination}{extension}')
-    #     args.query = f'{destination}{extension}'
-
-    # session = Session(database, args.query, query_saved=args.save)
 
     similar = storage.get_similar(args.query, topk=5,
                                   n_candidates=50, debug=debug,
@@ -165,35 +137,7 @@ def search(args, debug=True):
         print(f'Result images: {images}')
         draw_result(args.query, images)
 
-    # session.add_list(images)
-
-    # if args.save:
-    #     args.tag = args.tag or input('Please enter tag for session...\n')
-    #     while True:
-    #         try:
-    #             session.save(args.tag)
-    #         except exceptions.DuplicateSessionTag:
-    #             args.tag = input(f'Tag {args.tag} already exists. Please enter new...\n')
-    #         else:
-    #             break
-
     return images
-
-
-def show(args):
-    """
-    :param args.database:
-    :param args.tag:
-    """
-    database = args.database
-    registered_databases = _get_registered_databases()
-    if database not in registered_databases:
-        message = f'Databese {database} does not exist.'
-        raise ValueError(message)
-
-    session = Session.load(args.database, args.tag)
-    print(session.basket)
-    draw_result(session.query, session.basket)
 
 
 def evaluate(args):
