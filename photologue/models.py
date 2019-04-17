@@ -20,7 +20,6 @@ from django.conf import settings
 import cbir
 import cbir.commands
 
-
 logger = logging.getLogger('photologue.models')
 
 # Default limit for gallery.latest
@@ -119,6 +118,7 @@ IMAGE_FILTERS_HELP_TEXT = _('Chain multiple filters using the following pattern 
                             % (', '.join(filter_names)))
 
 size_method_map = {}
+
 
 def get_path_to_database(database, relative_to):
     """
@@ -341,14 +341,13 @@ class CbirIndex(models.Model):
     #     return redirect('cbir:cbir_page')
 
     def build(self):
-        # prepare arguments to cbir call
-        args = Namespace()
         database_name = self.database.slug
-        args.database = database_name
-        args.cbir_index_name = self.name
-        args.path = self.database.get_path_to_all_photos()
-
-        cbir.commands.register(args=args)
+        cbir_index_name = self.name
+        path_to_images_to_index = self.database.get_path_to_all_photos()
+        cbir.commands.register(database=database_name,
+                               cbir_index_name=cbir_index_name,
+                               path_to_images_to_index=path_to_images_to_index,
+                               path_to_images_to_train_clusterer=path_to_images_to_index)
         self.built = True
 
     def being_built(self):
@@ -393,8 +392,6 @@ class Event(models.Model):
             self.description_file.save(path, ContentFile(self.description))
         super().save()
 
-
-
     def init_if_needed_and_get_result_photos(self):
         result_photos = self.get_result_photos()
         event_inited = len(result_photos) > 0
@@ -403,7 +400,6 @@ class Event(models.Model):
             self.set_result_photos_from_names(result_photos_names)
             result_photos = self.get_result_photos()
         return result_photos
-
 
     # def get_photos_from_basket(self, basket, cbir_database_name):
     #     cbir_photos_location = cbir.DATABASES / cbir_database_name
@@ -427,13 +423,11 @@ class Event(models.Model):
         for database_photo_name in database_photos_names:
             database_photo = self.database.get_by_name(name=database_photo_name)
 
-
             event_photo = EventPhoto(slug='',
                                      event=self,
                                      is_query=False,
                                      database_photo=database_photo)
             event_photo.save()
-
 
     def get_result_photos(self):
         return EventPhoto.objects.filter(event=self).filter(is_query=False)
@@ -442,38 +436,25 @@ class Event(models.Model):
         return EventPhoto.objects.filter(event=self).filter(is_query=True)
 
     def _do_search(self):
-        args_for_search = Namespace()
 
         cbir_database_name = self.database.get_name()
         cbir_index_name = self.cbir_index.name
-        args_for_search.database = cbir_database_name
-        args_for_search.cbir_index_name = cbir_index_name
 
-        args_for_search.path = self.database.get_path_to_all_photos()
+        # path_to_images = self.database.get_path_to_all_photos()
 
         query_photos = self.get_query_photos()
         if len(query_photos) == 0:
-            message = 'no query photos'
             logger.warning(f'Event {self} does not have query photos')
             return []
 
-        # def get_path_to_all_photos(self):
-        #     name = self.slug
-        #     return Path(get_path_to_database(name, relative_to='base_dir')) / DATABASE_ALL_PHOTOS
-
-
         logger.info(f'query_photos[0].image.name: {query_photos[0].image.name}')
-        # logger.info(f'query_photos[0].image.filename: {query_photos[0].image.filename}')
-        res_1 = str(Path(get_path_to_database(self.database.get_name(),
-                                            relative_to='base_dir')) / DATABASE_ALL_PHOTOS / '1.txt')
-        logger.info(f'res_1: {res_1}')
-        res_2 = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
-        logger.info(f'res_2: {res_2}')
+        query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
+        logger.info(f'query: {query}')
 
-        args_for_search.query = res_2
-        args_for_search.save = False
-
-        result_photos_names = cbir.commands.search(args_for_search, debug=False)
+        # result_photos_names = cbir.commands.search(**vars(args_for_search))
+        result_photos_names = cbir.commands.search(database=cbir_database_name,
+                                                   cbir_index_name=cbir_index_name,
+                                                   query=query)
         return result_photos_names
 
     def has_cbir_index(self):
