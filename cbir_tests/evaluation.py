@@ -95,7 +95,8 @@ def AP(query, similar, debug=False):
 
 def evaluate(test_dir, train_dir, des_type, gt_dir, label,
              topk=5, n_test=100, sv_enable=True, qe_enable=True):
-    storage = Storage(test_dir, train_dir, des_type, label=label,
+    storage_dir = test_dir
+    storage = Storage(storage_dir, test_dir, train_dir, des_type, label=label,
                       max_keypoints=2000, L=5, K=10)
     queries, ok_answers, good_answers, junk_answers = load_gt(test_dir, gt_dir)
     scores = []

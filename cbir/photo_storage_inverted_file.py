@@ -23,10 +23,11 @@ class Storage:
         directory with photos.
     """
 
-    def __init__(self, dir_path, training_path, des_type,
+    def __init__(self, storage_path, testing_path, training_path, des_type,
                  label="", max_keypoints=500, L=5, K=10,
                  extensions=['jpg'], debug=False):
-        self.dir = dir_path
+        self.storage_path = storage_path
+        self.test_path = testing_path
         self.training_path = training_path
         self.max_keypoints = max_keypoints
         self.K = K
@@ -69,22 +70,22 @@ class Storage:
         postfix = '_{}_{}.pkl'.format(self.des_type, label)
 
         self.des_path = 'des' + postfix_des
-        self.des_path = os.path.join(self.dir, self.des_path)
+        self.des_path = os.path.join(self.storage_path, self.des_path)
 
         self.bow_path = 'bow' + postfix
-        self.bow_path = os.path.join(self.dir, self.bow_path)
+        self.bow_path = os.path.join(self.storage_path, self.bow_path)
 
         self.ca_path = 'clusterer' + postfix
-        self.ca_path = os.path.join(self.dir, self.ca_path)
+        self.ca_path = os.path.join(self.storage_path, self.ca_path)
 
         self.inverted_index_path = 'inverted_index' + postfix
-        self.inverted_index_path = os.path.join(self.dir, self.inverted_index_path)
+        self.inverted_index_path = os.path.join(self.storage_path, self.inverted_index_path)
 
         self.f_names_path = 'f_names' + postfix
-        self.f_names_path = os.path.join(self.dir, self.f_names_path)
+        self.f_names_path = os.path.join(self.storage_path, self.f_names_path)
 
         self.params_path = 'params' + postfix
-        self.params_path = os.path.join(self.dir, self.params_path)
+        self.params_path = os.path.join(self.storage_path, self.params_path)
 
         if (os.path.exists(self.inverted_index_path)
                 and os.path.exists(self.f_names_path)
@@ -112,11 +113,11 @@ class Storage:
         index_ready = os.path.exists(self.des_path)
         ca_ready = os.path.exists(self.ca_path)
 
-        if os.path.abspath(self.dir) == os.path.abspath(self.training_path):
+        if os.path.abspath(self.storage_path) == os.path.abspath(self.training_path):
 
             start = time.time()
             # images = list(random.sample(find_image_files(self.dir, self.extensions), 4000))
-            images = find_image_files(self.dir, self.extensions)
+            images = find_image_files(self.test_path, self.extensions)
             print("List of file names created in {} s".format(time.time() - start))
 
             start = time.time()
@@ -216,7 +217,7 @@ class Storage:
                 self.load_ca()
 
             if not index_ready:
-                images = find_image_files(self.dir, self.extensions)
+                images = find_image_files(self.test_path, self.extensions)
                 start = time.time()
                 for f in tqdm(images, total=len(images)):
                     tmp = self.get_descriptor(f, raw=True)
@@ -530,7 +531,7 @@ class Storage:
                         protocol=pickle.HIGHEST_PROTOCOL)
 
     def load(self):
-        with open(os.path.join(self.dir,
+        with open(os.path.join(self.storage_path,
                                'params_{}_{}.pkl'.format(self.des_type,
                                                          self.label)), 'rb') as f:
             params = pickle.load(f)
@@ -615,7 +616,9 @@ def compute_idf(bow):
 
 
 def main(storage_path, training_path, label):
+    test_path = storage_path
     storage = Storage(storage_path,
+                      test_path,
                       training_path,
                       'l2net',
                       label=label,

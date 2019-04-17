@@ -14,5 +14,4 @@ cuda_enabled = bool(os.environ.get('CUDA_HOME'))
 CONFIG = {
     'cpu_required': not cuda_enabled,
     'use_cuda': cuda_enabled,
-    'database': None,
 }
