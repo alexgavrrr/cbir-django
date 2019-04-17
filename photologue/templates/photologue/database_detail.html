@@ -20,6 +20,12 @@
         </h4>
 
         <h4>
+            <a href="{% url 'photologue:database_index_create'%}?database={{ database.slug }}">
+                Create new index for database
+            </a>
+        </h4>
+
+        <h4>
             <a href="{% url 'photologue:event_create' %}?database={{database.slug}}">
                 Create new event
             </a>

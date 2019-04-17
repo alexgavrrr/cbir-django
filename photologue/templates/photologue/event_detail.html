@@ -8,6 +8,12 @@
 	<div class="row col-lg-12">
         <h1 class="page-header">{{ event.title }}</h1>
         <p class="muted"><small>{% trans "Published" %} {{ event.date_added }}</small></p>
+
+        {% if warning_message %}
+                    <h4> {{ warning_message }}</h4>
+        {% endif %}
+
+
         {% if event.description %}
             <h4>Description</h4>
             <p style="text-indent: 3%">{{ event.description|safe }}</p>
@@ -26,8 +32,8 @@
 
         <h4>Result photos</h4>
         <ul>
-        {% if photos %}
-            {% for photo in photos %}
+        {% if result_photos %}
+            {% for photo in result_photos %}
                 <li>{{ photo }} </li>
                 <!--<img src="todo" class="todo" alt="{{ photo.slug }}">-->
             {% endfor %}

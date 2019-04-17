@@ -1,0 +1,27 @@
+{% extends "photologue/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ database_index.title }}{% endblock %}
+
+{% block content %}
+
+	<div class="row col-lg-12">
+        <h2 class="page-header">{{ database_index.title }}</h2>
+        <p class="muted"><small>{% trans "Published" %} {{ database_index.date_added }}</small></p>
+        {% if database_index.description %}
+            <h4>Description</h4>
+            <p style="text-indent: 3%">{{ database_index.description }}</p>
+        {% endif %}
+
+        <h4>
+            <a href="{% url 'photologue:database_detail' database_index.database.slug %}">
+                Database
+            </a>
+        </h4>
+
+
+
+        <div><a href="{% url 'photologue:database_list' %}" class="btn btn-default">{% trans "View all databases" %}</a></div>
+	</div>
+
+{% endblock %}

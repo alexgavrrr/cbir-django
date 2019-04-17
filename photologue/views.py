@@ -137,11 +137,19 @@ def event_detail_view(request, slug):
     RESULT_PHOTOS_LIMIT = 10
     context = {}
     event = get_object_or_404(models.Event, slug=slug)
+    context['event'] = event
+
+    if not event.has_cbir_index():
+        is_cbir_index_set = event.set_default_cbir_index_and_return_whether_success()
+        if not is_cbir_index_set:
+            context['warning_message'] = (f'Photos in the database {event.database} have not been indexed yet. '
+                                          f'First, go and create search index')
+            logger.info(f'event.database: {event.database}')
+            logger.info(f'event.database.slug: {event.database.slug}')
+            return render(request, 'photologue/event_detail.html', context)
+
     result_photos = event.init_if_needed_and_get_result_photos()
     result_photos_truncated = result_photos[:RESULT_PHOTOS_LIMIT]
-
-    # TODO: HARDCODED. Fix it.
-    cbir_database_name = 'buildings'
 
     context['result_photos'] = result_photos_truncated
     context['query_photos'] = event.get_query_photos()
@@ -159,6 +167,8 @@ def event_create_view(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.database = database
+            # TODO: Test setting cbir_index field.
+            event.cbir_index = form.cleaned_data.get('cbir_index') or database.cbir_index_default
             event.save()
 
             # Handling images chosen from existing ones in a database
@@ -227,3 +237,54 @@ def event_create_view(request):
 
     context['form'] = form
     return render(request, 'photologue/event_create.html', context)
+
+
+def database_index_info_view(request):
+    database_slug = request.GET.get('database')
+
+    if not database_slug:
+        pass  # show list of databases
+    else:
+        pass  # show list of
+
+
+def database_index_detail_view(request, slug):
+    database_index = get_object_or_404(models.CbirIndex, slug=slug)
+    context = {}
+    context['database_index'] = database_index
+    return render(request, 'photologue/database_index_detail.html', context)
+
+
+def database_index_management_view(request):
+    pass
+
+
+def database_index_create_view(request):
+    database_slug = request.GET.get('database')
+    database = get_object_or_404(models.Database, slug=database_slug)
+
+    context = {}
+    context['database'] = database
+
+    if request.method == 'POST':
+        form = forms.CbirIndexForm(request.POST)
+        if form.is_valid():
+            cbir_index = form.save(commit=False)
+            cbir_index.database = database
+            cbir_index.save()
+
+            set_default = form.cleaned_data.get('set_default')
+            database_has_default_cbir_index = bool(database.cbir_index_default)
+            if set_default or not database_has_default_cbir_index:
+                database.cbir_index_default = cbir_index
+                database.save()
+
+            # TODO: Make call to build index asynchronous
+            cbir_index.build_if_needed()
+
+            return HttpResponseRedirect(reverse('photologue:database_index_detail', kwargs={'slug': cbir_index.slug}))
+    else:
+        form = forms.CbirIndexForm()
+
+    context['form'] = form
+    return render(request, 'photologue/database_index_create.html', context)
