@@ -16,5 +16,6 @@ yes | rm db.sqlite3;
     python manage.py makemigrations && \
     python manage.py migrate && \
     ./createsuper.sh && \
-    ./clean_content.sh
+    ./clean_content.sh && \
+    ./clean_cbir_state.sh
 ```
