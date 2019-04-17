@@ -188,13 +188,13 @@ def event_create_view(request):
                                                 # description=...,
                                                 # description_file=...,
                                                 database_photo=query_photo_from_database, )
-                event_photo_path = models.get_storage_path_for_image(
-                    event_photo,
-                    filename=Path(query_photo_from_database.image.name).name)
-                event_photo.image = event_photo_path
-                path_to_original_file = os.path.join(MEDIA_ROOT, query_photo_from_database.image.name)
-                path_to_new_file = os.path.join(MEDIA_ROOT, event_photo_path)
-                shutil.copyfile(path_to_original_file, path_to_new_file)
+                # event_photo_path = models.get_storage_path_for_image(
+                #     event_photo,
+                #     filename=Path(query_photo_from_database.image.name).name)
+                # event_photo.image = event_photo_path
+                # path_to_original_file = os.path.join(MEDIA_ROOT, query_photo_from_database.image.name)
+                # path_to_new_file = os.path.join(MEDIA_ROOT, event_photo_path)
+                # shutil.copyfile(path_to_original_file, path_to_new_file)
                 event_photo.save()
 
             # Handling new uploaded images

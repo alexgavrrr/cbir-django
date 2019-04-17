@@ -1,3 +1,4 @@
+import shutil
 from argparse import Namespace
 import logging
 import os
@@ -423,11 +424,10 @@ class Event(models.Model):
             database_photo = DatabasePhoto.get_by_name(name=database_photo_name)
 
             event_photo = EventPhoto(slug='',
-                                     is_query=False,
                                      event=self,
+                                     is_query=False,
                                      database_photo=database_photo)
             event_photo.save()
-
 
 
     def get_result_photos(self):
@@ -449,7 +449,8 @@ class Event(models.Model):
         query_photos = self.get_query_photos()
         if len(query_photos) == 0:
             message = 'no query photos'
-            raise ValueError(message)
+            logger.warning(f'Event {self} does not have query photos')
+            return []
 
         # def get_path_to_all_photos(self):
         #     name = self.slug
@@ -519,8 +520,9 @@ class DatabasePhoto(ImageModel):
                              f'name != Path(image.name).name: {self.name} != {Path(self.image.name).name}')
         super().save()
 
-    def get_by_name(self, name):
-        database_photo = DatabasePhoto.objects.get(name=name)
+    @classmethod
+    def get_by_name(cls, name):
+        database_photo = cls.objects.get(name=name)
         return database_photo
 
 
@@ -547,5 +549,11 @@ class EventPhoto(ImageModel):
     def __str__(self):
         return f'{self.slug} from {self.event}'
 
-
-# class PathToDatabasePhoto(models.Model):
+    def save(self):
+        photo_path = get_storage_path_for_image(self,
+                                                filename=Path(self.database_photo.image.name).name)
+        self.image = photo_path
+        path_to_original_file = os.path.join(settings.MEDIA_ROOT, self.database_photo.image.name)
+        path_to_new_file = os.path.join(settings.MEDIA_ROOT, photo_path)
+        shutil.copyfile(path_to_original_file, path_to_new_file)
+        super().save()
