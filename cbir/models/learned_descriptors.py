@@ -183,10 +183,10 @@ class HardNetVanilla(nn.Module):
 
 class L2net_des:
     def __init__(self, max_keypoints=200, patch_size=32,
-                 model_src=Path(cbir.ROOT) / 'pretrained/l2net_L_N+.pt',  # TODO: change path to model to be absolute.
+                 model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/l2net_L_N+.pt',  # TODO: change path to model to be absolute.
                  use_cuda=True):
 
-        print("Loading pretrained network...")
+        print("Loading cbir_pretrained network...")
         self.use_cuda = use_cuda
         self.net = L2net()
 
@@ -209,7 +209,7 @@ class L2net_des:
 
 
 class HardNetBrown_des:
-    def __init__(self, model_src=Path(cbir.ROOT) / 'pretrained/6Brown/hardnetBr6.pth',  # TODO: change path to model to be absolute.
+    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/6Brown/hardnetBr6.pth',  # TODO: change path to model to be absolute.
                  patch_size=32, max_keypoints=200, use_cuda=True):
         self.use_cuda = use_cuda
         self.detector = cv2.xfeatures2d.SURF_create(350)
@@ -228,7 +228,7 @@ class HardNetBrown_des:
 
 
 class HardNetAll_des:
-    def __init__(self, model_src=Path(cbir.ROOT) / 'pretrained/pretrained_all_datasets/HardNet++.pth',  # TODO: change path to model to be absolute.
+    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/pretrained_all_datasets/HardNet++.pth',  # TODO: change path to model to be absolute.
                  patch_size=32, max_keypoints=500, use_cuda=True):
         self.use_cuda = use_cuda
         self.detector = cv2.xfeatures2d.SURF_create(350)
@@ -252,7 +252,7 @@ class HardNetAll_des:
 
 
 class HardNetHPatches_des:
-    def __init__(self, model_src=Path(cbir.ROOT) / 'pretrained/3rd_party/HardNetPS/HardNetPS.pth',  # TODO: change path to model to be absolute.
+    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/3rd_party/HardNetPS/HardNetPS.pth',  # TODO: change path to model to be absolute.
                  patch_size=32, max_keypoints=200, use_cuda=True):
         self.use_cuda = use_cuda
         self.detector = cv2.xfeatures2d.SURF_create(350)

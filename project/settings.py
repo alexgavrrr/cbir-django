@@ -17,7 +17,7 @@ from pathlib import Path
 # Note: must be equal to cbir's BASE_DIR(ROOT)
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-from cbir import ROOT as CBIR_BASE_DIR
+from cbir import BASE_DIR as CBIR_BASE_DIR
 assert Path(BASE_DIR) == Path(CBIR_BASE_DIR)
 
 # Quick-start development settings - unsuitable for production

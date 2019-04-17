@@ -3,9 +3,9 @@ from pathlib import Path
 
 
 # Directory containing manage.py or main.py
-ROOT = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-PERSISTENT_STATE = ROOT / '.cbir'
+PERSISTENT_STATE = BASE_DIR / '.cbir'
 DATABASES = PERSISTENT_STATE / 'databases'
 SESSIONS = PERSISTENT_STATE / 'sessions'  # TODO: Delete.
 QUERIES = PERSISTENT_STATE / 'queries'  # TODO: Delete.
