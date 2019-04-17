@@ -1,17 +1,14 @@
 import os
 from pathlib import Path
-import shutil
 
 import cbir
 from cbir import DATABASES
-from cbir import QUERIES
 from cbir.utils import basic
 from cbir import photo_storage_inverted_file
 from cbir.legacy_utils import draw_result
 from cbir.session import Session
-from cbir import exceptions
 
-import cbir_tests.start_evaluation
+import cbir_evaluation.start_evaluation
 
 
 def _get_registered_databases():
@@ -200,8 +197,8 @@ def show(args):
 
 
 def evaluate(args):
-    cbir_tests.start_evaluation.do_train_test(args.train_dir, args.test_dir, args.gt_dir,
-                                              args.sample)
+    cbir_evaluation.start_evaluation.do_train_test(args.train_dir, args.test_dir, args.gt_dir,
+                                                   args.sample)
 
 
 def prepare_directory_structure(args):

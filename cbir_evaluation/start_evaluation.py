@@ -1,6 +1,6 @@
 import os
 
-from cbir_tests.evaluation import evaluate
+from cbir_evaluation.evaluation import evaluate
 
 
 def train_my_test_my(des_type, output_file, sv=True, qe=True,
