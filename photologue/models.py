@@ -270,6 +270,10 @@ class Database(models.Model):
         name = self.slug
         return str(Path(get_path_to_database(name, relative_to='base_dir')) / DATABASE_ALL_PHOTOS)
 
+    def get_by_name(self, name):
+        database_photo = DatabasePhoto.objects.get(name=name, database=self)
+        return database_photo
+
 
 class CbirIndex(models.Model):
     date_added = models.DateTimeField(_('date published'),
@@ -421,7 +425,8 @@ class Event(models.Model):
     def set_result_photos_from_names(self, result_photos_names):
         database_photos_names = [Path(photo_name).name for photo_name in result_photos_names]
         for database_photo_name in database_photos_names:
-            database_photo = DatabasePhoto.get_by_name(name=database_photo_name)
+            database_photo = self.database.get_by_name(name=database_photo_name)
+
 
             event_photo = EventPhoto(slug='',
                                      event=self,
@@ -495,8 +500,9 @@ class DatabasePhoto(ImageModel):
     name = models.CharField('name',
                             max_length=250,
                             help_text='Name equal to corresponding filename',
-                            unique=True,
-                            null=False)
+                            unique=False,  # in different databases Photos can have equal names
+                            null=False,
+                            db_index=True)
     description = models.TextField('description',
                                    blank=True)
 
@@ -512,18 +518,10 @@ class DatabasePhoto(ImageModel):
         return f'{self.slug} from {self.database}'
 
     def save(self):
-        if not self.name:
-            logger.info(f'image_name: {self.image.name}')
-            self.name = Path(self.image.name).name
-        elif self.name != Path(self.image.name).name:
-            raise ValueError(f'Bad saving DatabasePhoto object. '
-                             f'name != Path(image.name).name: {self.name} != {Path(self.image.name).name}')
+        # TODO: Fix this strange saving.
         super().save()
-
-    @classmethod
-    def get_by_name(cls, name):
-        database_photo = cls.objects.get(name=name)
-        return database_photo
+        self.name = Path(self.image.name).name
+        super().save()
 
 
 class EventPhoto(ImageModel):
