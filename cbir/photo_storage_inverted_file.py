@@ -416,7 +416,8 @@ class CBIR:
     @classmethod
     def _inited_properly(cls, database, name):
         # TODO
-        return True
+        params_path = cls.get_params_path(database, name)
+        return os.path.exists(params_path)
 
     def __str__(self):
         return f'CBIR {self.database} {self.name}'

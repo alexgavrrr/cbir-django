@@ -8,7 +8,7 @@ import numpy
 from tqdm import tqdm
 
 from cbir.legacy_utils import find_image_files
-from cbir.photo_storage_inverted_file import Storage
+# from cbir.photo_storage_inverted_file import Storage
 
 
 def load_gt(img_path, gt_path):

@@ -19,6 +19,8 @@ from django.conf import settings
 
 import cbir
 import cbir.commands
+from cbir.legacy_utils import find_image_files
+from cbir.photo_storage_inverted_file import CBIR
 
 logger = logging.getLogger('photologue.models')
 
@@ -276,6 +278,11 @@ class Database(models.Model):
 
 
 class CbirIndex(models.Model):
+    DES_TYPE = 'l2net'
+    L = 10
+    K = 2
+    MAX_KEYPOINTS = 200
+
     date_added = models.DateTimeField(_('date published'),
                                       default=now)
     title = models.CharField(_('title'),
@@ -343,11 +350,23 @@ class CbirIndex(models.Model):
     def build(self):
         database_name = self.database.slug
         cbir_index_name = self.name
-        path_to_images_to_index = self.database.get_path_to_all_photos()
-        cbir.commands.build_cbir_index(database=database_name,
-                                       cbir_index_name=cbir_index_name,
-                                       path_to_images_to_index=path_to_images_to_index,
-                                       path_to_images_to_train_clusterer=path_to_images_to_index)
+
+        path_to_database_photos = self.database.get_path_to_all_photos()
+        list_paths_to_images_to_train_clusterer = find_image_files(path_to_database_photos, ['jpg'])
+        list_paths_to_images_to_index = list_paths_to_images_to_train_clusterer
+
+        CBIR.create_empty_if_needed(database_name, cbir_index_name,
+                                    des_type=CbirIndex.DES_TYPE,
+                                    max_keypoints=CbirIndex.MAX_KEYPOINTS,
+                                    K=CbirIndex.K, L=CbirIndex.L)
+        cbir_index = CBIR.get_instance(database_name, cbir_index_name)
+        cbir_index.set_fd(cbir_index.load_fd())
+        cbir_index.compute_descriptors(list(set(list_paths_to_images_to_index)
+                                            | set(list_paths_to_images_to_train_clusterer)))
+        cbir_index.train_clusterer(list_paths_to_images_to_train_clusterer)
+        cbir_index.set_ca(cbir_index.load_ca())
+        cbir_index.add_images_to_index(list_paths_to_images_to_index)
+
         self.built = True
 
     def being_built(self):
@@ -451,10 +470,23 @@ class Event(models.Model):
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
         logger.info(f'query: {query}')
 
-        # result_photos_names = cbir.commands.search(**vars(args_for_search))
-        result_photos_names = cbir.commands.search(database=cbir_database_name,
-                                                   cbir_index_name=cbir_index_name,
-                                                   query=query)
+        # result_photos_names = cbir.commands.search(database=cbir_database_name,
+        #                                            cbir_index_name=cbir_index_name,
+        #                                            query=query)
+
+        # query = str(Path(WHERE_PHOTOS) / 'all_souls_000000.jpg')
+        # result_images = cbir_index.search(query)
+        # cbir_index.unset_fd()
+        # cbir_index.unset_ca()
+
+        cbir_index = CBIR.get_instance(cbir_database_name, cbir_index_name)
+        cbir_index.set_fd(cbir_index.load_fd())
+        cbir_index.set_ca(cbir_index.load_ca())
+        result_photos_names = cbir_index.search(query, qe_enable=False)
+        result_photos_names = [v[1] for v in list(zip(*result_photos_names))[0]]
+        cbir_index.unset_fd()
+        cbir_index.unset_ca()
+
         return result_photos_names
 
     def has_cbir_index(self):
