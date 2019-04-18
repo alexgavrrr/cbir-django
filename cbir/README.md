@@ -3,8 +3,8 @@
 ## CLI
 
 ### Register
-`python main.py register <name> <path>`
-`python main.py register buildings /Users/alexgavr/main/Developer/Data/Buildings/Original/Oxford_sample/jpg`
+`python main.py build_cbir_index <name> <path>`
+`python main.py build_cbir_index buildings /Users/alexgavr/main/Developer/Data/Buildings/Original/Oxford_sample/jpg`
 
 ### Search
 `python main.py search buildings /Users/alexgavr/main/Developer/Data/Buildings/Original/Paris_sample/jpg/paris_defense_000004.jpg`

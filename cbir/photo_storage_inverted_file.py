@@ -1,6 +1,8 @@
+import logging
 import os
 import pickle
 import time
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -9,12 +11,189 @@ from scipy.sparse import csr_matrix
 from scipy.spatial.distance import euclidean
 from tqdm import tqdm
 
+import cbir
 from cbir import CONFIG
 from cbir.legacy_utils import find_image_files, draw_result
 from cbir.models.learned_descriptors import HardNetAll_des, HardNetBrown_des, HardNetHPatches_des
 from cbir.models.learned_descriptors import L2net_des
 from cbir.models.learned_descriptors import SURF, SIFT
 from cbir.vocabulary_tree import VocabularyTree
+
+logger = logging.getLogger('cbir.photo_storage_inverted_file')
+
+
+class CBIR:
+    @classmethod
+    def get_instance(cls, database, name):
+        if not cls.exists(database, name):
+            message = (f'CBIR {name} in database {database} does not exist. First create it. For example, by calling '
+                       f'`create_empty`.')
+            raise ValueError(message)
+
+        if cls.empty(database, name):
+            message = f'CBIR {database} {name} is empty'
+            logger.warning(message)
+
+        instance = CBIR()
+        instance.database = database
+        instance.name = name
+        return instance
+
+    @classmethod
+    def prepare_place_for_database_if_needed(cls, database):
+        if not os.path.exists(Path(cbir.DATABASES) / database):
+            os.mkdir(Path(cbir.DATABASES) / database)
+
+    @classmethod
+    def prepare_place_for_cbir_index_if_needed(cls, database, name):
+        if not os.path.exists(Path(cbir.DATABASES) / database / name):
+            os.mkdir(Path(cbir.DATABASES) / database / name)
+
+    @classmethod
+    def create_empty_if_needed(cls, database, name,
+                               des_type, max_keypoints,
+                               K, L):
+        """
+        Creates empty CBIR instance which indexes 0 objects.
+        :param database:
+        :param name:
+        :param des_type:
+        :param max_keypoints:
+        :param K:
+        :param L:
+        :return:
+        """
+        if not cls.exists(database, name):
+            cls.prepare_place_for_database_if_needed(database)
+            cls.prepare_place_for_cbir_index_if_needed(database, name)
+            cls._init_search_structures(database, name,
+                                        des_type, max_keypoints, K, L)
+
+    @classmethod
+    def _init_search_structures(cls, database, name,
+                                des_type, max_keypoints, K, L):
+        """
+        :param database:
+        :param name:
+        :param des_type:
+        :param max_keypoints:
+        :param K:
+        :param L:
+        """
+        raise NotImplementedError
+
+    def compute_descriptors(self,
+                            list_paths_to_images):
+        """
+        Computes decriptors for given images
+        and saves these descriptors in search structures (sqlite).
+
+        :param list_paths_to_images: images for which to compute descriptors
+        """
+        raise NotImplementedError
+
+    def train_clusterer(self,
+                        list_paths_to_images):
+        """
+        Trains clusterer on images from `list_paths_to_images_train_clusterer`
+        and saves it.
+
+        :param list_paths_to_images: images to use to train clusterer
+        """
+        raise NotImplementedError
+
+    def add_images_to_index(self,
+                            list_paths_to_images):
+        """
+        Adds images to search index.
+
+        :param list_paths_to_images: images to add to index
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def copy_descriptors_from_to(cls, database, from_name, to_name):
+        if not cls.descriptors_compatible(database, from_name, to_name):
+            message = f"Database {database}'s descriptors {from_name} and {to_name} are not compatible"
+            raise ValueError(message)
+
+        raise NotImplementedError
+
+    @classmethod
+    def descriptors_compatible(cls, database, first_name, second_name):
+        from_des_type = CBIR(database, first_name).get_des_type()
+        to_des_type = CBIR(database, second_name).get_des_type()
+        return from_des_type != to_des_type
+
+    @classmethod
+    def get_databases(cls):
+        return [
+            filename
+            for filename in os.listdir(cbir.DATABASES)
+            if os.path.isdir(Path(cbir.DATABASES) / filename)]
+
+    @classmethod
+    def get_cbir_indexes_of_database(cls, database):
+        return [
+            filename
+            for filename in os.listdir(Path(cbir.DATABASES) / database)
+            if os.path.isdir(Path(cbir.DATABASES) / database / filename)]
+
+    @classmethod
+    def exists(cls, database, name):
+        return (database in CBIR.get_databases()
+                and name in CBIR.get_cbir_indexes_of_database(database)
+                and cls._inited_properly(database, name))
+
+    @classmethod
+    def _inited_properly(cls, database, name):
+        raise NotImplementedError
+
+    @classmethod
+    def empty(cls, database, name):
+        raise NotImplementedError
+
+    def __str__(self):
+        return f'CBIR {self.database} {self.name}'
+
+    def get_des_type(self):
+        raise NotImplementedError
+
+    def search(self,
+               list_paths_to_images,
+               n_candidates=100,
+               topk=5, n_inliners_thr=20, max_verified=20,
+               qe_avg=50, qe_limit=30, new_query=None,
+               sv_enable=True, qe_enable=True, debug=False):
+        """
+        :param list_paths_to_images: query images
+        :return: list paths images most similar to the query
+        """
+        raise NotImplementedError
+
+
+# database = 'first'
+# name = 'index_first'
+#
+# des_type = 'l2net'
+# max_keypoints = 2000
+# K = 10
+# L = 2
+#
+# list_paths_to_images_to_train_clusterer = []
+# list_paths_to_images_to_index = []
+#
+# CBIR.create_empty_if_needed(database, name,
+#                             des_type=des_type, max_keypoints=max_keypoints,
+#                             K=K, L=L)
+# cbir_index = CBIR.get_instance(database, name)
+# cbir_index.compute_descriptors(list(set(list_paths_to_images_to_index)
+#                                     | set(list_paths_to_images_to_train_clusterer)))
+# cbir_index.train_clusterer(list_paths_to_images_to_train_clusterer)
+# cbir_index.add_images_to_index(list_paths_to_images_to_index)
+#
+# query_images = []
+# result_images = cbir_index.search(query_images)
 
 
 class Storage:
@@ -30,7 +209,7 @@ class Storage:
                  extensions=['jpg'],
                  debug=False):
         self.storage_path = storage_path
-        self.test_path = testing_path
+        self.testing_path = testing_path
         self.training_path = training_path
         self.max_keypoints = max_keypoints
         self.K = K
@@ -120,7 +299,7 @@ class Storage:
 
             start = time.time()
             # images = list(random.sample(find_image_files(self.dir, self.extensions), 4000))
-            images = find_image_files(self.test_path, self.extensions)
+            images = find_image_files(self.testing_path, self.extensions)
             print("List of file names created in {} s".format(time.time() - start))
 
             start = time.time()
@@ -220,7 +399,7 @@ class Storage:
                 self.load_ca()
 
             if not index_ready:
-                images = find_image_files(self.test_path, self.extensions)
+                images = find_image_files(self.testing_path, self.extensions)
                 start = time.time()
                 for f in tqdm(images, total=len(images)):
                     tmp = self.get_descriptor(f, raw=True)
@@ -600,7 +779,7 @@ class Storage:
                         protocol=pickle.HIGHEST_PROTOCOL)
 
     def show(self):
-        pass
+        print('a')
 
 
 def compute_idf(bow):

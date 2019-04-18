@@ -330,7 +330,7 @@ class CbirIndex(models.Model):
     #     args.path = Path(cbir.ROOT) / 'public' / 'media' / 'photologue' / 'photos'
     #
     #     try:
-    #         cbir.commands.register(args=args)
+    #         cbir.commands.build_cbir_index(args=args)
     #     except ValueError as exc:
     #         if str(exc).endswith('already exists.'):
     #             # return HttpResponse(f'Database {args.database} already exists')
@@ -344,10 +344,10 @@ class CbirIndex(models.Model):
         database_name = self.database.slug
         cbir_index_name = self.name
         path_to_images_to_index = self.database.get_path_to_all_photos()
-        cbir.commands.register(database=database_name,
-                               cbir_index_name=cbir_index_name,
-                               path_to_images_to_index=path_to_images_to_index,
-                               path_to_images_to_train_clusterer=path_to_images_to_index)
+        cbir.commands.build_cbir_index(database=database_name,
+                                       cbir_index_name=cbir_index_name,
+                                       path_to_images_to_index=path_to_images_to_index,
+                                       path_to_images_to_train_clusterer=path_to_images_to_index)
         self.built = True
 
     def being_built(self):

@@ -20,7 +20,7 @@ def create_parser():
     subparsers = parser.add_subparsers(title='Commands', dest='command')
 
     # TODO: Add config parameter and do not require some parameters here.
-    register_parser = subparsers.add_parser('register', help='Register new database of images')
+    register_parser = subparsers.add_parser('build_cbir_index', help='Register new database of images')
     register_parser.add_argument('database', help='Name of a new registered database')
     register_parser.add_argument('path', help='Path to directory containing images')
 

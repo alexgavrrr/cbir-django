@@ -32,10 +32,10 @@ def compute(model, image, patch_size, kp, expansion_coef=1.3,
         return None, None
 
     patches = [cv2.resize(cv2.getRectSubPix(image,
-                                            (round(k.size * expansion_coef),
-                                             round(k.size * expansion_coef)),
+                                            (round(k.size * expansion_coef), round(k.size * expansion_coef)),
                                             k.pt),
-                          (patch_size, patch_size)) for k in kp]
+                          (patch_size, patch_size))
+               for k in kp]
     # N_DRAW = 30
     # patches_to_draw = random.sample(patches, N_DRAW)
     # draw_patches(patches_to_draw)
@@ -47,9 +47,9 @@ def compute(model, image, patch_size, kp, expansion_coef=1.3,
     des = []
     for i in range(it):
         if use_cuda:
-            des.append(model(patches[i * bs:(i + 1) * bs].cuda()).cpu().data.numpy())
+            des.append(model(patches[i * bs: (i + 1) * bs].cuda()).cpu().data.numpy())
         else:
-            des.append(model(patches[i * bs:(i + 1) * bs]).cpu().data.numpy())
+            des.append(model(patches[i * bs: (i + 1) * bs]).cpu().data.numpy())
 
     if r > 1:
         rem = patches[it * bs:]

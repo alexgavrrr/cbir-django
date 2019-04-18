@@ -31,10 +31,10 @@ def _get_registered_cbir_indexes_of_database(database):
 ####################
 
 
-def register(database,
-             cbir_index_name,
-             path_to_images_to_index,
-             path_to_images_to_train_clusterer=None):
+def build_cbir_index(database,
+                     cbir_index_name,
+                     path_to_images_to_index,
+                     path_to_images_to_train_clusterer=None):
     """
     :param database:
     :param cbir_index_name
