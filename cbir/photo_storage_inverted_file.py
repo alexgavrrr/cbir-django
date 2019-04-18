@@ -80,7 +80,90 @@ class CBIR:
         :param K:
         :param L:
         """
-        raise NotImplementedError
+        params = {}
+        params['des_type'] = des_type
+        params['max_keypoints'] = max_keypoints
+        params['n_words'] = K ** L
+        params['idf'] = []
+        params['most_frequent'] = []
+        params['least_frequent'] = []
+
+        bow = []
+        inverted_index = []
+        f_names = []
+        cls._save(database, name,
+                  params,
+                  bow,
+                  inverted_index,
+                  f_names)
+
+        index = []
+        cls._save_index(database, name,
+                        params['des_type'],
+                        index)
+
+        clusterer = []
+        cls._save_clusterer(database, name,
+                            params['des_type'],
+                            clusterer)
+
+    @classmethod
+    def _save(cls, database, name,
+              params,
+              bow,
+              inverted_index,
+              f_names):
+
+        params['des_path'] = cls.get_des_path(database, name, params['des_type'])
+
+        storage_path = cls.get_storage_path(database, name)
+        postfix = '_{}_{}.pkl'.format(params['des_type'], '')
+        params['bow_path'] = os.path.join(storage_path, 'bow' + postfix)
+        params['inverted_index_path'] = os.path.join(storage_path, 'inverted_index' + postfix)
+        params['f_names_path'] = os.path.join(storage_path, 'f_names' + postfix)
+
+        with open(params['bow_path'], 'wb') as f:
+            pickle.dump(bow, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+        with open(params['inverted_index_path'], 'wb') as f:
+            pickle.dump(inverted_index, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+        with open(params['f_names_path'], 'wb') as f:
+            pickle.dump(f_names, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+        with open(params['params_path'], 'wb') as f:
+            pickle.dump(params, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_index(cls, database, name,
+                    des_type,
+                    index):
+        with open(cls.get_des_path(database, name, des_type), 'wb') as f:
+            pickle.dump({k: (v[0],
+                             [p.pt[0] for p in v[1]],
+                             [p.pt[1] for p in v[1]],
+                             [p.size for p in v[1]])
+                         for k, v in index.items()}, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_clusterer(cls, database, name,
+                        des_type,
+                        clusterer):
+        with open(cls.get_clusterer_path(database, name, des_type), 'wb') as f:
+            pickle.dump(clusterer, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def get_des_path(cls, database, name, des_type):
+        postfix_des = '_{}.pkl'.format(des_type)
+        return os.path.join(cls.get_storage_path(database, name), 'des' + postfix_des)
+
+    @classmethod
+    def get_clusterer_path(cls, database, name, des_type):
+        postfix = '_{}_{}.pkl'.format(des_type, '')
+        return os.path.join(cls.get_storage_path(database, name), 'clusterer' + postfix)
 
     def compute_descriptors(self,
                             list_paths_to_images):
@@ -138,6 +221,10 @@ class CBIR:
             filename
             for filename in os.listdir(Path(cbir.DATABASES) / database)
             if os.path.isdir(Path(cbir.DATABASES) / database / filename)]
+
+    @classmethod
+    def get_storage_path(cls, database, name):
+        return str(Path(cbir.DATABASES) / database / name)
 
     @classmethod
     def exists(cls, database, name):
