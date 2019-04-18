@@ -197,6 +197,7 @@ class L2net_des:
 
         if use_cuda:
             self.net.cuda()
+
         self.detector = cv2.xfeatures2d.SURF_create(350)
         self.max_keypoints = max_keypoints
         self.ps = patch_size
