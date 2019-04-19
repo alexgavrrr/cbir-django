@@ -338,11 +338,9 @@ class CbirIndex(models.Model):
                                     max_keypoints=CbirIndex.MAX_KEYPOINTS,
                                     K=CbirIndex.K, L=CbirIndex.L)
         cbir_index = CBIR.get_instance(database_name, cbir_index_name)
-        cbir_index.set_fd(cbir_index.load_fd())
         cbir_index.compute_descriptors(list(set(list_paths_to_images_to_index)
                                             | set(list_paths_to_images_to_train_clusterer)))
         cbir_index.train_clusterer(list_paths_to_images_to_train_clusterer)
-        cbir_index.set_ca(cbir_index.load_ca())
         cbir_index.add_images_to_index(list_paths_to_images_to_index)
 
         self.built = True

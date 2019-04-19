@@ -130,6 +130,10 @@ class CBIR:
 
         :param list_paths_to_images: images for which to compute descriptors
         """
+        fd_loaded_before = self.fd is not None
+        if not fd_loaded_before:
+            self.set_fd(self.load_fd())
+
         index = self.load_index()
 
         count_new = 0
@@ -147,6 +151,9 @@ class CBIR:
                 else:
                     count_defects += 1
                     print("No keypoints found for {}".format(path_to_image))
+
+        if not fd_loaded_before:
+            self.unset_fd()
 
         print(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
         CBIR._save_index(self.database, self.name, index)
@@ -180,7 +187,9 @@ class CBIR:
             return self.get_bow_vector(des, total_count_coordinate_for_bow), kp
 
     def get_bow_vector(self, img_des, total_count=True):
-        res = np.zeros(self.n_words if not total_count else self.n_words + 1)
+        res = np.zeros(self.n_words
+                       if not total_count
+                       else self.n_words + 1)
 
         if img_des.ndim == 1:
             img_des = img_des.reshape(img_des.shape[0], -1)
@@ -219,11 +228,20 @@ class CBIR:
         """
 
         index = self.load_index()
+
+        ca_loaded_before = self.ca is not None
+        if not ca_loaded_before:
+            self.set_ca(self.load_ca())
+
         corpus = [(self.ca.predict(value[0]), key)
                   for key, value
                   in tqdm(index.items(), total=len(index))
                   if key in list_paths_to_images
                   ]
+
+        if not ca_loaded_before:
+            self.unset_ca()
+
         corpus = list(zip(*corpus))
         corpus, f_names_new = corpus
 
