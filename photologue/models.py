@@ -243,13 +243,11 @@ class Database(models.Model):
     def latest(self, limit=None):
         if not limit:
             limit = LATEST_LIMIT
-
-        # TODO: return self.events
-        return []
+        raise NotImplemented
 
     def get_events(self, limit=10):
         limit = limit or LATEST_LIMIT
-        events = Event.objects.filter(database=self)[:limit]
+        events = self.event_set.all()[:limit]
         logger.info(f'events: {events}')
         return events
 
@@ -270,7 +268,7 @@ class Database(models.Model):
         name = self.slug
         return str(Path(get_path_to_database(name, relative_to='base_dir')) / DATABASE_ALL_PHOTOS)
 
-    def get_by_name(self, name):
+    def get_photo_by_name(self, name):
         database_photo = DatabasePhoto.objects.get(name=name, database=self)
         return database_photo
 
@@ -399,27 +397,10 @@ class Event(models.Model):
             result_photos = self.get_result_photos()
         return result_photos
 
-    # def get_photos_from_basket(self, basket, cbir_database_name):
-    #     cbir_photos_location = cbir.DATABASES / cbir_database_name
-    #
-    #     def convert_full_path_to_photo_object_name(full_path, cbir_photos_location):
-    #         return Path('photologue') / 'photos' / Path(full_path).relative_to(cbir_photos_location)
-    #
-    #     photos = []
-    #     for full_path in basket:
-    #         photo_object_name = convert_full_path_to_photo_object_name(full_path, cbir_photos_location)
-    #         query_result = Photo.objects.filter(image__exact=photo_object_name)
-    #
-    #         if len(query_result) == 0:
-    #             photos += [None]
-    #         else:
-    #             photos += [query_result[0]]
-    #
-    #     return photos
     def set_result_photos_from_names(self, result_photos_names):
         database_photos_names = [Path(photo_name).name for photo_name in result_photos_names]
         for database_photo_name in database_photos_names:
-            database_photo = self.database.get_by_name(name=database_photo_name)
+            database_photo = self.database.get_photo_by_name(name=database_photo_name)
 
             event_photo = EventPhoto(slug='',
                                      event=self,
@@ -434,30 +415,15 @@ class Event(models.Model):
         return EventPhoto.objects.filter(event=self).filter(is_query=True)
 
     def _do_search(self):
-
         cbir_database_name = self.database.get_name()
         cbir_index_name = self.cbir_index.name
-
-        # path_to_images = self.database.get_path_to_all_photos()
 
         query_photos = self.get_query_photos()
         if len(query_photos) == 0:
             logger.warning(f'Event {self} does not have query photos')
             return []
 
-        logger.info(f'query_photos[0].image.name: {query_photos[0].image.name}')
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
-        logger.info(f'query: {query}')
-
-        # result_photos_names = cbir.commands.search(database=cbir_database_name,
-        #                                            cbir_index_name=cbir_index_name,
-        #                                            query=query)
-
-        # query = str(Path(WHERE_PHOTOS) / 'all_souls_000000.jpg')
-        # result_images = cbir_index.search(query)
-        # cbir_index.unset_fd()
-        # cbir_index.unset_ca()
-
         cbir_index = CBIR.get_instance(cbir_database_name, cbir_index_name)
         cbir_index.set_fd(cbir_index.load_fd())
         cbir_index.set_ca(cbir_index.load_ca())

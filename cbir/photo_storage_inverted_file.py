@@ -122,120 +122,6 @@ class CBIR:
         cls._save_freqs(database, name, freqs)
         cls._save_f_names(database, name, f_names)
 
-    @classmethod
-    def _save(cls, database, name,
-              params,
-              bow,
-              inverted_index,
-              freqs,
-              f_names):
-
-        cls._save_params(database, name, params)
-        cls._save_bow(database, name, bow)
-        cls._save_inverted_index(database, name, inverted_index)
-        cls._save_freqs(database, name, freqs)
-        cls._save_f_names(database, name, f_names)
-
-    @classmethod
-    def _save_params(cls, database, name,
-                     params):
-        with open(cls.get_params_path(database, name), 'wb') as f:
-            pickle.dump(params, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def _save_data_dependent_params(cls, database, name,
-                                    data_dependent_params):
-        with open(cls.get_data_dependent_params_path(database, name), 'wb') as f:
-            pickle.dump(data_dependent_params, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def _save_index(cls, database, name,
-                    index):
-        with open(cls.get_des_path(database, name), 'wb') as f:
-            pickle.dump({k: (v[0],
-                             [p.pt[0] for p in v[1]],
-                             [p.pt[1] for p in v[1]],
-                             [p.size for p in v[1]])
-                         for k, v in index.items()}, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def _save_clusterer(cls, database, name,
-                        clusterer):
-        with open(cls.get_clusterer_path(database, name), 'wb') as f:
-            pickle.dump(clusterer, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def _save_bow(cls, database, name,
-                  bow):
-        with open(cls.get_bow_path(database, name), 'wb') as f:
-            pickle.dump(bow, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def _save_inverted_index(cls, database, name,
-                             inverted_index):
-        with open(cls.get_inverted_index_path(database, name), 'wb') as f:
-            pickle.dump(inverted_index, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def _save_f_names(cls, database, name,
-                      f_names):
-        with open(cls.get_f_names_path(database, name), 'wb') as f:
-            pickle.dump(f_names, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def _save_freqs(cls, database, name,
-                    freqs):
-        with open(cls.get_freqs_path(database, name), 'wb') as f:
-            pickle.dump(freqs, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-
-    @classmethod
-    def get_params_path(cls, database, name):
-        postfix = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'params' + postfix)
-
-    @classmethod
-    def get_data_dependent_params_path(cls, database, name):
-        postfix = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'data_dependent_params' + postfix)
-
-    @classmethod
-    def get_des_path(cls, database, name):
-        postfix_des = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'des' + postfix_des)
-
-    @classmethod
-    def get_clusterer_path(cls, database, name):
-        postfix = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'clusterer' + postfix)
-
-    @classmethod
-    def get_inverted_index_path(cls, database, name):
-        postfix = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'inverted_index' + postfix)
-
-    @classmethod
-    def get_bow_path(cls, database, name):
-        postfix = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'bow' + postfix)
-
-    @classmethod
-    def get_f_names_path(cls, database, name):
-        postfix = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'f_names' + postfix)
-
-    @classmethod
-    def get_freqs_path(cls, database, name):
-        postfix = '.pkl'
-        return os.path.join(cls.get_storage_path(database, name), 'freqs' + postfix)
-
     def compute_descriptors(self,
                             list_paths_to_images):
         """
@@ -404,10 +290,6 @@ class CBIR:
             if os.path.isdir(Path(cbir.DATABASES) / database / filename)]
 
     @classmethod
-    def get_storage_path(cls, database, name):
-        return str(Path(cbir.DATABASES) / database / name)
-
-    @classmethod
     def exists(cls, database, name):
         return (database in CBIR.get_databases()
                 and name in CBIR.get_cbir_indexes_of_database(database)
@@ -425,44 +307,6 @@ class CBIR:
     def empty(self):
         inverted_index = self.load_inverted_index()
         return len(inverted_index) == 0
-
-    def load_params(self):
-        with open(CBIR.get_params_path(self.database, self.name), 'rb') as f:
-            params = pickle.load(f)
-        return params
-
-    def load_data_dependent_params(self):
-        with open(CBIR.get_data_dependent_params_path(self.database, self.name), 'rb') as f:
-            data_dependent_params = pickle.load(f)
-        return data_dependent_params
-
-    def load_inverted_index(self):
-        with open(CBIR.get_inverted_index_path(self.database, self.name), 'rb') as f:
-            inverted_index = pickle.load(f)
-        return inverted_index
-
-    def load_index(self):
-        with open(CBIR.get_des_path(self.database, self.name), 'rb') as f:
-            index = pickle.load(f)
-        index = {k: (v[0],
-                     [cv2.KeyPoint(*el) for el in zip(v[1], v[2], v[3])])
-                 for k, v in index.items()}
-        return index
-
-    def load_f_names(self):
-        with open(CBIR.get_f_names_path(self.database, self.name), 'rb') as f:
-            f_names = pickle.load(f)
-        return f_names
-
-    def load_bow(self):
-        with open(CBIR.get_bow_path(self.database, self.name), 'rb') as f:
-            bow = pickle.load(f)
-        return bow
-
-    def load_freqs(self):
-        with open(CBIR.get_freqs_path(self.database, self.name), 'rb') as f:
-            freqs = pickle.load(f)
-        return freqs
 
     def load_fd(self):
         max_keypoints = self.max_keypoints
@@ -722,6 +566,149 @@ class CBIR:
         return [all_matches, all_matches_masks, all_transforms,
                 verified,
                 descriptors_kp]
+
+    # Very common
+    @classmethod
+    def get_storage_path(cls, database, name):
+        return str(Path(cbir.DATABASES) / database / name)
+
+    @classmethod
+    def _save_params(cls, database, name,
+                     params):
+        with open(cls.get_params_path(database, name), 'wb') as f:
+            pickle.dump(params, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_data_dependent_params(cls, database, name,
+                                    data_dependent_params):
+        with open(cls.get_data_dependent_params_path(database, name), 'wb') as f:
+            pickle.dump(data_dependent_params, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_index(cls, database, name,
+                    index):
+        with open(cls.get_des_path(database, name), 'wb') as f:
+            pickle.dump({k: (v[0],
+                             [p.pt[0] for p in v[1]],
+                             [p.pt[1] for p in v[1]],
+                             [p.size for p in v[1]])
+                         for k, v in index.items()}, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_clusterer(cls, database, name,
+                        clusterer):
+        with open(cls.get_clusterer_path(database, name), 'wb') as f:
+            pickle.dump(clusterer, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_bow(cls, database, name,
+                  bow):
+        with open(cls.get_bow_path(database, name), 'wb') as f:
+            pickle.dump(bow, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_inverted_index(cls, database, name,
+                             inverted_index):
+        with open(cls.get_inverted_index_path(database, name), 'wb') as f:
+            pickle.dump(inverted_index, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_f_names(cls, database, name,
+                      f_names):
+        with open(cls.get_f_names_path(database, name), 'wb') as f:
+            pickle.dump(f_names, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def _save_freqs(cls, database, name,
+                    freqs):
+        with open(cls.get_freqs_path(database, name), 'wb') as f:
+            pickle.dump(freqs, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def get_params_path(cls, database, name):
+        postfix = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'params' + postfix)
+
+    @classmethod
+    def get_data_dependent_params_path(cls, database, name):
+        postfix = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'data_dependent_params' + postfix)
+
+    @classmethod
+    def get_des_path(cls, database, name):
+        postfix_des = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'des' + postfix_des)
+
+    @classmethod
+    def get_clusterer_path(cls, database, name):
+        postfix = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'clusterer' + postfix)
+
+    @classmethod
+    def get_inverted_index_path(cls, database, name):
+        postfix = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'inverted_index' + postfix)
+
+    @classmethod
+    def get_bow_path(cls, database, name):
+        postfix = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'bow' + postfix)
+
+    @classmethod
+    def get_f_names_path(cls, database, name):
+        postfix = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'f_names' + postfix)
+
+    @classmethod
+    def get_freqs_path(cls, database, name):
+        postfix = '.pkl'
+        return os.path.join(cls.get_storage_path(database, name), 'freqs' + postfix)
+
+    def load_params(self):
+        with open(CBIR.get_params_path(self.database, self.name), 'rb') as f:
+            params = pickle.load(f)
+        return params
+
+    def load_data_dependent_params(self):
+        with open(CBIR.get_data_dependent_params_path(self.database, self.name), 'rb') as f:
+            data_dependent_params = pickle.load(f)
+        return data_dependent_params
+
+    def load_inverted_index(self):
+        with open(CBIR.get_inverted_index_path(self.database, self.name), 'rb') as f:
+            inverted_index = pickle.load(f)
+        return inverted_index
+
+    def load_index(self):
+        with open(CBIR.get_des_path(self.database, self.name), 'rb') as f:
+            index = pickle.load(f)
+        index = {k: (v[0],
+                     [cv2.KeyPoint(*el) for el in zip(v[1], v[2], v[3])])
+                 for k, v in index.items()}
+        return index
+
+    def load_f_names(self):
+        with open(CBIR.get_f_names_path(self.database, self.name), 'rb') as f:
+            f_names = pickle.load(f)
+        return f_names
+
+    def load_bow(self):
+        with open(CBIR.get_bow_path(self.database, self.name), 'rb') as f:
+            bow = pickle.load(f)
+        return bow
+
+    def load_freqs(self):
+        with open(CBIR.get_freqs_path(self.database, self.name), 'rb') as f:
+            freqs = pickle.load(f)
+        return freqs
 
 
 def compute_idf(bow):
