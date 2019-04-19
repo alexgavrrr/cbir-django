@@ -23,7 +23,7 @@
         <ul>
         {% if query_photos %}
                 {% for query in query_photos %}
-                    <li>{{ query }}</li>
+                    <li>{{ query }}</li> - TODO Display photo with reference to full photo
                 {% endfor %}
         {% else %}
             No query photos
@@ -34,7 +34,7 @@
         <ul>
         {% if result_photos %}
             {% for photo in result_photos %}
-                <li>{{ photo }} </li>
+                <li>{{ photo }} </li> - TODO Display photo with reference to full photo
                 <!--<img src="todo" class="todo" alt="{{ photo.slug }}">-->
             {% endfor %}
         {% else %}

@@ -195,7 +195,6 @@ def get_storage_path_for_image(instance, filename):
         database = instance.event.database.slug
         folder = instance.event.slug
 
-    # TODO: Should change fn?
     fn = filename
 
     return str(Path(get_path_to_database(database, relative_to='media_root')) / folder / fn)
@@ -265,7 +264,6 @@ class Database(models.Model):
         super().save()
 
     def get_name(self):
-        # TODO: Make name field and return name
         return self.slug
 
     def get_path_to_all_photos(self):
@@ -329,24 +327,6 @@ class CbirIndex(models.Model):
     def building_needed(self):
         return not self.built and not self.being_built()
 
-    # def register_view(request):
-    #     args = Namespace()
-    #
-    #     # HARDCODED
-    #     args.database = 'buildings'
-    #     args.path = Path(cbir.ROOT) / 'public' / 'media' / 'photologue' / 'photos'
-    #
-    #     try:
-    #         cbir.commands.build_cbir_index(args=args)
-    #     except ValueError as exc:
-    #         if str(exc).endswith('already exists.'):
-    #             # return HttpResponse(f'Database {args.database} already exists')
-    #             return render(request, 'cbir/database.html', context={'payload': f'Database {args.database} already exists'})
-    #         else:
-    #             raise exc
-    #
-    #     return redirect('cbir:cbir_page')
-
     def build(self):
         database_name = self.database.slug
         cbir_index_name = self.name
@@ -391,7 +371,6 @@ class Event(models.Model):
                                         blank=True)
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
 
-    # TODO: add cbir_index field: ForeignKey
     cbir_index = models.ForeignKey(to=CbirIndex,
                                    on_delete=models.SET_NULL,
                                    null=True,
@@ -543,7 +522,7 @@ class EventPhoto(ImageModel):
     description = models.TextField('description',
                                    blank=True)
 
-    # TODO: Find out whether description file is needed for database photo
+    # TODO: Find out whether description file is needed for event photo
     description_file = models.FileField('description_file',
                                         max_length=FILE_FIELD_MAX_LENGTH,
                                         upload_to=get_storage_path_for_description_file_of_event_photo,
@@ -558,7 +537,7 @@ class EventPhoto(ImageModel):
                                        null=True)
 
     def __str__(self):
-        return f'{self.slug} from {self.event}'
+        return f'{self.database_photo.name} from {self.event}'
 
     def save(self):
         photo_path = get_storage_path_for_image(self,

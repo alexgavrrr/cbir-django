@@ -14,14 +14,11 @@
         {% endif %}
 
         <h4>
-            <a href="{% url 'photologue:database_detail' database_index.database.slug %}">
-                Database
-            </a>
+            TODO: Statistics about index
         </h4>
 
-
-
-        <div><a href="{% url 'photologue:database_list' %}" class="btn btn-default">{% trans "View all databases" %}</a></div>
+        <div><a href="{% url 'photologue:database_index_info' %}?database={{database_index.database.slug}}" class="btn btn-default">
+            All database {{ database_index.database }} indexes info </a></div>
 	</div>
 
 {% endblock %}

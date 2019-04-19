@@ -1,15 +1,11 @@
 import logging
-import os
-import shutil
-from pathlib import Path
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import ListView, DetailView
 
-from project.settings import MEDIA_ROOT
 from . import forms
 from . import models
 
@@ -118,21 +114,6 @@ def database_edit_view(request, slug):
     return render(request, 'photologue/database_edit.html', context)
 
 
-# class EventDetailView(DetailView):
-#     model = models.Event
-#     template_name = 'photologue/event_detail.html'
-#     context_object_name = 'event'
-#
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         all_photos = models.EventPhoto.objects.filter(event=context['event'])
-#         query_photos = all_photos.filter(is_query=True)
-#         result_photos = all_photos.filter(is_query=False)
-#         context['result_photos'] = result_photos
-#         context['query_photos'] = query_photos
-#         return context
-# event_detail_view = EventDetailView.as_view()
-
 def event_detail_view(request, slug):
     RESULT_PHOTOS_LIMIT = 10
     context = {}
@@ -167,8 +148,10 @@ def event_create_view(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.database = database
-            # TODO: Test setting cbir_index field.
-            event.cbir_index = form.cleaned_data.get('cbir_index') or database.cbir_index_default
+            event.cbir_index = form.cleaned_data.get('cbir_index')
+            if not event.cbir_index or event.cbir_index.database != database:
+                # TODO: Fine that user's cbir_index is ignored silently?
+                event.cbir_index = database.cbir_index_default
             event.save()
 
             # Handling images chosen from existing ones in a database
@@ -188,13 +171,6 @@ def event_create_view(request):
                                                 # description=...,
                                                 # description_file=...,
                                                 database_photo=query_photo_from_database, )
-                # event_photo_path = models.get_storage_path_for_image(
-                #     event_photo,
-                #     filename=Path(query_photo_from_database.image.name).name)
-                # event_photo.image = event_photo_path
-                # path_to_original_file = os.path.join(MEDIA_ROOT, query_photo_from_database.image.name)
-                # path_to_new_file = os.path.join(MEDIA_ROOT, event_photo_path)
-                # shutil.copyfile(path_to_original_file, path_to_new_file)
                 event_photo.save()
 
             # Handling new uploaded images
@@ -233,7 +209,7 @@ def event_create_view(request):
 
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
     else:
-        form = forms.EventForm()
+        form = forms.EventForm(initial={'cbir_index': database.cbir_index_default})
 
     context['form'] = form
     return render(request, 'photologue/event_create.html', context)
@@ -243,9 +219,15 @@ def database_index_info_view(request):
     database_slug = request.GET.get('database')
 
     if not database_slug:
-        pass  # show list of databases
+        return HttpResponse("Database must be provided as get parameter for which to show info")
     else:
-        pass  # show list of
+        context = {}
+        database = get_object_or_404(models.Database, slug=database_slug)
+        context['database'] = database
+        cbir_indexes = database.cbirindex_set.all()
+        context['cbir_indexes'] = cbir_indexes
+
+        return render(request, 'photologue/database_index_info.html', context)
 
 
 def database_index_detail_view(request, slug):
@@ -284,7 +266,7 @@ def database_index_create_view(request):
 
             return HttpResponseRedirect(reverse('photologue:database_index_detail', kwargs={'slug': cbir_index.slug}))
     else:
-        form = forms.CbirIndexForm()
+        form = forms.CbirIndexForm(initial={'database': database})
 
     context['form'] = form
     return render(request, 'photologue/database_index_create.html', context)
