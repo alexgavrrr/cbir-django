@@ -401,10 +401,20 @@ class CBIR:
         start = time.time()
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
+        fd_loaded_before = self.fd is not None
+        if not fd_loaded_before:
+            self.set_fd(self.load_fd())
+
+        ca_loaded_before = self.ca is not None
+        if not ca_loaded_before:
+            self.set_ca(self.load_ca())
+
         result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
 
         if len(result_tuple) != 3 or result_tuple[0] is None:
             message = f'Could not get descriptor for image {img_path}'
+            if not fd_loaded_before:
+                self.unset_fd()
             raise ValueError(message)
 
         img_descriptor, img_bovw, kp = result_tuple
@@ -416,7 +426,6 @@ class CBIR:
         #     img_bovw = new_query[:-1].astype(np.float32) / new_query[-1]
         # else:
         #     img_bovw = img_bovw[:-1].astype(np.float32) / img_bovw[-1]
-
         if new_query is not None:
             img_bovw = new_query.astype(np.float32)
         else:
@@ -462,6 +471,10 @@ class CBIR:
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
+            if not fd_loaded_before:
+                self.unset_fd()
+            if not ca_loaded_before:
+                self.unset_ca()
             return candidates[:topk]
 
         start = time.time()
@@ -533,6 +546,10 @@ class CBIR:
         if debug and qe_enable and new_query is None:
             print("Query Expansion got in {}s".format(time.time() - start))
 
+        if not fd_loaded_before:
+            self.unset_fd()
+        if not ca_loaded_before:
+            self.unset_ca()
         return sv_candidates[:topk]
 
     def ransac(self, img_descriptor, kp, candidates,
