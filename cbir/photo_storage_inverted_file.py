@@ -445,19 +445,9 @@ class CBIR:
         idf = self.load_data_dependent_params()['idf']
         f_names = self.load_f_names()
 
-        # print(f'bow.todense(): {bow.todense()}')
-        # print(f'candidates: {candidates}')
-        # inverted_index = self.load_inverted_index()
-        # print(f'inverted_index: {inverted_index}')
-
         ranks = []
         for i in candidates:
-            print(i)
             bow_row = np.array(bow[i].todense(), dtype=np.float).flatten()
-            # print(f'img_bovw:\n{img_bovw}')
-            # print(f'img_bovw * idf:\n{img_bovw * idf}')
-            # print(f'bow_row[:-1]:\n{bow_row[:-1]}')
-            # print(f'bow_row[:-1] / bow_row[-1] * idf: {bow_row[:-1] / bow_row[-1] * idf}')
             ranks.append((i, euclidean(img_bovw[:-1] / img_bovw[-1] * idf, bow_row[:-1] / bow_row[-1] * idf)))
 
         ranks = sorted(ranks, key=lambda x: x[1])
