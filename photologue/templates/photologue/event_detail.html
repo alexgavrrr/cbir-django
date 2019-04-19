@@ -8,6 +8,12 @@
 	<div class="row col-lg-12">
         <h1 class="page-header">{{ event.title }}</h1>
         <p class="muted"><small>{% trans "Published" %} {{ event.date_added }}</small></p>
+
+        {% if warning_message %}
+                    <h4> {{ warning_message }}</h4>
+        {% endif %}
+
+
         {% if event.description %}
             <h4>Description</h4>
             <p style="text-indent: 3%">{{ event.description|safe }}</p>
@@ -17,7 +23,7 @@
         <ul>
         {% if query_photos %}
                 {% for query in query_photos %}
-                    <li>{{ query }}</li>
+                    <li>{{ query }}</li> - TODO Display photo with reference to full photo
                 {% endfor %}
         {% else %}
             No query photos
@@ -26,9 +32,9 @@
 
         <h4>Result photos</h4>
         <ul>
-        {% if photos %}
-            {% for photo in photos %}
-                <li>{{ photo }} </li>
+        {% if result_photos %}
+            {% for photo in result_photos %}
+                <li>{{ photo }} </li> - TODO Display photo with reference to full photo
                 <!--<img src="todo" class="todo" alt="{{ photo.slug }}">-->
             {% endfor %}
         {% else %}

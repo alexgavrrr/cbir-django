@@ -1,7 +1,10 @@
 from django import forms
 from django.forms import ModelForm
 
-from .models import Database, Event, DatabasePhoto
+from .models import (Database,
+                     Event,
+                     DatabasePhoto,
+                     CbirIndex, )
 
 FILE_MAX_LENGTH = 100
 
@@ -28,4 +31,13 @@ class EventForm(ModelForm):
 
     class Meta:
         model = Event
-        fields = ['date_added', 'title', 'slug', 'description']
+        fields = ['date_added', 'title', 'slug', 'description', 'cbir_index']
+
+
+class CbirIndexForm(ModelForm):
+    set_as_default = forms.BooleanField(required=False,
+                                     initial=False,)
+
+    class Meta:
+        model = CbirIndex
+        fields = ['date_added', 'title', 'slug', 'name', 'description', 'database']
