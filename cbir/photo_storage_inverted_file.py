@@ -134,6 +134,7 @@ class CBIR:
         if not fd_loaded_before:
             self.set_fd(self.load_fd())
 
+        # TODO: Memory. Loading full index. Fix it.
         index = self.load_index()
 
         count_new = 0
@@ -212,6 +213,8 @@ class CBIR:
         :param list_paths_to_images: images to use to train clusterer
         """
         # TODO: Handle case if some photo from list_paths_to_images not in index yet.
+
+        # TODO: Memory. Loading full index. Fix it.
         index = self.load_index()
         descriptors_for_training = [v[0] for k, v in index.items() if k in list_paths_to_images]
         descriptors_for_training = np.concatenate(descriptors_for_training, axis=0)
@@ -227,6 +230,7 @@ class CBIR:
         :param list_paths_to_images: images to add to index
         """
 
+        # TODO: Memory. Loading full index. Fix it.
         index = self.load_index()
 
         ca_loaded_before = self.ca is not None
@@ -245,8 +249,11 @@ class CBIR:
         corpus = list(zip(*corpus))
         corpus, f_names_new = corpus
 
+        # TODO: Memory. Bow can be bery big. Consider about it.
         bow_new = np.zeros((len(f_names_new), self.n_words + 1), dtype=np.int16)
         freqs = self.load_freqs()
+
+        # TODO: Memory. inverted_index can be bery big. Consider about it.
         inverted_index = self.load_inverted_index()
         for i, image in enumerate(corpus):
             for word in image:
