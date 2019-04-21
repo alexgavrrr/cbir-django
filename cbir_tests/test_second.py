@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from cbir import BASE_DIR
-from cbir.photo_storage_inverted_file import CBIR
+from cbir.cbir_core import CBIR
 
 logger = logging.getLogger()
 
@@ -10,6 +10,8 @@ CBIR_DATABASE_NAME = 'first'
 CBIR_INDEX_NAME = 'index_first'
 WHERE_PHOTOS = str(Path(BASE_DIR) / 'public' / 'media'
                    / 'content' / CBIR_DATABASE_NAME / 'database_all')
+WHERE_PHOTOS_RELATIVE_TO_BASE_DIR = str(Path(WHERE_PHOTOS).relative_to(BASE_DIR))
+
 from cbir.legacy_utils import find_image_files
 
 

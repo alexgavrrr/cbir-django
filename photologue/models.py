@@ -20,7 +20,7 @@ from django.conf import settings
 import cbir
 import cbir.commands
 from cbir.legacy_utils import find_image_files
-from cbir.photo_storage_inverted_file import CBIR
+from cbir.cbir_core import CBIR
 
 logger = logging.getLogger('photologue.models')
 

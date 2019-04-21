@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from cbir import BASE_DIR
-from cbir.photo_storage_inverted_file import CBIR
+from cbir.cbir_core import CBIR
 
 logger = logging.getLogger()
 
