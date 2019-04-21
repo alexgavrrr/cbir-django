@@ -5,7 +5,7 @@ import cbir
 import cbir.commands
 import cbir.configuration
 
-base_parser = argparse.ArgumentParser(add_help=False, prog='CBIR')
+base_parser = argparse.ArgumentParser(add_help=False, prog='CBIRCore')
 base_parser.add_argument('-c', '--config',
                          help='Path to config')
 
@@ -13,7 +13,7 @@ base_parser.add_argument('-c', '--config',
 def create_parser():
     """Creates ArgumentParser to parse command-line options"""
 
-    parser = argparse.ArgumentParser(description='CBIR commands',
+    parser = argparse.ArgumentParser(description='CBIRCore commands',
                                      parents=[base_parser])
 
     # The command selected by the user will be stored in `args.command`
@@ -44,7 +44,7 @@ def create_parser():
     show_parser.add_argument('database', help='Name of a database related to session')
     show_parser.add_argument('tag', help='Tag of a session to show')
 
-    evaluate_parser = subparsers.add_parser('evaluate', help='Evaluate CBIR pipeline')
+    evaluate_parser = subparsers.add_parser('evaluate', help='Evaluate CBIRCore pipeline')
     evaluate_parser.add_argument('--sample', action='store_true', default=False, help='Whether not to use all data')
     evaluate_parser.add_argument('--train_dir', default=None)
     evaluate_parser.add_argument('--test_dir', default=None)

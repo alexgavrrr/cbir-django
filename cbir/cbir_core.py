@@ -29,15 +29,15 @@ MAX_KEYPOINTS = 2000
 # TODO:
 # Use DATABASES_RELATIVE_TO_BASE_DIR instead of DATABASES
 
-class CBIR:
+class CBIRCore:
     @classmethod
     def get_instance(cls, database, name):
         if not cls.exists(database, name):
-            message = (f'CBIR {name} in database {database} does not exist. First create it. For example, by calling '
+            message = (f'CBIRCore {name} in database {database} does not exist. First create it. For example, by calling '
                        f'`create_empty`.')
             raise ValueError(message)
 
-        instance = CBIR()
+        instance = CBIRCore()
         instance.database = database
         instance.name = name
 
@@ -70,7 +70,7 @@ class CBIR:
                                des_type, max_keypoints,
                                K, L):
         """
-        Creates empty CBIR instance which indexes 0 objects.
+        Creates empty CBIRCore instance which indexes 0 objects.
         :param database:
         :param name:
         :param des_type:
@@ -87,8 +87,8 @@ class CBIR:
 
     @classmethod
     def exists(cls, database, name):
-        return (database in CBIR.get_databases()
-                and name in CBIR.get_cbir_indexes_of_database(database)
+        return (database in CBIRCore.get_databases()
+                and name in CBIRCore.get_cbir_indexes_of_database(database)
                 and cls._inited_properly(database, name))
 
     @classmethod
@@ -137,7 +137,7 @@ class CBIR:
                 and inited_properly)
 
     def __str__(self):
-        return f'CBIR {self.database} {self.name}'
+        return f'CBIRCore {self.database} {self.name}'
 
     def empty(self):
         # TODO: Rewrite.
@@ -242,7 +242,7 @@ class CBIR:
         COUNT_DESCRIPTORS_EXPECTED = 5000
         PLACEHOLDER_SIZE = 1000
 
-        path_to_mmap_descriptors = Path(CBIR.get_storage_path(self.database, self.name)) / 'mmap_descriptors'
+        path_to_mmap_descriptors = Path(CBIRCore.get_storage_path(self.database, self.name)) / 'mmap_descriptors'
         mmap_descriptos = np.memmap(path_to_mmap_descriptors,
                                     dtype='float32',
                                     shape=(COUNT_DESCRIPTORS_EXPECTED, SIZE_DESCRIPTOR),
@@ -290,7 +290,7 @@ class CBIR:
             return placeholder
 
         ca = VocabularyTree(L=self.L, K=self.K).fit(loader)
-        CBIR._save_clusterer(self.database, self.name, ca)
+        CBIRCore._save_clusterer(self.database, self.name, ca)
 
     def add_images_to_index(self):
         """
@@ -372,7 +372,7 @@ class CBIR:
         data_dependent_params['most_frequent'] = most_frequent
         data_dependent_params['least_frequent'] = least_frequent
 
-        CBIR._save_data_dependent_params(self.database, self.name, data_dependent_params)
+        CBIRCore._save_data_dependent_params(self.database, self.name, data_dependent_params)
 
     def get_candidates_raw(self, query, filter=True):
         """
@@ -773,22 +773,22 @@ class CBIR:
         return os.path.join(cls.get_storage_path(database, name), 'freqs' + postfix)
 
     def load_params(self):
-        with open(CBIR.get_params_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_params_path(self.database, self.name), 'rb') as f:
             params = pickle.load(f)
         return params
 
     def load_data_dependent_params(self):
-        with open(CBIR.get_data_dependent_params_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_data_dependent_params_path(self.database, self.name), 'rb') as f:
             data_dependent_params = pickle.load(f)
         return data_dependent_params
 
     def load_inverted_index(self):
-        with open(CBIR.get_inverted_index_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_inverted_index_path(self.database, self.name), 'rb') as f:
             inverted_index = pickle.load(f)
         return inverted_index
 
     def load_index(self):
-        with open(CBIR.get_des_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_des_path(self.database, self.name), 'rb') as f:
             index = pickle.load(f)
         index = {k: (v[0],
                      [cv2.KeyPoint(*el) for el in zip(v[1], v[2], v[3])])
@@ -796,32 +796,37 @@ class CBIR:
         return index
 
     def load_f_names(self):
-        with open(CBIR.get_f_names_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_f_names_path(self.database, self.name), 'rb') as f:
             f_names = pickle.load(f)
         return f_names
 
     def load_bow(self):
-        with open(CBIR.get_bow_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_bow_path(self.database, self.name), 'rb') as f:
             bow = pickle.load(f)
         return bow
 
     def load_freqs(self):
-        with open(CBIR.get_data_dependent_params_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_data_dependent_params_path(self.database, self.name), 'rb') as f:
             freqs = pickle.load(f)['freqs']
         return freqs
 
     @classmethod
-    def copy_descriptors_from_to(cls, database, from_name, to_name):
-        if not cls.descriptors_compatible(database, from_name, to_name):
-            message = f"Database {database}'s descriptors {from_name} and {to_name} are not compatible"
-            raise ValueError(message)
+    def copy_descriptors_from_to(cls,
+                                 from_database, from_name,
+                                 to_database, to_name,
+                                 to_index,
+                                 for_training):
+        """
+        Copies descriptors to another index and setting new purpose values.
+        """
 
+        # database_service.copy_
         raise NotImplementedError
 
     @classmethod
     def descriptors_compatible(cls, database, first_name, second_name):
-        from_des_type = CBIR(database, first_name).des_type
-        to_des_type = CBIR(database, second_name).des_type
+        from_des_type = CBIRCore(database, first_name).des_type
+        to_des_type = CBIRCore(database, second_name).des_type
         return from_des_type != to_des_type
 
     @classmethod
@@ -865,7 +870,7 @@ class CBIR:
         self.fd = None
 
     def load_ca(self):
-        with open(CBIR.get_clusterer_path(self.database, self.name), 'rb') as f:
+        with open(CBIRCore.get_clusterer_path(self.database, self.name), 'rb') as f:
             ca = pickle.load(f)
         return ca
 
@@ -914,7 +919,7 @@ def main(storage_path, training_path, label):
     # TODO: Write or delete
 
     test_path = storage_path
-    cbir_index = CBIR.get_instance()
+    cbir_index = CBIRCore.get_instance()
 
     while True:
         print("Enter command")

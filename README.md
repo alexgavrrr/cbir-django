@@ -1,4 +1,4 @@
-# Django image storage app powered by CBIR library
+# Django image storage app powered by CBIRCore library
 
 ## Setup instructions
 pipenv install

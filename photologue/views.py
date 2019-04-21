@@ -149,8 +149,13 @@ def event_create_view(request):
             event = form.save(commit=False)
             event.database = database
             event.cbir_index = form.cleaned_data.get('cbir_index')
-            if not event.cbir_index or event.cbir_index.database != database:
-                # TODO: Fine that user's cbir_index is ignored silently?
+            if event.cbir_index.database != database:
+                # TODO: Fine that user's cbir_index is ignored silently? User is not told about it.
+                logger.warning(f'User chose incorrect cbir_index connected to database {event.cbir_index.database}. '
+                               f'But intends to create an event for {database} database')
+                event.cbir_index = database.cbir_index_default
+
+            if not event.cbir_index:
                 event.cbir_index = database.cbir_index_default
             event.save()
 
@@ -231,7 +236,7 @@ def database_index_info_view(request):
 
 
 def database_index_detail_view(request, slug):
-    database_index = get_object_or_404(models.CbirIndex, slug=slug)
+    database_index = get_object_or_404(models.CBIRIndex, slug=slug)
     context = {}
     context['database_index'] = database_index
     return render(request, 'photologue/database_index_detail.html', context)
@@ -253,6 +258,10 @@ def database_index_create_view(request):
         if form.is_valid():
             cbir_index = form.save(commit=False)
             cbir_index.database = database
+
+            # TODO: Make call to build index asynchronous
+            cbir_index.build_if_needed()
+
             cbir_index.save()
 
             set_default = form.cleaned_data.get('set_default')
@@ -260,9 +269,6 @@ def database_index_create_view(request):
             if set_default or not database_has_default_cbir_index:
                 database.cbir_index_default = cbir_index
                 database.save()
-
-            # TODO: Make call to build index asynchronous
-            cbir_index.build_if_needed()
 
             return HttpResponseRedirect(reverse('photologue:database_index_detail', kwargs={'slug': cbir_index.slug}))
     else:

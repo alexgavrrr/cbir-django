@@ -1,4 +1,4 @@
-# CBIR on Python
+# CBIRCore on Python
 
 ## CLI
 
@@ -11,7 +11,7 @@
 `python main.py search buildings /Users/alexgavr/main/Developer/Data/Buildings/Original/Paris_sample/jpg/paris_defense_000004.jpg --save --tag first`
 
 ### Testing
-#### Evaluating CBIR pipeline
+#### Evaluating CBIRCore pipeline
 in root directory perform:
 `env PYTHONPATH="." python tests/evaluation.py`
 `env PYTHONPATH="." python tests/test.py`
