@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 import cbir
 from cbir import CONFIG
+from cbir import database_service
 from cbir.legacy_utils import draw_result
 from cbir.models.learned_descriptors import HardNetAll_des, HardNetBrown_des, HardNetHPatches_des
 from cbir.models.learned_descriptors import L2net_des
@@ -26,8 +27,7 @@ MAX_KEYPOINTS = 2000
 
 
 # TODO:
-# Now all images in the index are both for training clusterer and for indexing.
-# In the future distinguishing between purposes will be required.
+# Use DATABASES_RELATIVE_TO_BASE_DIR instead of DATABASES
 
 class CBIR:
     @classmethod
@@ -47,6 +47,8 @@ class CBIR:
         instance.K = params['K']
         instance.L = params['L']
         instance.n_words = instance.K ** instance.L
+
+        instance.db = database_service.get_db(cls.get_storage_path(database, name))
 
         instance.fd = None
         instance.ca = None
@@ -84,6 +86,12 @@ class CBIR:
                                         des_type, max_keypoints, K, L)
 
     @classmethod
+    def exists(cls, database, name):
+        return (database in CBIR.get_databases()
+                and name in CBIR.get_cbir_indexes_of_database(database)
+                and cls._inited_properly(database, name))
+
+    @classmethod
     def _init_search_structures(cls, database, name,
                                 des_type, max_keypoints, K, L):
         """
@@ -102,53 +110,74 @@ class CBIR:
         params['n_words'] = K ** L
 
         data_dependent_params = {}
-        data_dependent_params['idf'] = []
+        data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
+        data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
         data_dependent_params['most_frequent'] = []
         data_dependent_params['least_frequent'] = []
 
-        index = {}
-        clusterer = []
-        bow = None
-        inverted_index = [set() for i in range(params['n_words'])]
-        freqs = np.zeros(params['n_words'], dtype=np.int16)
-        f_names = []
-
         cls._save_params(database, name, params)
-        cls._save_data_dependent_params(database, name, params)
-        cls._save_index(database, name, index)
+        cls._save_data_dependent_params(database, name, data_dependent_params)
+
+        db = database_service.get_db(cls.get_storage_path(database, name))
+        database_service.create_empty(db)
+
+        clusterer = None
         cls._save_clusterer(database, name, clusterer)
-        cls._save_bow(database, name, bow)
-        cls._save_inverted_index(database, name, inverted_index)
-        cls._save_freqs(database, name, freqs)
-        cls._save_f_names(database, name, f_names)
+
+    @classmethod
+    def _inited_properly(cls, database, name):
+        params_path = cls.get_params_path(database, name)
+        data_dependent_params_path = cls.get_data_dependent_params_path(database, name)
+
+        potential_db = database_service.get_db(cls.get_storage_path(database, name))
+        inited_properly = database_service.inited_properly(potential_db)
+
+        return (os.path.exists(params_path)
+                and os.path.exists(data_dependent_params_path)
+                and inited_properly)
+
+    def __str__(self):
+        return f'CBIR {self.database} {self.name}'
+
+    def empty(self):
+        # TODO: Rewrite.
+        inverted_index = self.load_inverted_index()
+        return len(inverted_index) == 0
 
     def compute_descriptors(self,
-                            list_paths_to_images):
+                            list_paths_to_images,
+                            to_index,
+                            for_training_clusterer):
         """
         Computes decriptors for given images
         and saves these descriptors in search structures (sqlite).
 
         :param list_paths_to_images: images for which to compute descriptors
+        :param to_index: whether these photos to be indexed
+        :param for_training_clusterer: whether to use these photos for training clusterer
         """
+        # TODO: fd_ready_decorator and ca_ready_decorator
         fd_loaded_before = self.fd is not None
         if not fd_loaded_before:
             self.set_fd(self.load_fd())
 
-        # TODO: Memory. Loading full index. Fix it.
-        index = self.load_index()
-
         count_new = 0
         count_defects = 0
         count_old = 0
-        for path_to_image in list_paths_to_images:
-            print(path_to_image)
-            if path_to_image in index.keys():
+        for path_to_image in tqdm(list_paths_to_images, desc='Computing descriptors for photos and saving in the database'):
+            if database_service.is_image_indexed(self.db, path_to_image):
                 count_old += 1
             else:
-                tmp = self.get_descriptor(path_to_image, raw=True)
-                if tmp[0] is not None:
+                descriptor_now = self.get_descriptor(path_to_image, raw=True)
+                if descriptor_now[0] is not None:
                     count_new += 1
-                    index[path_to_image] = tmp
+                    new_photo = {
+                        'name': path_to_image,
+                        'descriptor': self.serialize_descriptor(descriptor_now),
+                        'to_index': to_index,
+                        'for_training': for_training_clusterer
+                    }
+                    database_service.add_photos(self.db, [new_photo])
                 else:
                     count_defects += 1
                     print("No keypoints found for {}".format(path_to_image))
@@ -157,7 +186,6 @@ class CBIR:
             self.unset_fd()
 
         print(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
-        CBIR._save_index(self.database, self.name, index)
 
     def get_descriptor(self, path_to_image, raw=False, both=False, total_count_coordinate_for_bow=True):
         if type(path_to_image) is str:
@@ -204,179 +232,153 @@ class CBIR:
 
         return res / float(img_des.shape[0])
 
-    def train_clusterer(self,
-                        list_paths_to_images):
+    def train_clusterer(self):
         """
-        Trains clusterer on images from `list_paths_to_images_train_clusterer`
-        and saves it.
-
-        :param list_paths_to_images: images to use to train clusterer
+        Trains clusterer on images which's descriptors
+        have already been computed and marked for_training.
         """
-        # TODO: Handle case if some photo from list_paths_to_images not in index yet.
+        logger.info(f'Training clusterer on previously computed descriptors for index {self.name} of database {self.database}')
+        SIZE_DESCRIPTOR = 128
+        COUNT_DESCRIPTORS_EXPECTED = 5000
+        PLACEHOLDER_SIZE = 1000
 
-        # TODO: Memory. Loading full index. Fix it.
-        index = self.load_index()
-        descriptors_for_training = [v[0] for k, v in index.items() if k in list_paths_to_images]
-        descriptors_for_training = np.concatenate(descriptors_for_training, axis=0)
+        path_to_mmap_descriptors = Path(CBIR.get_storage_path(self.database, self.name)) / 'mmap_descriptors'
+        mmap_descriptos = np.memmap(path_to_mmap_descriptors,
+                                    dtype='float32',
+                                    shape=(COUNT_DESCRIPTORS_EXPECTED, SIZE_DESCRIPTOR),
+                                    mode='w+')
+        placeholder = np.zeros(shape=(PLACEHOLDER_SIZE, SIZE_DESCRIPTOR), dtype='float32')
+        begin_placehoder = 0
+        begin_mmap_descriptors = 0
+        logger.info('Saving descriptors from database to disk')
 
-        ca = VocabularyTree(L=self.L, K=self.K).fit(descriptors_for_training)
+        count_photos_for_training = 0
+        count_descriptors_flattened_for_training = 0
+        for descriptor in tqdm(database_service.get_photos_descriptors_for_training_iterator(self.db),
+                               desc="Saving descriptors from database to disk"):
+            descriptor = descriptor['descriptor']
+            deserialized_descriptor = self.deserialize_descriptor(descriptor)
+            deserialized_descriptor_without_kp = deserialized_descriptor[0]
+            end_now = min(begin_placehoder + deserialized_descriptor_without_kp.shape[0], placeholder.shape[0])
+
+            count_photos_for_training += 1
+            count_descriptors_flattened_for_training += deserialized_descriptor_without_kp.shape[0]
+
+            # TODO: Remove comment
+            # print(f'deserialized_descriptor.shape: {deserialized_descriptor.shape}')
+            # print(f'end_now: {end_now}')
+            # print(f'begin_placehoder: {begin_placehoder}')
+            # print(f'end_now - begin_placehoder: {end_now - begin_placehoder}')
+
+            placeholder[begin_placehoder:end_now] = deserialized_descriptor_without_kp[0: end_now - begin_placehoder]
+            begin_placehoder = end_now
+            if end_now == placeholder.shape[0]:
+                mmap_descriptos[begin_mmap_descriptors: begin_mmap_descriptors + placeholder.shape[0]] = placeholder
+                begin_placehoder = 0
+                begin_mmap_descriptors += placeholder.shape[0]
+        mmap_descriptos[begin_mmap_descriptors: begin_mmap_descriptors + end_now] = placeholder[:end_now]
+
+        logger.info(f'Count descriptors flattened for training: {count_descriptors_flattened_for_training}\n'
+                    f'Count photos used for training: {count_photos_for_training}\n'
+                    f'Average count of descriptors - keypoints on one photo: '
+                    f'{int(count_descriptors_flattened_for_training / count_photos_for_training)})')
+
+        def loader(indices):
+            if len(indices) > placeholder.shape[0]:
+                raise ValueError
+            placeholder[:len(indices)] = mmap_descriptos[indices]
+            return placeholder
+
+        ca = VocabularyTree(L=self.L, K=self.K).fit(loader)
         CBIR._save_clusterer(self.database, self.name, ca)
 
-    def add_images_to_index(self,
-                            list_paths_to_images):
+    def add_images_to_index(self):
         """
-        Adds images to search index.
-
-        :param list_paths_to_images: images to add to index
+        Adds images marked for indexing,
+        whose descriptors have already been computed, to search index.
+        If images have already been indexed before (bow is not null) then ignores it.
         """
-
-        # TODO: Memory. Loading full index. Fix it.
-        index = self.load_index()
-
+        logger.info(f'Adding photos to index {self.name} in database {self.database}')
+        # TODO: fd_ready_decorator and ca_ready_decorator
         ca_loaded_before = self.ca is not None
         if not ca_loaded_before:
             self.set_ca(self.load_ca())
 
-        corpus = [(self.ca.predict(value[0]), key)
-                  for key, value
-                  in tqdm(index.items(), total=len(index))
-                  if key in list_paths_to_images
-                  ]
+        # TODO: Apply cunning trick. Model WordPhoto should not have index by word in the beginning
+        # for faster inserts. When all inserts are done then we should build index and get blobs sorted by word.
 
-        if not ca_loaded_before:
-            self.unset_ca()
-
-        corpus = list(zip(*corpus))
-        corpus, f_names_new = corpus
-
-        # TODO: Memory. Bow can be bery big. Consider about it.
-        bow_new = np.zeros((len(f_names_new), self.n_words + 1), dtype=np.int16)
-        freqs = self.load_freqs()
-
-        # TODO: Memory. inverted_index can be bery big. Consider about it.
-        inverted_index = self.load_inverted_index()
-        for i, image in enumerate(corpus):
-            for word in image:
-                bow_new[i][word] += 1
-                bow_new[i][self.n_words] += 1
-                if bow_new[i][word] == 1:
+        data_dependent_params = self.load_data_dependent_params()
+        freqs = data_dependent_params['freqs']
+        for photo in tqdm(database_service
+                                  .get_photos_descriptors_needed_to_add_to_index_iterator(self.db),
+                          desc='Applying clusterer, updaing bow and inverted index '
+                               'for every photo to needed to add to index'):
+            word_photo_relations = []
+            photo_descriptor = self.deserialize_descriptor(photo.descriptor)
+            photo_words = self.ca.predict(photo_descriptor[0])
+            photo_bow = np.zeros((self.n_words + 1,), dtype=np.int16)
+            for word in photo_words:
+                word_photo_relations += [{'word': word, 'photo': photo.name}]
+                photo_bow[word] += 1
+                photo_bow[self.n_words] += 1
+                if photo_bow[word] == 1:
                     freqs[word] += 1
-                inverted_index[word].add(i)
 
-        bow = self.load_bow()
-        bow_new = sparse.vstack((bow, bow_new), format='csr')
+            # TODO: photo.pk instead of photo.name must be in the future.
+            database_service.add_word_photo_relations(self.db, word_photo_relations)
+            photo_to_update = {
+                'name': photo.name,
+                'bow': self.serialize_bow(photo_bow)
+            }
+            database_service.update_bows(self.db, [photo_to_update])
 
-        f_names = self.load_f_names()
-        f_names_new = f_names + list(f_names_new)
+        # TODO: Build index on WordPhoto by word if not yet.
+
+        # Sort by word and get word photo relations
+        word_now = None
+        word_photos_now = set()
+        for ind, word_photo_relation in enumerate(database_service.get_word_photo_relations_sorted(self.db)):
+            word_next = word_photo_relation['word']
+            photo_next = word_photo_relation['photo']
+            if word_now and word_now != word_next:
+                word_to_insert = {
+                    'word': word_now,
+                    'photos': self.serialize_word_photos(word_photos_now)
+                }
+                database_service.insert_or_replace_word(self.db, [word_to_insert])
+                word_photos_now = set()
+
+            word_now = word_next
+            word_photos_now.add(photo_next)
+
+        if word_now:
+            word_to_insert = {
+                'word': word_now,
+                'photos': self.serialize_word_photos(word_photos_now)
+            }
+            database_service.insert_or_replace_word(self.db, [word_to_insert])
 
         five_percent = int(0.085 * self.n_words)
         freqs = np.argsort(freqs)
         most_frequent = freqs[-five_percent:]
         least_frequent = freqs[:five_percent]
-        idf = compute_idf(bow_new.todense())
+
+        total_count_photos_indexed = database_service.count_indexed(self.db)
+        idf = compute_idf_lazy(freqs, total_count_photos_indexed)
 
         data_dependent_params = {}
+        data_dependent_params['freqs'] = freqs
         data_dependent_params['idf'] = idf
         data_dependent_params['most_frequent'] = most_frequent
         data_dependent_params['least_frequent'] = least_frequent
 
         CBIR._save_data_dependent_params(self.database, self.name, data_dependent_params)
-        CBIR._save_bow(self.database, self.name, bow_new)
-        CBIR._save_inverted_index(self.database, self.name, inverted_index)
-        CBIR._save_freqs(self.database, self.name, freqs)
-        CBIR._save_f_names(self.database, self.name, f_names_new)
 
-    @classmethod
-    def copy_descriptors_from_to(cls, database, from_name, to_name):
-        if not cls.descriptors_compatible(database, from_name, to_name):
-            message = f"Database {database}'s descriptors {from_name} and {to_name} are not compatible"
-            raise ValueError(message)
-
-        raise NotImplementedError
-
-    @classmethod
-    def descriptors_compatible(cls, database, first_name, second_name):
-        from_des_type = CBIR(database, first_name).des_type
-        to_des_type = CBIR(database, second_name).des_type
-        return from_des_type != to_des_type
-
-    @classmethod
-    def get_databases(cls):
-        return [
-            filename
-            for filename in os.listdir(cbir.DATABASES)
-            if os.path.isdir(Path(cbir.DATABASES) / filename)]
-
-    @classmethod
-    def get_cbir_indexes_of_database(cls, database):
-        return [
-            filename
-            for filename in os.listdir(Path(cbir.DATABASES) / database)
-            if os.path.isdir(Path(cbir.DATABASES) / database / filename)]
-
-    @classmethod
-    def exists(cls, database, name):
-        return (database in CBIR.get_databases()
-                and name in CBIR.get_cbir_indexes_of_database(database)
-                and cls._inited_properly(database, name))
-
-    @classmethod
-    def _inited_properly(cls, database, name):
-        # TODO
-        params_path = cls.get_params_path(database, name)
-        return os.path.exists(params_path)
-
-    def __str__(self):
-        return f'CBIR {self.database} {self.name}'
-
-    def empty(self):
-        inverted_index = self.load_inverted_index()
-        return len(inverted_index) == 0
-
-    def load_fd(self):
-        max_keypoints = self.max_keypoints
-
-        if self.des_type == 'sift':
-            fd = SIFT(max_keypoints=max_keypoints)
-        elif self.des_type == 'surf':
-            fd = SURF(max_keypoints=max_keypoints)
-        elif self.des_type == 'l2net':
-            fd = L2net_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
-        elif self.des_type == 'HardNetBrown':
-            fd = HardNetBrown_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
-        elif self.des_type == 'HardNetAll':
-            fd = HardNetAll_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
-        elif self.des_type == 'HardNetHPatches':
-            fd = HardNetHPatches_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
-        else:
-            raise ValueError(f'Bad des_type: {self.des_type}')
-
-        return fd
-
-    def set_fd(self, fd):
-        self.fd = fd
-
-    def unset_fd(self):
-        self.fd = None
-
-    def load_ca(self):
-        with open(CBIR.get_clusterer_path(self.database, self.name), 'rb') as f:
-            ca = pickle.load(f)
-        return ca
-
-    def set_ca(self, ca):
-        self.ca = ca
-
-    def unset_ca(self):
-        self.ca = None
-
-    def get_candidates(self, query, filter=True):
+    def get_candidates_raw(self, query, filter=True):
         """
         :param query:  `[(visual_word, freq), ...]` query as a bow(BoVW)
         :param filter:
         """
-        candidates = set()
-
         most_frequent = self.load_data_dependent_params()['most_frequent']
 
         interesting_words_in_query = [word
@@ -385,15 +387,9 @@ class CBIR:
                                       if (freq > 1e-7
                                           and (not filter or word not in most_frequent))]
 
-        for word in interesting_words_in_query:
-            new_candidates = self.get_candidates_by_word(word)
-            candidates = candidates | new_candidates
-
-        return candidates
-
-    def get_candidates_by_word(self, word):
-        inverted_index = self.load_inverted_index()
-        return inverted_index[word]
+        candidates_iterator = database_service.get_photos_by_words_iterator(self.db, interesting_words_in_query)
+        candidates_iterator_modified = (candidate['photos'] for candidate in candidates_iterator)
+        return list(candidates_iterator_modified)
 
     def search(self,
                img_path,
@@ -405,9 +401,12 @@ class CBIR:
         :param list_paths_to_images: query images
         :return: list paths images most similar to the query
         """
+        logger.info(f'Performing search in database {self.database} on index {self.name}. '
+                    f'Path to query: {img_path}')
         start = time.time()
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
+        # TODO: fd_ready_decorator and ca_ready_decorator
         fd_loaded_before = self.fd is not None
         if not fd_loaded_before:
             self.set_fd(self.load_fd())
@@ -429,36 +428,57 @@ class CBIR:
 
         start = time.time()
 
-        # if new_query is not None:
-        #     img_bovw = new_query[:-1].astype(np.float32) / new_query[-1]
-        # else:
-        #     img_bovw = img_bovw[:-1].astype(np.float32) / img_bovw[-1]
         if new_query is not None:
             img_bovw = new_query.astype(np.float32)
         else:
             img_bovw = img_bovw.astype(np.float32)
 
-        candidates = self.get_candidates(img_bovw[:-1])
-        if len(candidates) == 0:
-            candidates = self.get_candidates(img_bovw[:-1], filter=False)
+        candidates_raw = self.get_candidates_raw(img_bovw[:-1])
+        if len(candidates_raw) == 0:
+            candidates_raw = self.get_candidates_raw(img_bovw[:-1], filter=False)
+        candidates = set()
+        for candidate_raw in candidates_raw:
+            candidates |= self.deserialize_word_photos(candidate_raw)
         print("Candidates got in {}".format(time.time() - start))
         if debug:
             print(len(candidates))
 
+        # TODO: In the future make candidates an iterator. Now Algorithm requires all candidates in RAM
+        # because it applies sorting. But algorithm needs only top n_candidates.
+        # Thus we can apply linear algorithm with heapq or tree and iterator will be enough.
+
+        print(f'type(next(iter(candidates))): {type(next(iter(candidates)))}')
+        print(f'next(iter(candidates)): {next(iter(candidates))}')
+
         # STEP 2. PRELIMINARY RANKING
         start = time.time()
 
-        bow = self.load_bow()
+        # bow = self.load_bow()
         idf = self.load_data_dependent_params()['idf']
-        f_names = self.load_f_names()
 
+        # f_names = self.load_f_names()
+
+        # TODO: Use heapq to obtain preliminary top n_candidates
+        # Getting all candidates in ram and sorting can infeasible.
         ranks = []
-        for i in candidates:
-            bow_row = np.array(bow[i].todense(), dtype=np.float).flatten()
-            ranks.append((i, euclidean(img_bovw[:-1] / img_bovw[-1] * idf, bow_row[:-1] / bow_row[-1] * idf)))
+        for candidate in candidates:
+            candidate_bow_raw = database_service.get_bow(self.db, candidate)
+            candidate_bow_raw = candidate_bow_raw['bow']
+            candidate_bow = self.deserialize_bow(candidate_bow_raw)
+            # bow_row = np.array(bow[candidate].todense(), dtype=np.float).flatten()
+            ranks.append((candidate, euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
+                                               candidate_bow[:-1] / candidate_bow[-1] * idf)))
 
         ranks = sorted(ranks, key=lambda x: x[1])
-        candidates = [(i[0], f_names[i[0]]) for i in ranks[:n_candidates]]
+
+        print(f'Ranks: {ranks}')
+
+        # candidates = [(i[0], f_names[i[0]]) for i in ranks[:n_candidates]]
+        # earlier [(ind_candidate, name_candidate)]
+
+        candidates = [(None, rank[0]) for rank in ranks[:n_candidates]]
+
+        print(f'Candidates: {candidates}')
 
         print("Short list got in {}".format(time.time() - start))
         if debug:
@@ -475,10 +495,33 @@ class CBIR:
             return candidates[:topk]
 
         start = time.time()
+
+        # TODO: Do not return and get descriptors_kp if it is not needed.
         [all_matches, all_matches_masks, all_transforms,
          verified,
          descriptors_kp] = self.ransac(img_descriptor, kp, candidates,
                                        n_inliners_thr, max_verified)
+
+        print(f'all_matches: {type(all_matches)}')
+        print(f'all_matches[0]: {all_matches[0]}')
+        print(f'len(all_matches): {len(all_matches)}')
+
+        print(f'all_matches_masks: {type(all_matches_masks)}')
+        print(f'all_matches_masks[0]: {all_matches_masks[0]}')
+        print(f'len(all_matches_masks): {len(all_matches_masks)}')
+
+        print(f'all_transforms: {type(all_transforms)}')
+        print(f'all_transforms[0]: {all_transforms[0]}')
+        print(f'len(all_transforms): {len(all_transforms)}')
+
+        print(f'verified: {type(verified)}')
+        print(f'verified[0]: {verified[0]}')
+        print(f'len(verified): {len(verified)}')
+
+        print(f'descriptors_kp: {type(descriptors_kp)}')
+        print(f'descriptors_kp[0]: {descriptors_kp[0]}')
+        print(f'len(descriptors_kp): {len(descriptors_kp)}')
+
         print('Spatial verification got in {}s'.format(time.time() - start))
         if debug:
             n = 1
@@ -520,9 +563,15 @@ class CBIR:
         if qe_enable and new_query is None and np.count_nonzero(verified) < qe_limit:
             start = time.time()
             top_res = []
-            for r in sv_candidates[:qe_avg]:
-                bow_row = np.array(bow[r[0][0]].todense()).flatten()
-                top_res.append(bow_row)
+            for sv_candidate in sv_candidates[:qe_avg]:
+                # INDEX CANDIDATE NEEDED HERE
+                # bow_row = np.array(bow[r[0][0]].todense()).flatten()
+
+                sv_candidate_bow_raw = database_service.get_bow(self.db, sv_candidate[0][1])
+                sv_candidate_bow_raw = sv_candidate_bow_raw['bow']
+                sv_candidate_bow = self.deserialize_bow(sv_candidate_bow_raw)
+                top_res.append(sv_candidate_bow)
+
             one_more_query = (sum(top_res) + img_bovw) / (len(top_res) + 1)
 
             new_sv_candidates = self.search(img_path, n_candidates,
@@ -533,10 +582,12 @@ class CBIR:
 
             old = set(sv_candidates[i][0][0] for i in range(len(sv_candidates)))
             new = set(new_sv_candidates[i][0][0] for i in range(len(new_sv_candidates)))
-            dublicates = set(old) & set(new)
+            duplicates = set(old) & set(new)
 
             new_sv_candidates = [el for el in new_sv_candidates
-                                 if el[0][0] not in dublicates]
+                                 if el[0][0] not in duplicates]
+
+            # CANDIDATES' RANKS VALUES ARE NEEDED HERE.
             sv_candidates = sorted(sv_candidates + new_sv_candidates,
                                    key=lambda x: x[1], reverse=True)
 
@@ -552,10 +603,20 @@ class CBIR:
     def ransac(self, img_descriptor, kp, candidates,
                min_inliners, max_verified):
 
-        index = self.load_index()
-        descriptors = [index[img[1]] for img in candidates]
+        # index = self.load_index()
+        # descriptors = [index[img[1]] for img in candidates]
+        # descriptors, descriptors_kp = list(zip(*descriptors))
 
-        descriptors, descriptors_kp = list(zip(*descriptors))
+        descriptors_raw_iterator = database_service.get_photos_descriptors_by_names_iterator(
+            self.db,
+            # TODO: `candidate[1]` because not it is this way for backward-compatibility.
+            # In the future I will choose ind or name as the only indentifier of a photo
+            [candidate[1]
+             for candidate
+             in candidates]
+        )
+        descriptors_kp_pair_iterator = (self.deserialize_descriptor(descriptor_raw['descriptor'])
+                                        for descriptor_raw in descriptors_raw_iterator)
 
         # Brute force matcher
         bf = cv2.BFMatcher(cv2.NORM_L2)
@@ -568,11 +629,18 @@ class CBIR:
         verified = []
         n_verified = 0
 
-        for i, des in enumerate(descriptors):
-            matches = bf.match(img_descriptor, des)
+        # TODO: Now it is for backward-compatibility. Remove in the future
+        descriptors_kp = []
+
+        for i, descriptor_kp_pair in enumerate(descriptors_kp_pair_iterator):
+            descriptor = descriptor_kp_pair[0]
+            descriptor_kp = descriptor_kp_pair[1]
+            descriptors_kp += [kp]
+
+            matches = bf.match(img_descriptor, descriptor)
             if len(matches) > MIN_MATCH_COUNT:
                 src_pts = np.float32([kp[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
-                dst_pts = np.float32([descriptors_kp[i][m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+                dst_pts = np.float32([descriptor_kp[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
                 M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
                 matchesMask = mask.ravel().tolist()
@@ -738,52 +806,126 @@ class CBIR:
         return bow
 
     def load_freqs(self):
-        with open(CBIR.get_freqs_path(self.database, self.name), 'rb') as f:
-            freqs = pickle.load(f)
+        with open(CBIR.get_data_dependent_params_path(self.database, self.name), 'rb') as f:
+            freqs = pickle.load(f)['freqs']
         return freqs
 
+    @classmethod
+    def copy_descriptors_from_to(cls, database, from_name, to_name):
+        if not cls.descriptors_compatible(database, from_name, to_name):
+            message = f"Database {database}'s descriptors {from_name} and {to_name} are not compatible"
+            raise ValueError(message)
 
-def compute_idf(bow):
-    idf = np.zeros(bow.shape[1] - 1)
-    for word in range(bow.shape[1] - 1):
-        s = np.sum(bow[:, word] > 0)
-        if s != 0:
-            idf[word] = np.log(bow.shape[0] / float(s))
+        raise NotImplementedError
+
+    @classmethod
+    def descriptors_compatible(cls, database, first_name, second_name):
+        from_des_type = CBIR(database, first_name).des_type
+        to_des_type = CBIR(database, second_name).des_type
+        return from_des_type != to_des_type
+
+    @classmethod
+    def get_databases(cls):
+        return [
+            filename
+            for filename in os.listdir(cbir.DATABASES)
+            if os.path.isdir(Path(cbir.DATABASES) / filename)]
+
+    @classmethod
+    def get_cbir_indexes_of_database(cls, database):
+        return [
+            filename
+            for filename in os.listdir(Path(cbir.DATABASES) / database)
+            if os.path.isdir(Path(cbir.DATABASES) / database / filename)]
+
+    def load_fd(self):
+        max_keypoints = self.max_keypoints
+
+        if self.des_type == 'sift':
+            fd = SIFT(max_keypoints=max_keypoints)
+        elif self.des_type == 'surf':
+            fd = SURF(max_keypoints=max_keypoints)
+        elif self.des_type == 'l2net':
+            fd = L2net_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
+        elif self.des_type == 'HardNetBrown':
+            fd = HardNetBrown_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
+        elif self.des_type == 'HardNetAll':
+            fd = HardNetAll_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
+        elif self.des_type == 'HardNetHPatches':
+            fd = HardNetHPatches_des(max_keypoints=max_keypoints, use_cuda=CONFIG['use_cuda'])
+        else:
+            raise ValueError(f'Bad des_type: {self.des_type}')
+
+        return fd
+
+    def set_fd(self, fd):
+        self.fd = fd
+
+    def unset_fd(self):
+        self.fd = None
+
+    def load_ca(self):
+        with open(CBIR.get_clusterer_path(self.database, self.name), 'rb') as f:
+            ca = pickle.load(f)
+        return ca
+
+    def set_ca(self, ca):
+        self.ca = ca
+
+    def unset_ca(self):
+        self.ca = None
+
+    def serialize_descriptor(self, descriptor):
+        return pickle.dumps((descriptor[0],
+                             [p.pt[0] for p in descriptor[1]],
+                             [p.pt[1] for p in descriptor[1]],
+                             [p.size for p in descriptor[1]]),
+                            protocol=pickle.HIGHEST_PROTOCOL)
+
+    def deserialize_descriptor(self, descriptor):
+        descriptor = pickle.loads(descriptor)
+        return (descriptor[0], [cv2.KeyPoint(*el) for el in zip(descriptor[1], descriptor[2], descriptor[3])])
+
+    def serialize_bow(self, bow):
+        bow_sparse = sparse.coo_matrix(bow)
+        return pickle.dumps(bow_sparse)
+
+    def deserialize_bow(self, bow):
+        bow_sparse = pickle.loads(bow)
+        bow = bow_sparse.toarray().squeeze()
+        return bow
+
+    def serialize_word_photos(self, word_photos):
+        word_photos = pickle.dumps(word_photos)
+        return word_photos
+
+    def deserialize_word_photos(self, word_photos):
+        return pickle.loads(word_photos)
+
+
+def compute_idf_lazy(freqs, total_count_documents):
+    not_zero = np.where(freqs != 0)[0]
+    idf = np.zeros(freqs.shape[0])
+    idf[not_zero] = np.log(total_count_documents / freqs[not_zero])
     return idf
 
 
 def main(storage_path, training_path, label):
+    # TODO: Write or delete
+
     test_path = storage_path
-    storage = Storage(storage_path,
-                      test_path,
-                      training_path,
-                      'l2net',
-                      label=label,
-                      max_keypoints=2000,
-                      L=2,
-                      K=10,
-                      extensions=['jpg'],
-                      debug=True)
+    cbir_index = CBIR.get_instance()
+
     while True:
         print("Enter command")
-        cmd = input().split()
-        if cmd[0] == 's' and len(cmd) == 4:
-            similar = storage.get_similar(cmd[1], topk=int(cmd[2]),
-                                          n_candidates=int(cmd[3]), debug=True,
-                                          qe_enable=False)
-            print(similar)
-            draw_result(cmd[1],
-                        [v[1] for v in list(zip(*similar))[0]])
-        elif cmd[0] == 'q':
-            break
-        else:
-            print("Unknown command")
 
-    print("Bye!")
+        break
+
+    print("Finished")
 
 
 if __name__ == "__main__":
     main(
         '/Users/alexgavr/main/Developer/Data/Buildings/Revisited/datasets/roxford5k_sample/jpg',
         '/Users/alexgavr/main/Developer/Data/Buildings/Revisited/datasets/roxford5k_sample/jpg',
-        'First Label')
+        '')

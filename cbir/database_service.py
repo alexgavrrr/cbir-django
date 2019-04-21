@@ -15,6 +15,12 @@ def get_db(path):
     return db
 
 
+def inited_properly(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([Photo, Word, WordPhoto]):
+            return Photo.table_exists() and Word.table_exists() and WordPhoto.table_exists()
+
+
 def create_empty(db):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
