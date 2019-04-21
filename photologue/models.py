@@ -350,6 +350,52 @@ class CBIRIndex(models.Model):
         # TODO: Delete it or begin using it, for example, for async call.
         return False
 
+    def add_not_yet_indexed_photos(self):
+        """
+        Calls cbir_index_core's function to compute descriptors for photos from a database for which descriptors
+        have not been computed yet. After calls cbir_index_core's function to add_photos_to_index.
+        Before calling cbir_index_core's functions cbir_index(=self) should find out which photos it has not indexed yet.
+        """
+        # Define which photos have not been indexed yet by this index.
+        # TODO: How? CBIRIndex should store information about which photos from database it has indexed.
+        # new ones = Database photos - indexed
+        # ManyToManyRelation?
+
+        # cbir_instance.compute_descriptors(list_paths, to_index=True, for_training_clusterer=False)
+        # cbir_instance.add_photos_to_index()
+
+        raise NotImplementedError
+
+    def build_index_based_on_other(self, cbir_index_to_copy):
+        """
+
+        :param database:
+        :param cbir_index_to_copy:
+        :return:
+        """
+        CBIRCore.create_empty_if_needed(self.database, self.name)
+        cbir_core_index = CBIRCore.get_instance(self.database, self.name)
+
+        for_training = True
+        to_index = cbir_index_to_copy.database == self.database
+        cbir_core_index.copy_descriptors_from_to(
+            from_database=cbir_index_to_copy.database,
+            from_name=cbir_index_to_copy.name,
+            to_database=self.database,
+            to_name=self.name,
+            to_index=to_index,
+            for_training=for_training)
+
+        list_paths_to_photos_from_database_whose_descriptors_not_computed_yet = None  # TODO
+        cbir_core_index.compute_descriptors(list_paths_to_photos_from_database_whose_descriptors_not_computed_yet,
+                                            to_index=True,
+                                            for_training_clusterer=True)
+        cbir_core_index.train_clusterer()
+        cbir_core_index.add_images_to_index()
+        self.built = True
+
+        raise NotImplementedError('list_paths_to_photos_from_database_whose_descriptors_not_computed_yet must find')
+
 
 class Event(models.Model):
     date_added = models.DateTimeField(_('date published'),
