@@ -4,7 +4,7 @@ from pathlib import Path
 import cbir
 from cbir import DATABASES
 from cbir.utils import basic
-from cbir import photo_storage_inverted_file
+from cbir import cbir_core
 from cbir.legacy_utils import draw_result
 
 import cbir_evaluation.start_evaluation
@@ -58,16 +58,16 @@ def build_cbir_index(database,
         raise ValueError(message)
 
     os.mkdir(Path(DATABASES) / database / cbir_index_name)
-    storage = photo_storage_inverted_file.Storage(Path(DATABASES) / database / cbir_index_name,
-                                                  testing_path=path_to_images_to_index,
-                                                  training_path=path_to_images_to_train_clusterer,
-                                                  des_type='l2net',
-                                                  label='',
-                                                  max_keypoints=2000,
-                                                  L=2,
-                                                  K=10,
-                                                  extensions=['jpg'],
-                                                  debug=True)
+    storage = cbir_core.Storage(Path(DATABASES) / database / cbir_index_name,
+                                testing_path=path_to_images_to_index,
+                                training_path=path_to_images_to_train_clusterer,
+                                des_type='l2net',
+                                label='',
+                                max_keypoints=2000,
+                                L=2,
+                                K=10,
+                                extensions=['jpg'],
+                                debug=True)
 
 
 def search(database,
@@ -92,16 +92,16 @@ def search(database,
 
     # TODO: Make more robust loading of a storage object.
     # Now it seems like it can begin to build new Storage.
-    storage = photo_storage_inverted_file.Storage(Path(DATABASES) / database / cbir_index_name,
-                                                  testing_path=None,
-                                                  training_path=None,
-                                                  des_type='l2net',
-                                                  label='',
-                                                  max_keypoints=2000,
-                                                  L=2,
-                                                  K=10,
-                                                  extensions=['jpg'],
-                                                  debug=True)
+    storage = cbir_core.Storage(Path(DATABASES) / database / cbir_index_name,
+                                testing_path=None,
+                                training_path=None,
+                                des_type='l2net',
+                                label='',
+                                max_keypoints=2000,
+                                L=2,
+                                K=10,
+                                extensions=['jpg'],
+                                debug=True)
 
     if not query:
         raise ValueError('No query provided')

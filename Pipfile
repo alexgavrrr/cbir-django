@@ -27,6 +27,7 @@ torch = "==0.4.1"
 torchvision = "==0.2.1"
 tqdm = "==4.29.1"
 Cycler = "==0.10.0"
+peewee = "==3.9.4"
 
 
 [requires]

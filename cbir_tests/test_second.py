@@ -10,6 +10,8 @@ CBIR_DATABASE_NAME = 'first'
 CBIR_INDEX_NAME = 'index_first'
 WHERE_PHOTOS = str(Path(BASE_DIR) / 'public' / 'media'
                    / 'content' / CBIR_DATABASE_NAME / 'database_all')
+WHERE_PHOTOS_RELATIVE_TO_BASE_DIR = str(Path(WHERE_PHOTOS).relative_to(BASE_DIR))
+
 from cbir.legacy_utils import find_image_files
 
 
@@ -29,22 +31,15 @@ def test_CBIR():
                                 des_type=des_type, max_keypoints=max_keypoints,
                                 K=K, L=L)
     cbir_index = CBIR.get_instance(database, name)
-
-    cbir_index.set_fd(cbir_index.load_fd())
     cbir_index.compute_descriptors(list(set(list_paths_to_images_to_index)
-                                        | set(list_paths_to_images_to_train_clusterer)))
-
-    cbir_index.train_clusterer(list_paths_to_images_to_train_clusterer)
-    cbir_index.set_ca(cbir_index.load_ca())
-
-    cbir_index.add_images_to_index(list_paths_to_images_to_index)
+                                        | set(list_paths_to_images_to_train_clusterer)),
+                                   to_index=True,
+                                   for_training_clusterer=True)
+    cbir_index.train_clusterer()
+    cbir_index.add_images_to_index()
 
     query = str(Path(WHERE_PHOTOS) / 'all_souls_000000.jpg')
     result_images = cbir_index.search(query)
-
-    cbir_index.unset_fd()
-    cbir_index.unset_ca()
-
     print(result_images)
 
 

@@ -20,7 +20,7 @@ from django.conf import settings
 import cbir
 import cbir.commands
 from cbir.legacy_utils import find_image_files
-from cbir.photo_storage_inverted_file import CBIR
+from cbir.cbir_core import CBIR
 
 logger = logging.getLogger('photologue.models')
 
@@ -338,11 +338,9 @@ class CbirIndex(models.Model):
                                     max_keypoints=CbirIndex.MAX_KEYPOINTS,
                                     K=CbirIndex.K, L=CbirIndex.L)
         cbir_index = CBIR.get_instance(database_name, cbir_index_name)
-        cbir_index.set_fd(cbir_index.load_fd())
         cbir_index.compute_descriptors(list(set(list_paths_to_images_to_index)
                                             | set(list_paths_to_images_to_train_clusterer)))
         cbir_index.train_clusterer(list_paths_to_images_to_train_clusterer)
-        cbir_index.set_ca(cbir_index.load_ca())
         cbir_index.add_images_to_index(list_paths_to_images_to_index)
 
         self.built = True
@@ -425,12 +423,8 @@ class Event(models.Model):
 
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
         cbir_index = CBIR.get_instance(cbir_database_name, cbir_index_name)
-        cbir_index.set_fd(cbir_index.load_fd())
-        cbir_index.set_ca(cbir_index.load_ca())
         result_photos_names = cbir_index.search(query, qe_enable=False)
         result_photos_names = [v[1] for v in list(zip(*result_photos_names))[0]]
-        cbir_index.unset_fd()
-        cbir_index.unset_ca()
 
         return result_photos_names
 
