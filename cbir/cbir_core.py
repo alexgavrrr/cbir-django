@@ -140,7 +140,7 @@ class CBIRCore:
         return f'CBIRCore {self.database} {self.name}'
 
     def empty(self):
-        # TODO: Rewrite.
+        # TODO: Rewrite or delete.
         inverted_index = self.load_inverted_index()
         return len(inverted_index) == 0
 
@@ -332,7 +332,8 @@ class CBIRCore:
             }
             database_service.update_bows(self.db, [photo_to_update])
 
-        # TODO: Build index on WordPhoto by word if not yet.
+        # TODO: Build index on `WordPhoto` table by `word` column if not yet. Now it this index
+        # is build in the beginning but it is not the most efficient approach.
 
         # Sort by word and get word photo relations
         word_now = None
@@ -609,7 +610,7 @@ class CBIRCore:
 
         descriptors_raw_iterator = database_service.get_photos_descriptors_by_names_iterator(
             self.db,
-            # TODO: `candidate[1]` because not it is this way for backward-compatibility.
+            # TODO: `candidate[1]` because now it is this way for backward-compatibility.
             # In the future I will choose ind or name as the only indentifier of a photo
             [candidate[1]
              for candidate
