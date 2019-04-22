@@ -5,44 +5,78 @@
 
 {% block content %}
 
-	<div class="row col-lg-12">
-        <h1 class="page-header">{{ event.title }}</h1>
-        <p class="muted"><small>{% trans "Published" %} {{ event.date_added }}</small></p>
+<div class="row col-lg-12">
+    <h1 class="page-header">{{ event.title }}</h1>
+    <p class="muted">
+        <small>{% trans "Published" %} {{ event.date_added }}</small>
+    </p>
 
-        {% if warning_message %}
-                    <h4> {{ warning_message }}</h4>
-        {% endif %}
+    {% if warning_message %}
+    <h4> {{ warning_message }}</h4>
+    {% endif %}
 
 
-        {% if event.description %}
-            <h4>Description</h4>
-            <p style="text-indent: 3%">{{ event.description|safe }}</p>
-        {% endif %}
+    {% if event.description %}
+    <h4>Description</h4>
+    <p style="text-indent: 3%">{{ event.description|safe }}</p>
+    {% endif %}
 
-        <h4>Query photos</h4>
-        <ul>
+    <h4>Query photos</h4>
+    <ul>
         {% if query_photos %}
-                {% for query in query_photos %}
-                    <li>{{ query }}</li> - TODO Display photo with reference to full photo
-                {% endfor %}
-        {% else %}
-            No query photos
-        {% endif %}
-        </ul>
+        {% for query in query_photos %}
+        <li>
+            <h5>{{ query }}</h5>
+            {{ query.description }}
+            <p>
+                <a href="{{ query.get_absolute_url }}">
+                    Event query link
+                </a>
+            </p>
 
-        <h4>Result photos</h4>
-        <ul>
+            <p>
+                <a href="{{ query.database_photo.get_absolute_url }}">
+                    Corresponding database photo link
+                </a>
+            </p>
+            <img src="{{ query.get_display_url }}" class="thumbnail" alt="{{ query.title }}">
+
+        </li>
+        {% endfor %}
+        {% else %}
+        No query photos
+        {% endif %}
+    </ul>
+
+    <h4>Result photos</h4>
+    <ul>
         {% if result_photos %}
-            {% for photo in result_photos %}
-                <li>{{ photo }} </li> - TODO Display photo with reference to full photo
-                <!--<img src="todo" class="todo" alt="{{ photo.slug }}">-->
-            {% endfor %}
-        {% else %}
-            No result photos
-        {% endif %}
-        </ul>
+        {% for photo in result_photos %}
+        <li>
+            <h5>{{ photo }}</h5>
+            {{ photo.description }}
+            <p>
+                <a href="{{ photo.get_absolute_url }}">
+                    Event photo link
+                </a>
+            </p>
 
-        <div><a href="{% url 'photologue:database_detail' event.database.slug %}" class="btn btn-default">{% trans "View all events in database" %}</a></div>
-	</div>
+            <p>
+                <a href="{{ photo.database_photo.get_absolute_url }}">
+                    Corresponding database photo link
+                </a>
+            </p>
+            <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
+
+        </li>
+        {% endfor %}
+        {% else %}
+        No result photos
+        {% endif %}
+    </ul>
+
+    <div><a href="{% url 'photologue:database_detail' event.database.slug %}" class="btn btn-default">{% trans "View all events in database"
+        %}</a></div>
+</div>
 
 {% endblock %}

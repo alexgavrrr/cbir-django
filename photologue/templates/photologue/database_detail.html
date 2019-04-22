@@ -5,56 +5,72 @@
 
 {% block content %}
 
-	<div class="row col-lg-12">
-        <h2 class="page-header">{{ database.title }}</h2>
-        <p class="muted"><small>{% trans "Published" %} {{ database.date_added }}</small></p>
-        {% if database.description %}
-            <h4>Description</h4>
-            <p style="text-indent: 3%">{{ database.description }}</p>
-        {% endif %}
+<div class="row col-lg-12">
+    <h2 class="page-header">{{ database.title }}</h2>
+    <p class="muted">
+        <small>{% trans "Published" %} {{ database.date_added }}</small>
+    </p>
+    {% if database.description %}
+    <h4>Description</h4>
+    <p style="text-indent: 3%">{{ database.description }}</p>
+    {% endif %}
 
-        <h4>
-            <a href="{% url 'photologue:database_edit' database.slug %}">
-                Edit database
+    <h4>
+        <a href="{% url 'photologue:database_edit' database.slug %}">
+            Edit database
+        </a>
+    </h4>
+
+    <h4>
+        <a href="{% url 'photologue:database_index_create'%}?database={{ database.slug }}">
+            Create new index for database
+        </a>
+    </h4>
+
+    <h4>
+        <a href="{% url 'photologue:database_index_info'%}?database={{ database.slug }}">
+            Indexes info
+        </a>
+    </h4>
+
+    <h4>
+        <a href="{% url 'photologue:event_create' %}?database={{database.slug}}">
+            Create new event
+        </a>
+    </h4>
+
+    {% if events %}
+    <h4>Events</h4>
+    <ul>
+        {% for event in events %}
+        <li>
+            <a href="{{ event.get_absolute_url }}">
+                {{ event.title }}
             </a>
-        </h4>
+        </li>
 
-        <h4>
-            <a href="{% url 'photologue:database_index_create'%}?database={{ database.slug }}">
-                Create new index for database
+        {% endfor %}
+    </ul>
+
+    {% else %}
+    <p>No events yet</p>
+    {% endif %}
+
+    <h4>Photos</h4>
+    <ul>
+        {% for photo in database.sample_photos %}
+        <li>
+            <a href="{{ photo.get_absolute_url }}">
+                {{ photo }}
+                <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
             </a>
-        </h4>
+        </li>
+        {% endfor %}
+        <li>...</li>
+    </ul>
 
-        <h4>
-            <a href="{% url 'photologue:database_index_info'%}?database={{ database.slug }}">
-                Indexes info
-            </a>
-        </h4>
 
-        <h4>
-            <a href="{% url 'photologue:event_create' %}?database={{database.slug}}">
-                Create new event
-            </a>
-        </h4>
-
-        {% if events %}
-            <h4>Events</h4>
-            <ul>
-                {% for event in events %}
-                    <li>
-                        <a href="{{ event.get_absolute_url }}">
-                            {{ event.title }}
-                        </a>
-                    </li>
-
-                {% endfor %}
-            </ul>
-
-        {% else %}
-            <p>No events yet</p>
-        {% endif %}
-
-        <div><a href="{% url 'photologue:database_list' %}" class="btn btn-default">{% trans "View all databases" %}</a></div>
-	</div>
+    <div><a href="{% url 'photologue:database_list' %}" class="btn btn-default">{% trans "View all databases" %}</a></div>
+</div>
 
 {% endblock %}

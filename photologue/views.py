@@ -276,3 +276,22 @@ def database_index_create_view(request):
 
     context['form'] = form
     return render(request, 'photologue/database_index_create.html', context)
+
+
+def database_photo_detail_view(request, slug):
+    LIMIT = 10
+    photo = get_object_or_404(models.DatabasePhoto, slug=slug)
+
+    photo.eventphoto_set.all()
+    events = [event_photo.event for event_photo in photo.eventphoto_set.all()]
+    queries = [None] * len(events)
+
+    context = {}
+    context['photo'] = photo
+    context['events_queries_pairs'] = list(zip(events, queries))
+
+    return render(request, 'photologue/database_photo_detail.html', context)
+
+
+def event_photo_detail_view(requst, event_slug, pk):
+    return HttpResponse('AAA event_photo' + event_slug + str(pk))
