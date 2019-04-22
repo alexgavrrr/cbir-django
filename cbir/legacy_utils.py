@@ -47,12 +47,12 @@ def str2bool(v):
         return False
 
 
-def find_image_files(root, extensions):
+def find_image_files(root, extensions, recursive=True):
     files = []
     for file_dir in os.listdir(root):
         full_path = os.path.join(root, file_dir)
-        if os.path.isdir(full_path):
-            files += find_image_files(full_path, extensions)
+        if os.path.isdir(full_path) and recursive:
+            files += find_image_files(full_path, extensions, recursive)
 
         # TODO: Consider whether this code can add dir to list of files.
         for ext in extensions:
