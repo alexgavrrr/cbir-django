@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from cbir import BASE_DIR
-from cbir.cbir_core import CBIR
+from cbir.cbir_core import CBIRCore
 
 logger = logging.getLogger()
 
@@ -27,10 +27,10 @@ def test_CBIR():
     list_paths_to_images_to_train_clusterer = find_image_files(WHERE_PHOTOS, ['jpg'])
     list_paths_to_images_to_index = list_paths_to_images_to_train_clusterer
 
-    CBIR.create_empty_if_needed(database, name,
-                                des_type=des_type, max_keypoints=max_keypoints,
-                                K=K, L=L)
-    cbir_index = CBIR.get_instance(database, name)
+    CBIRCore.create_empty_if_needed(database, name,
+                                    des_type=des_type, max_keypoints=max_keypoints,
+                                    K=K, L=L)
+    cbir_index = CBIRCore.get_instance(database, name)
     cbir_index.compute_descriptors(list(set(list_paths_to_images_to_index)
                                         | set(list_paths_to_images_to_train_clusterer)),
                                    to_index=True,

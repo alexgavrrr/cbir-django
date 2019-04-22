@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from tqdm import tqdm
+import logging
 
 
 class VocabularyTree:
@@ -46,6 +47,8 @@ class VocabularyTree:
     #     return self
 
     def fit(self, loader):
+        # TODO: Write it correctly. Now it is totally wrong.
+        logging.getLogger('cbir.vocabulary_tree').warning('Fit is totally incorrect now. Need to be fixed')
         self.ca = []
         self.ca.append(MiniBatchKMeans(n_clusters=self.K,
                                        batch_size=1000).fit(loader(list(range(1000)))))

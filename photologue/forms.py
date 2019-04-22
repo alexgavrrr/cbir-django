@@ -4,7 +4,7 @@ from django.forms import ModelForm
 from .models import (Database,
                      Event,
                      DatabasePhoto,
-                     CbirIndex, )
+                     CBIRIndex, )
 
 FILE_MAX_LENGTH = 100
 
@@ -39,5 +39,5 @@ class CbirIndexForm(ModelForm):
                                      initial=False,)
 
     class Meta:
-        model = CbirIndex
+        model = CBIRIndex
         fields = ['date_added', 'title', 'slug', 'name', 'description', 'database']
