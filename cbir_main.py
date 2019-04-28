@@ -70,7 +70,7 @@ def main(argv):
         raise SystemExit
 
     config_path = args.config
-    cbir.configuration.configure(config_path, args)
+    # cbir.configuration.configure(config_path, args)
     command(args)
 
 
