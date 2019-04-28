@@ -1,11 +1,13 @@
-# Django image storage app powered by CBIRCore library
+# Django image storage app powered by CBIR library
 
 ## Setup instructions
+```
+pipenv shell
 pipenv install
 python manage.py makemigrations
 python manage.py migrate
+```
 
-python cbir_main.py prepare_cbir_directory_structure
 
 ## Development
 
@@ -13,6 +15,15 @@ Reload from scratch command
 ```
 yes | rm db.sqlite3;
     rm -rf photologue/migrations/*; touch photologue/migrations/__init__.py && \
+    python manage.py makemigrations && \
+    python manage.py migrate && \
+    ./createsuper.sh && \
+    ./clean_content.sh && \
+    ./clean_cbir_state.sh
+```
+
+```
+yes | rm db.sqlite3;
     python manage.py makemigrations && \
     python manage.py migrate && \
     ./createsuper.sh && \

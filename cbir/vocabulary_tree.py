@@ -20,39 +20,12 @@ class VocabularyTree:
 
         self.n_images = None
 
-    # def fit(self, data):
-    #     self.ca = []
-    #     self.ca.append(MiniBatchKMeans(n_clusters=self.K,
-    #                                    batch_size=1000).fit(data))
-    #     labels = self.ca[0].predict(data).astype(np.int32)
-    #
-    #     for l in range(1, self.L):
-    #         print("At level {}".format(l))
-    #         ca_l = []
-    #         n_c = self.K ** l
-    #         for i in range(n_c):
-    #             idx = np.where(labels == i)[0]
-    #
-    #             if len(idx) > self.K * 3:
-    #                 ca_l.append(MiniBatchKMeans(n_clusters=self.K,
-    #                                             batch_size=1000,
-    #                                             init_size=self.K * 3).fit(data[idx, :]))
-    #                 labels[idx] = labels[idx] * self.K + ca_l[i].predict(data[idx, :]).astype(np.int32)
-    #             else:
-    #                 ca_l.append(None)
-    #                 labels[idx] = labels[idx] * self.K
-    #
-    #         self.ca.append(ca_l)
-    #
-    #     return self
-
-    def fit(self, loader):
-        # TODO: Write it correctly. Now it is totally wrong.
-        logging.getLogger('cbir.vocabulary_tree').warning('Fit is totally incorrect now. Need to be fixed')
+    def fit(self, data):
+        logging.getLogger('cbir.vocabulary_tree').warning('Memory ineffiient logging')
         self.ca = []
         self.ca.append(MiniBatchKMeans(n_clusters=self.K,
-                                       batch_size=1000).fit(loader(list(range(1000)))))
-        labels = self.ca[0].predict(loader(list(range(1000)))).astype(np.int32)
+                                       batch_size=1000).fit(data))
+        labels = self.ca[0].predict(data).astype(np.int32)
 
         for l in range(1, self.L):
             print("At level {}".format(l))
@@ -64,8 +37,8 @@ class VocabularyTree:
                 if len(idx) > self.K * 3:
                     ca_l.append(MiniBatchKMeans(n_clusters=self.K,
                                                 batch_size=1000,
-                                                init_size=self.K * 3).fit(loader(list(range(1000)))[idx, :]))
-                    labels[idx] = labels[idx] * self.K + ca_l[i].predict(loader(list(range(1000)))[idx, :]).astype(np.int32)
+                                                init_size=self.K * 3).fit(data[idx, :]))
+                    labels[idx] = labels[idx] * self.K + ca_l[i].predict(data[idx, :]).astype(np.int32)
                 else:
                     ca_l.append(None)
                     labels[idx] = labels[idx] * self.K
@@ -73,6 +46,34 @@ class VocabularyTree:
             self.ca.append(ca_l)
 
         return self
+
+    # def fit(self, loader):
+    #     # TODO: Write it correctly. Now it is totally wrong.
+    #     logging.getLogger('cbir.vocabulary_tree').warning('Fit is totally incorrect now. Need to be fixed')
+    #     self.ca = []
+    #     self.ca.append(MiniBatchKMeans(n_clusters=self.K,
+    #                                    batch_size=1000).fit(loader(list(range(1000)))))
+    #     labels = self.ca[0].predict(loader(list(range(1000)))).astype(np.int32)
+    #
+    #     for l in range(1, self.L):
+    #         print("At level {}".format(l))
+    #         ca_l = []
+    #         n_c = self.K ** l
+    #         for i in range(n_c):
+    #             idx = np.where(labels == i)[0]
+    #
+    #             if len(idx) > self.K * 3:
+    #                 ca_l.append(MiniBatchKMeans(n_clusters=self.K,
+    #                                             batch_size=1000,
+    #                                             init_size=self.K * 3).fit(loader(list(range(1000)))[idx, :]))
+    #                 labels[idx] = labels[idx] * self.K + ca_l[i].predict(loader(list(range(1000)))[idx, :]).astype(np.int32)
+    #             else:
+    #                 ca_l.append(None)
+    #                 labels[idx] = labels[idx] * self.K
+    #
+    #         self.ca.append(ca_l)
+    #
+    #     return self
 
     def predict(self, data):
         if data.ndim == 1:
