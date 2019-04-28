@@ -54,12 +54,8 @@
         {% for photo in result_photos %}
         <li>
             <h5>{{ photo }}</h5>
+            <p>Similarity: {{ photo.similarity }}</p>
             {{ photo.description }}
-            <p>
-                <a href="{{ photo.get_absolute_url }}">
-                    Event photo link
-                </a>
-            </p>
 
             <p>
                 <a href="{{ photo.database_photo.get_absolute_url }}">
@@ -75,8 +71,7 @@
         {% endif %}
     </ul>
 
-    <div><a href="{% url 'photologue:database_detail' event.database.slug %}" class="btn btn-default">{% trans "View all events in database"
-        %}</a></div>
+    <div><a href="{% url 'photologue:database_detail' event.database.slug %}" class="btn btn-default">{% trans "View all events in database" %}</a></div>
 </div>
 
 {% endblock %}

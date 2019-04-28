@@ -460,20 +460,21 @@ class Event(models.Model):
         result_photos = self.get_result_photos()
         event_inited = len(result_photos) > 0
         if not event_inited:
-            result_photos_names = self._do_search()
-            self.set_result_photos_from_names(result_photos_names)
+            result_photos_names, result_photos_similarities = self._do_search()
+            self.set_result_photos_from_names(result_photos_names, result_photos_similarities)
             result_photos = self.get_result_photos()
         return result_photos
 
-    def set_result_photos_from_names(self, result_photos_names):
+    def set_result_photos_from_names(self, result_photos_names, result_photos_similarities):
         database_photos_names = [Path(photo_name).name for photo_name in result_photos_names]
-        for database_photo_name in database_photos_names:
+        for database_photo_name, result_photo_similarity in zip(database_photos_names, result_photos_similarities):
             print(f'database_photo_name: {database_photo_name}')
             database_photo = self.database.get_photo_by_name(name=database_photo_name)
             event_photo = EventPhoto(slug='',
                                      event=self,
                                      is_query=False,
-                                     database_photo=database_photo)
+                                     database_photo=database_photo,
+                                     similarity=result_photo_similarity)
             event_photo.save()
 
     def get_result_photos(self):
@@ -493,10 +494,12 @@ class Event(models.Model):
 
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
         cbir_index = CBIRCore.get_instance(cbir_database_name, cbir_index_name)
-        result_photos_names = cbir_index.search(query, qe_enable=True)
-        result_photos_names = [v[1] for v in list(zip(*result_photos_names))[0]]
-
-        return result_photos_names
+        result_photos_raw = cbir_index.search(query, qe_enable=True)
+        print(f'result_photos: {result_photos_raw}')
+        print(f'result_photos[0]: {result_photos_raw[0]}')
+        result_photos_names = [t[0][1] for t in result_photos_raw]
+        result_photos_similarities = [t[1] for t in result_photos_raw]
+        return result_photos_names, result_photos_similarities
 
     def has_cbir_index(self):
         return bool(self.cbir_index)
@@ -1159,6 +1162,9 @@ class EventPhoto(ImageModel):
     database_photo = models.ForeignKey(to=DatabasePhoto,
                                        on_delete=models.SET_NULL,
                                        null=True)
+    similarity = models.FloatField(null=True,
+                                   blank=True)
+
     def get_absolute_url(self):
         return reverse('photologue:event_photo_detail', args=[self.event.slug, self.pk])
 
