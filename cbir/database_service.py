@@ -123,6 +123,14 @@ def count_indexed(db):
                     .where(Photo.to_index == True)
                     .count())
 
+def count_for_training(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([Photo, Word]):
+            return (Photo
+                    .select()
+                    .where(Photo.for_training == True)
+                    .count())
+
 
 def add_word_photo_relations(db, relations):
     with MODELS_LOCK:
