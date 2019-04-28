@@ -239,7 +239,10 @@ class CBIRCore:
         """
         logger.info(f'Training clusterer on previously computed descriptors for index {self.name} of database {self.database}')
         SIZE_DESCRIPTOR = 128
-        COUNT_DESCRIPTORS_EXPECTED = 5000
+
+        count_photos_for_training_expected = database_service.count_for_training(self.db)
+        COUNT_DESCRIPTORS_EXPECTED = self.max_keypoints * count_photos_for_training_expected
+
         PLACEHOLDER_SIZE = 1000
 
         path_to_mmap_descriptors = Path(CBIRCore.get_storage_path(self.database, self.name)) / 'mmap_descriptors'
