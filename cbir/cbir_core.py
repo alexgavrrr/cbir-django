@@ -289,7 +289,7 @@ class CBIRCore:
             placeholder[:len(indices)] = mmap_descriptos[indices]
             return placeholder
 
-        ca = VocabularyTree(L=self.L, K=self.K).fit(loader)
+        ca = VocabularyTree(L=self.L, K=self.K).fit(mmap_descriptos)
         CBIRCore._save_clusterer(self.database, self.name, ca)
 
     def add_images_to_index(self):
