@@ -53,61 +53,61 @@ def database_create_view(request):
 
             # Handling files from zip
             zip_file = form.cleaned_data['zip_file']
-            zip = zipfile.ZipFile(zip_file)
-            count_files_from_zip = 1
-            for filename in sorted(zip.namelist()):
-                # logger.debug('Reading file "{0}".'.format(filename))
+            if zip_file:
+                zip = zipfile.ZipFile(zip_file)
+                count_files_from_zip = 1
+                for filename in sorted(zip.namelist()):
+                    # logger.debug('Reading file "{0}".'.format(filename))
 
-                if filename.startswith('__') or filename.startswith('.'):
-                    logger.debug('Ignoring file "{0}".'.format(filename))
-                    continue
-                if os.path.dirname(filename):
-                    logger.warning('Ignoring file "{0}" as it is in a subfolder; all images should be in the top '
-                                   'folder of the zip.'.format(filename))
-                    continue
-
-                data = zip.read(filename)
-
-                if not len(data):
-                    logger.debug('File "{0}" is empty.'.format(filename))
-                    continue
-
-                # Basic check that we have a valid image.
-                try:
-                    file = BytesIO(data)
-                    opened = Image.open(file)
-                    opened.verify()
-                except Exception:
-                    # Pillow doesn't recognize it as an image.
-                    # If a "bad" file is found we just skip it.
-                    logger.error('Could not process file "{0}" in the .zip archive.'.format(
-                        filename))
-                    if request:
-                        messages.warning(request,
-                                         'Could not process file "{0}" in the .zip archive.'
-                                            .format(filename),
-                                         fail_silently=True)
-                    continue
-
-                while True:
-                    slug = f'{database.slug}-fromzip-{count_files_from_zip}'
-                    if models.DatabasePhoto.objects.filter(slug=slug).exists():
-                        count_files_from_zip += 1
+                    if filename.startswith('__') or filename.startswith('.'):
+                        logger.debug('Ignoring file "{0}".'.format(filename))
                         continue
-                    break
-                database_photo = models.DatabasePhoto(slug=slug,
-                                                      database=database)
-                contentfile = ContentFile(data)
-                database_photo.image.save(filename, contentfile)
-                database_photo.save()
+                    if os.path.dirname(filename):
+                        logger.warning('Ignoring file "{0}" as it is in a subfolder; all images should be in the top '
+                                       'folder of the zip.'.format(filename))
+                        continue
 
-            zip.close()
+                    data = zip.read(filename)
 
-            if request:
-                messages.success(request,
-                                 'The photos from zip have been added.',
-                                 fail_silently=True)
+                    if not len(data):
+                        logger.debug('File "{0}" is empty.'.format(filename))
+                        continue
 
+                    # Basic check that we have a valid image.
+                    try:
+                        file = BytesIO(data)
+                        opened = Image.open(file)
+                        opened.verify()
+                    except Exception:
+                        # Pillow doesn't recognize it as an image.
+                        # If a "bad" file is found we just skip it.
+                        logger.error('Could not process file "{0}" in the .zip archive.'.format(
+                            filename))
+                        if request:
+                            messages.warning(request,
+                                             'Could not process file "{0}" in the .zip archive.'
+                                                .format(filename),
+                                             fail_silently=True)
+                        continue
+
+                    while True:
+                        slug = f'{database.slug}-fromzip-{count_files_from_zip}'
+                        if models.DatabasePhoto.objects.filter(slug=slug).exists():
+                            count_files_from_zip += 1
+                            continue
+                        break
+                    database_photo = models.DatabasePhoto(slug=slug,
+                                                          database=database)
+                    contentfile = ContentFile(data)
+                    database_photo.image.save(filename, contentfile)
+                    database_photo.save()
+
+                zip.close()
+
+                if request:
+                    messages.success(request,
+                                     'The photos from zip have been added.',
+                                     fail_silently=True)
 
             # Handling files
             count_files = 1

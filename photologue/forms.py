@@ -18,7 +18,7 @@ class DatabaseForm(ModelForm):
     photos = forms.ImageField(required=False,
                               label='photos',
                               widget=forms.ClearableFileInput(attrs={'multiple': True}))
-    zip_file = forms.FileField()
+    zip_file = forms.FileField(required=False)
 
     class Meta:
         model = Database
@@ -30,6 +30,8 @@ class DatabaseForm(ModelForm):
         on keeping the code easier to read!
         """
         zip_file = self.cleaned_data['zip_file']
+        if not zip_file:
+            return zip_file
         try:
             zip = zipfile.ZipFile(zip_file)
         except BadZipFile as e:
