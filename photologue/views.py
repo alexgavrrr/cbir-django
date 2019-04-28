@@ -12,6 +12,8 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.contrib import messages
 from django.views.generic import ListView, DetailView
+from tqdm import tqdm
+
 
 from . import forms
 from . import models
@@ -51,12 +53,13 @@ def database_create_view(request):
             database = form.save(commit=False)
             database.save()
 
-            # Handling files from zip
             zip_file = form.cleaned_data['zip_file']
             if zip_file:
+                # Handling files from zip
+                logger.info('Handling files from zip archive')
                 zip = zipfile.ZipFile(zip_file)
                 count_files_from_zip = 1
-                for filename in sorted(zip.namelist()):
+                for filename in tqdm(sorted(zip.namelist())):
                     # logger.debug('Reading file "{0}".'.format(filename))
 
                     if filename.startswith('__') or filename.startswith('.'):
@@ -110,8 +113,9 @@ def database_create_view(request):
                                      fail_silently=True)
 
             # Handling files
+            logger.info('Handling files')
             count_files = 1
-            for file_image in request.FILES.getlist('photos'):
+            for file_image in tqdm(request.FILES.getlist('photos')):
                 while True:
                     slug = f'{database.slug}-{count_files}'
                     if models.DatabasePhoto.objects.filter(slug=slug).exists():

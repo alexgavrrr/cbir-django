@@ -11,13 +11,21 @@
         <small>{% trans "Published" %} {{ photo.date_added }}</small>
     </p>
 
+    <h2>{{ photo }}</h2>
+    {{ photo.description }}
+    <p>
+        <a href="{{ photo.image.url }}">
+            <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
+        </a>
+    </p>
+
 
     {% if photo.description %}
     <h4>Description</h4>
     <p style="text-indent: 3%">{{ photo.description|safe }}</p>
     {% endif %}
 
-
+    {% if events_queries_pairs %}
     <h4>Events links</h4>
 
     <ul>
@@ -30,6 +38,8 @@
         </li>
         {% endfor %}
     </ul>
+    {% endif %}
+
 
     <div><a href="{% url 'photologue:database_detail' photo.database.slug %}" class="btn btn-default">{% trans "Database "%}</a></div>
 </div>
