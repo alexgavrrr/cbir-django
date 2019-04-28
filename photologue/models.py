@@ -296,10 +296,12 @@ class Database(models.Model):
 
 
 class CBIRIndex(models.Model):
-    DES_TYPE = 'l2net'
-    L = 10
-    K = 2
-    MAX_KEYPOINTS = 200
+    # DES_TYPE = 'l2net'
+    DES_TYPE = 'HardNetHPatches'
+
+    L = 5
+    K = 10
+    MAX_KEYPOINTS = 2000
 
     date_added = models.DateTimeField(_('date published'),
                                       default=now)
