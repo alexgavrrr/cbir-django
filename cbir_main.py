@@ -69,9 +69,10 @@ def main(argv):
         parser.print_help()
         raise SystemExit
 
-    config_path = args.config
-    # cbir.configuration.configure(config_path, args)
-    command(args)
+    # config_path = args.config
+    # config = cbir.configuration.make_config(config_path)
+
+    command(**vars(args))
 
 
 if __name__ == '__main__':

@@ -934,7 +934,4 @@ def main(storage_path, training_path, label):
 
 
 if __name__ == "__main__":
-    main(
-        '/Users/alexgavr/main/Developer/Data/Buildings/Revisited/datasets/roxford5k_sample/jpg',
-        '/Users/alexgavr/main/Developer/Data/Buildings/Revisited/datasets/roxford5k_sample/jpg',
-        '')
+    pass

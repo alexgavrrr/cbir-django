@@ -298,8 +298,7 @@ class Database(models.Model):
 class CBIRIndex(models.Model):
     # DES_TYPE = 'l2net'
     DES_TYPE = 'HardNetHPatches'
-
-    L = 5
+    L = 4
     K = 10
     MAX_KEYPOINTS = 2000
 
@@ -336,6 +335,9 @@ class CBIRIndex(models.Model):
         verbose_name = _('CBIRCore index')
         verbose_name_plural = _('CBIRCore indexes')
 
+        unique_together = (('database', 'name'),)
+
+
     def __str__(self):
         return self.title
 
@@ -350,24 +352,51 @@ class CBIRIndex(models.Model):
         return not self.built and not self.being_built()
 
     def build(self):
-        database_name = self.database.slug
-        cbir_index_name = self.name
-
+        """
+        Creates and builds index completely. For training algo uses all and only images from database.
+        Not recommended.
+        """
         path_to_database_photos = self.database.get_path_to_all_photos()
         list_paths_to_images_to_train_clusterer = find_image_files(path_to_database_photos, ['jpg'], recursive=False)
         list_paths_to_images_to_index = list_paths_to_images_to_train_clusterer
 
+        database_name = self.database.slug
+        cbir_index_name = self.name
         CBIRCore.create_empty_if_needed(database_name, cbir_index_name,
                                         des_type=CBIRIndex.DES_TYPE,
                                         max_keypoints=CBIRIndex.MAX_KEYPOINTS,
                                         K=CBIRIndex.K, L=CBIRIndex.L)
-        cbir_core_index = CBIRCore.get_instance(database_name, cbir_index_name)
-        cbir_core_index.compute_descriptors(list(set(list_paths_to_images_to_index)
+        cbir_core = CBIRCore.get_instance(database_name, cbir_index_name)
+        cbir_core.compute_descriptors(list(set(list_paths_to_images_to_index)
                                                  | set(list_paths_to_images_to_train_clusterer)),
-                                            to_index=True,
-                                            for_training_clusterer=True)
-        cbir_core_index.train_clusterer()
-        cbir_core_index.add_images_to_index()
+                                        to_index=True,
+                                        for_training_clusterer=True)
+        cbir_core.train_clusterer()
+        cbir_core.add_images_to_index()
+        self.built = True
+
+    def build_using_dataset_for_training(self, dataset_directory, use_database_photos_for_training):
+        path_to_database_photos = self.database.get_path_to_all_photos()
+        list_paths_to_images_to_index = find_image_files(path_to_database_photos, ['jpg'], recursive=False)
+        list_paths_to_dataset_images = find_image_files(dataset_directory, ['jpg'], recursive=True)
+
+        database_name = self.database.slug
+        cbir_index_name = self.name
+        CBIRCore.create_empty_if_needed(database_name, cbir_index_name,
+                                        des_type=CBIRIndex.DES_TYPE,
+                                        max_keypoints=CBIRIndex.MAX_KEYPOINTS,
+                                        K=CBIRIndex.K, L=CBIRIndex.L)
+        cbir_core = CBIRCore.get_instance(database_name, cbir_index_name)
+
+        cbir_core.compute_descriptors(list_paths_to_images_to_index,
+                                      to_index=True,
+                                      for_training_clusterer=use_database_photos_for_training)
+
+        cbir_core.compute_descriptors(list_paths_to_dataset_images,
+                                      to_index=False,
+                                      for_training_clusterer=True)
+        cbir_core.train_clusterer()
+        cbir_core.add_images_to_index()
         self.built = True
 
     def being_built(self):
@@ -376,9 +405,9 @@ class CBIRIndex(models.Model):
 
     def add_not_yet_indexed_photos(self):
         """
-        Calls cbir_index_core's function to compute descriptors for photos from a database for which descriptors
-        have not been computed yet. After calls cbir_index_core's function to add_photos_to_index.
-        Before calling cbir_index_core's functions cbir_index(=self) should find out which photos it has not indexed yet.
+        Calls cbir_core's function to compute descriptors for photos from a database for which descriptors
+        have not been computed yet. After calls cbir_core's function to add_photos_to_index.
+        Before calling cbir_core's functions cbir_index(=self) should find out which photos it has not indexed yet.
         """
         # Define which photos have not been indexed yet by this index.
         # TODO: How? CBIRIndex should store information about which photos from database it has indexed.
@@ -398,11 +427,11 @@ class CBIRIndex(models.Model):
         :return:
         """
         CBIRCore.create_empty_if_needed(self.database, self.name)
-        cbir_core_index = CBIRCore.get_instance(self.database, self.name)
+        cbir_core = CBIRCore.get_instance(self.database, self.name)
 
         for_training = True
         to_index = cbir_index_to_copy.database == self.database
-        cbir_core_index.copy_descriptors_from_to(
+        CBIRCore.copy_descriptors_from_to(
             from_database=cbir_index_to_copy.database,
             from_name=cbir_index_to_copy.name,
             to_database=self.database,
@@ -411,11 +440,11 @@ class CBIRIndex(models.Model):
             for_training=for_training)
 
         list_paths_to_photos_from_database_whose_descriptors_not_computed_yet = None  # TODO
-        cbir_core_index.compute_descriptors(list_paths_to_photos_from_database_whose_descriptors_not_computed_yet,
+        cbir_core.compute_descriptors(list_paths_to_photos_from_database_whose_descriptors_not_computed_yet,
                                             to_index=True,
                                             for_training_clusterer=True)
-        cbir_core_index.train_clusterer()
-        cbir_core_index.add_images_to_index()
+        cbir_core.train_clusterer()
+        cbir_core.add_images_to_index()
         self.built = True
 
         raise NotImplementedError('list_paths_to_photos_from_database_whose_descriptors_not_computed_yet must find')
@@ -540,6 +569,15 @@ class ImageModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def copy_photo_and_assign_image_field(self, full_path_to_original_photo):
+        path_to_new_photo = get_storage_path_for_image(
+            self,
+            filename=Path(full_path_to_original_photo).name)
+
+        full_path_to_new_photo = os.path.join(settings.MEDIA_ROOT, path_to_new_photo)
+        shutil.copyfile(full_path_to_original_photo, full_path_to_new_photo)
+        self.image = path_to_new_photo
 
     def EXIF(self, file=None):
         try:
@@ -1129,10 +1167,16 @@ class DatabasePhoto(ImageModel):
 
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = (('database', 'name'), )
+
     def __str__(self):
         return f'{self.slug} from {self.database}'
 
     def save(self):
+        super().save()
+
+    def save_when_name_not_inited(self):
         # TODO: Fix this strange saving.
         super().save()
         self.name = Path(self.image.name).name
@@ -1174,10 +1218,6 @@ class EventPhoto(ImageModel):
         return f'{self.database_photo.name} from {self.event}'
 
     def save(self):
-        photo_path = get_storage_path_for_image(self,
-                                                filename=Path(self.database_photo.image.name).name)
-        self.image = photo_path
-        path_to_original_file = os.path.join(settings.MEDIA_ROOT, self.database_photo.image.name)
-        path_to_new_file = os.path.join(settings.MEDIA_ROOT, photo_path)
-        shutil.copyfile(path_to_original_file, path_to_new_file)
+        full_path_to_original_photo = os.path.join(settings.MEDIA_ROOT, self.database_photo.image.name)
+        self.copy_photo_and_assign_image_field(full_path_to_original_photo)
         super().save()
