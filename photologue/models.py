@@ -298,7 +298,7 @@ class Database(models.Model):
 class CBIRIndex(models.Model):
     # DES_TYPE = 'l2net'
     DES_TYPE = 'HardNetHPatches'
-    L = 5
+    L = 4
     K = 10
     MAX_KEYPOINTS = 2000
 
@@ -334,6 +334,9 @@ class CBIRIndex(models.Model):
         get_latest_by = 'date_added'
         verbose_name = _('CBIRCore index')
         verbose_name_plural = _('CBIRCore indexes')
+
+        unique_together = (('database', 'name'),)
+
 
     def __str__(self):
         return self.title
@@ -1163,6 +1166,9 @@ class DatabasePhoto(ImageModel):
                                         blank=True)
 
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = (('database', 'name'), )
 
     def __str__(self):
         return f'{self.slug} from {self.database}'
