@@ -2,6 +2,7 @@ import logging
 import os
 import zipfile
 from io import BytesIO
+from pathlib import Path
 
 from PIL import Image
 from django.core.files.base import ContentFile
@@ -103,6 +104,7 @@ def database_create_view(request):
                                                           database=database)
                     contentfile = ContentFile(data)
                     database_photo.image.save(filename, contentfile)
+                    database_photo.name = Path(database_photo.image.name).name
                     database_photo.save()
 
                 zip.close()
@@ -126,7 +128,7 @@ def database_create_view(request):
                 database_photo = models.DatabasePhoto(slug=slug,
                                                       database=database,
                                                       image=file_image)
-                database_photo.save()
+                database_photo.save_when_name_not_inited()
 
             return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
     else:
@@ -172,7 +174,7 @@ def database_edit_view(request, slug):
                 database_photo = models.DatabasePhoto(slug=slug,
                                                       database=database,
                                                       image=file_image)
-                database_photo.save()
+                database_photo.save_when_name_not_inited()
 
             return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
     else:
@@ -268,18 +270,13 @@ def event_create_view(request):
 
                 database_photo = models.DatabasePhoto(slug=database_photo_slug,
                                                       database=database,
-                                                      # description=...,
-                                                      # description_file=...,
                                                       image=file_image)
-                database_photo.save()
+                database_photo.save_when_name_not_inited()
 
                 event_photo = models.EventPhoto(slug=event_photo_slug,
                                                 event=event,
                                                 is_query=True,
-                                                # description=...,
-                                                # description_file=...,
-                                                database_photo=database_photo,
-                                                image=file_image, )
+                                                database_photo=database_photo, )
                 event_photo.save()
 
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))

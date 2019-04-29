@@ -298,7 +298,6 @@ class Database(models.Model):
 class CBIRIndex(models.Model):
     # DES_TYPE = 'l2net'
     DES_TYPE = 'HardNetHPatches'
-
     L = 5
     K = 10
     MAX_KEYPOINTS = 2000
@@ -540,6 +539,15 @@ class ImageModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def copy_photo_and_assign_image_field(self, full_path_to_original_photo):
+        path_to_new_photo = get_storage_path_for_image(
+            self,
+            filename=Path(full_path_to_original_photo).name)
+
+        full_path_to_new_photo = os.path.join(settings.MEDIA_ROOT, path_to_new_photo)
+        shutil.copyfile(full_path_to_original_photo, full_path_to_new_photo)
+        self.image = path_to_new_photo
 
     def EXIF(self, file=None):
         try:
@@ -1133,6 +1141,9 @@ class DatabasePhoto(ImageModel):
         return f'{self.slug} from {self.database}'
 
     def save(self):
+        super().save()
+
+    def save_when_name_not_inited(self):
         # TODO: Fix this strange saving.
         super().save()
         self.name = Path(self.image.name).name
@@ -1174,10 +1185,6 @@ class EventPhoto(ImageModel):
         return f'{self.database_photo.name} from {self.event}'
 
     def save(self):
-        photo_path = get_storage_path_for_image(self,
-                                                filename=Path(self.database_photo.image.name).name)
-        self.image = photo_path
-        path_to_original_file = os.path.join(settings.MEDIA_ROOT, self.database_photo.image.name)
-        path_to_new_file = os.path.join(settings.MEDIA_ROOT, photo_path)
-        shutil.copyfile(path_to_original_file, path_to_new_file)
+        full_path_to_original_photo = os.path.join(settings.MEDIA_ROOT, self.database_photo.image.name)
+        self.copy_photo_and_assign_image_field(full_path_to_original_photo)
         super().save()
