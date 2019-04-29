@@ -1,10 +1,12 @@
 import cbir
 
 
-def configure(config_path, args):
+def make_config(config_path, database, cbir_index_name, **kwargs):
     """
-    :param config_path:
-    :param args: May contain some parameters for config.
-                 Has higher priority than config from `config_path`
+    :return config: {
+        'database':,
+        'cbir_index_name':,
+    }
+    :raises ValueError: "required parameter not specified"
     """
     raise NotImplemented

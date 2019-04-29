@@ -10,15 +10,24 @@ from cbir.legacy_utils import draw_result
 import cbir_evaluation.start_evaluation
 
 
+def prepare_directory_structure(args):
+    persistent_state = args.persistent_state or cbir.PERSISTENT_STATE
+    databases = persistent_state / 'databases'
+    if not os.path.exists(persistent_state):
+        os.mkdir(persistent_state)
+    if not os.path.exists(databases):
+        os.mkdir(databases)
+
+
+def _prepare_place_for_database(database):
+    os.mkdir(Path(DATABASES) / database)
+
+
 def _get_registered_databases():
     return [
         filename
         for filename in os.listdir(DATABASES)
         if os.path.isdir(Path(DATABASES) / filename)]
-
-
-def _prepare_place_for_database(database):
-    os.mkdir(Path(DATABASES) / database)
 
 
 def _get_registered_cbir_indexes_of_database(database):
@@ -158,12 +167,3 @@ def add_images(database,
 def evaluate(args):
     cbir_evaluation.start_evaluation.do_train_test(args.train_dir, args.test_dir, args.gt_dir,
                                                    args.sample)
-
-
-def prepare_directory_structure(args):
-    persistent_state = args.persistent_state or cbir.PERSISTENT_STATE
-    databases = persistent_state / 'databases'
-    if not os.path.exists(persistent_state):
-        os.mkdir(persistent_state)
-    if not os.path.exists(databases):
-        os.mkdir(databases)
