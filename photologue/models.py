@@ -388,7 +388,7 @@ class CBIRIndex(models.Model):
                                         K=CBIRIndex.K, L=CBIRIndex.L)
         cbir_core = CBIRCore.get_instance(database_name, cbir_index_name)
 
-        cbir_core.compute_descriptors(list_paths_to_images_to_index,
+        cbir_core.compute_descriptors_fast(list_paths_to_images_to_index,
                                       to_index=True,
                                       for_training_clusterer=use_database_photos_for_training)
 

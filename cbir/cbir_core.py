@@ -187,6 +187,22 @@ class CBIRCore:
 
         print(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
 
+    def compute_descriptors_fast(self,
+                                 list_paths_to_images,
+                                 to_index, for_training_clusterer):
+        fd_loaded_before = self.fd is not None
+        if not fd_loaded_before:
+            self.set_fd(self.load_fd())
+
+        descriptors = []
+        for path_to_image in tqdm(list_paths_to_images, desc='Computing descriptors for photos and saving in the database'):
+            descriptor_now = self.get_descriptor(path_to_image, raw=True)
+            descriptors.append(descriptor_now)
+
+        if not fd_loaded_before:
+            self.unset_fd()
+
+
     def get_descriptor(self, path_to_image, raw=False, both=False, total_count_coordinate_for_bow=True):
         if type(path_to_image) is str:
             image = cv2.imread(path_to_image, 0)
