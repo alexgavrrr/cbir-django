@@ -407,7 +407,7 @@ class CBIRIndex(models.Model):
         """
         Calls cbir_core's function to compute descriptors for photos from a database for which descriptors
         have not been computed yet. After calls cbir_core's function to add_photos_to_index.
-        Before calling cbir_core's functions cbir_index(=self) should find out which photos it has not indexed yet.
+        Before calling cbir_core's functions, cbir_index(=self) should find out which photos it has not indexed yet.
         """
         # Define which photos have not been indexed yet by this index.
         # TODO: How? CBIRIndex should store information about which photos from database it has indexed.

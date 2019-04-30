@@ -335,8 +335,8 @@ class CBIRCore:
             }
             database_service.update_bows(self.db, [photo_to_update])
 
-        # TODO: Build index on `WordPhoto` table by `word` column if not yet. Now it this index
-        # is build in the beginning but it is not the most efficient approach.
+        # TODO: Build index on `WordPhoto` table by `word` column if not yet. Now this index
+        # is built in the beginning but it is not the most efficient approach.
 
         # Sort by word and get word photo relations
         word_now = None
