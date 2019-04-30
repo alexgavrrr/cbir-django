@@ -307,8 +307,7 @@ class CBIRCore:
         if not ca_loaded_before:
             self.set_ca(self.load_ca())
 
-        # TODO: Apply cunning trick. Model WordPhoto should not have index by word in the beginning
-        # for faster inserts. When all inserts are done then we should build index and get blobs sorted by word.
+        database_service.clean_word_photo_relations_table(self.db)
 
         data_dependent_params = self.load_data_dependent_params()
         freqs = data_dependent_params['freqs']
@@ -335,8 +334,7 @@ class CBIRCore:
             }
             database_service.update_bows(self.db, [photo_to_update])
 
-        # TODO: Build index on `WordPhoto` table by `word` column if not yet. Now this index
-        # is built in the beginning but it is not the most efficient approach.
+        database_service.sort_word_photo_relations_table(self.db)
 
         # Sort by word and get word photo relations
         word_now = None
@@ -345,9 +343,13 @@ class CBIRCore:
             word_next = word_photo_relation['word']
             photo_next = word_photo_relation['photo']
             if word_now and word_now != word_next:
+                word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
+                word_photos_old = set()
+                if word_photos_old_raw:
+                    word_photos_old = self.deserialize_word_photos(word_photos_old_raw[0]['photos'])
                 word_to_insert = {
                     'word': word_now,
-                    'photos': self.serialize_word_photos(word_photos_now)
+                    'photos': self.serialize_word_photos(word_photos_now | word_photos_old)
                 }
                 database_service.insert_or_replace_word(self.db, [word_to_insert])
                 word_photos_now = set()
@@ -356,11 +358,17 @@ class CBIRCore:
             word_photos_now.add(photo_next)
 
         if word_now:
+            word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
+            word_photos_old = set()
+            if word_photos_old_raw:
+                word_photos_old = self.deserialize_word_photos(word_photos_old_raw[0]['photos'])
             word_to_insert = {
                 'word': word_now,
-                'photos': self.serialize_word_photos(word_photos_now)
+                'photos': self.serialize_word_photos(word_photos_now | word_photos_old)
             }
             database_service.insert_or_replace_word(self.db, [word_to_insert])
+
+        database_service.clean_word_photo_relations_table(self.db)
 
         five_percent = int(0.085 * self.n_words)
         freqs = np.argsort(freqs)

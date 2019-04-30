@@ -7,7 +7,30 @@ from .database_schema import (Photo,
                               Word,
                               WordPhoto)
 
+from playhouse.migrate import (migrate,
+                               SqliteMigrator)
 MODELS_LOCK = threading.Lock()
+
+
+def clean_word_photo_relations_table(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
+            migrator = SqliteMigrator(db)
+            WordPhoto.drop_table()
+
+            try:
+                migrate(migrator.drop_index('wordphoto', 'word'))
+            except peewee.OperationalError:
+                pass
+
+            WordPhoto.create_table()
+
+
+def sort_word_photo_relations_table(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
+            migrator = SqliteMigrator(db)
+            migrate(migrator.add_index('wordphoto', ('word',), False),)
 
 
 def get_db(path):
@@ -91,7 +114,9 @@ def get_photos_descriptors_needed_to_add_to_index_iterator(db):
         with db.bind_ctx([Photo, Word]):
             query = (Photo
                      .select(Photo.name, Photo.descriptor)
-                     .where((Photo.to_index == True) & (Photo.bow == None)))
+                     # .where((Photo.to_index == True) & (Photo.bow == None)))
+                     .where((Photo.to_index == True)))
+
             return query.iterator()
 
 
@@ -122,6 +147,7 @@ def count_indexed(db):
                     .select()
                     .where(Photo.to_index == True)
                     .count())
+
 
 def count_for_training(db):
     with MODELS_LOCK:

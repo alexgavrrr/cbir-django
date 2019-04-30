@@ -53,5 +53,5 @@ class WordPhoto(BaseModel):
     """
     Class for fast adding word - photo relation
     """
-    word = IntegerField(index=True)
+    word = IntegerField()
     photo = ForeignKeyField(Photo)
