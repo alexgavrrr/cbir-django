@@ -30,3 +30,5 @@ yes | rm db.sqlite3;
     ./clean_content.sh && \
     ./clean_cbir_state.sh
 ```
+
+scp -r data/ gavr@104.45.144.192:~/main/cbir-django
