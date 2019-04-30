@@ -115,8 +115,7 @@ def get_photos_descriptors_needed_to_add_to_index_iterator(db):
         with db.bind_ctx([Photo, Word]):
             query = (Photo
                      .select(Photo.name, Photo.descriptor)
-                     # .where((Photo.to_index == True) & (Photo.bow == None)))
-                     .where((Photo.to_index == True)))
+                     .where((Photo.to_index == True) & (Photo.bow == None)))
 
             return query.iterator()
 
