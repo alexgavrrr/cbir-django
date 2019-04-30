@@ -15,9 +15,10 @@ MODELS_LOCK = threading.Lock()
 def clean_word_photo_relations_table(db):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
-            migrator = SqliteMigrator(db)
-            WordPhoto.drop_table()
+            if db.table_exists(WordPhoto):
+                WordPhoto.drop_table()
 
+            migrator = SqliteMigrator(db)
             try:
                 migrate(migrator.drop_index('wordphoto', 'word'))
             except peewee.OperationalError:
@@ -41,7 +42,7 @@ def get_db(path):
 def inited_properly(db):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word, WordPhoto]):
-            return Photo.table_exists() and Word.table_exists() and WordPhoto.table_exists()
+            return Photo.table_exists() and Word.table_exists()
 
 
 def create_empty(db):
