@@ -22,9 +22,9 @@ def test_CBIR():
     des_type = 'l2net'
     max_keypoints = 2000
     K = 10
-    L = 2
+    L = 4
 
-    list_paths_to_images_to_train_clusterer = find_image_files(WHERE_PHOTOS, ['jpg'])
+    list_paths_to_images_to_train_clusterer = find_image_files(WHERE_PHOTOS, ['jpg'], recursive=False)
     list_paths_to_images_to_index = list_paths_to_images_to_train_clusterer
 
     CBIRCore.create_empty_if_needed(database, name,
