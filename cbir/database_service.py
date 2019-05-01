@@ -1,14 +1,14 @@
-from pathlib import Path
 import threading
-import sqlite3
+from pathlib import Path
 
 import peewee
+from playhouse.migrate import (migrate,
+                               SqliteMigrator)
+
 from .database_schema import (Photo,
                               Word,
                               WordPhoto)
 
-from playhouse.migrate import (migrate,
-                               SqliteMigrator)
 MODELS_LOCK = threading.Lock()
 
 
@@ -31,7 +31,7 @@ def sort_word_photo_relations_table(db):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
             migrator = SqliteMigrator(db)
-            migrate(migrator.add_index('wordphoto', ('word',), False),)
+            migrate(migrator.add_index('wordphoto', ('word',), False), )
 
 
 def get_db(path):

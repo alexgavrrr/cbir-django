@@ -1,7 +1,8 @@
-from peewee import *
-from peewee import Model
 import logging
 from pathlib import Path
+
+from peewee import *
+from peewee import Model
 
 from cbir import DATABASES
 

@@ -1,7 +1,7 @@
+import logging
+
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
-from tqdm import tqdm
-import logging
 
 
 class VocabularyTree:

@@ -14,7 +14,6 @@ from tqdm import tqdm
 import cbir
 from cbir import CONFIG
 from cbir import database_service
-from cbir.legacy_utils import draw_result
 from cbir.models.learned_descriptors import HardNetAll_des, HardNetBrown_des, HardNetHPatches_des
 from cbir.models.learned_descriptors import L2net_des
 from cbir.models.learned_descriptors import SURF, SIFT
@@ -925,21 +924,3 @@ def compute_idf_lazy(freqs, total_count_documents):
     idf = np.zeros(freqs.shape[0])
     idf[not_zero] = np.log(total_count_documents / freqs[not_zero])
     return idf
-
-
-def main(storage_path, training_path, label):
-    # TODO: Write or delete
-
-    test_path = storage_path
-    cbir_index = CBIRCore.get_instance()
-
-    while True:
-        print("Enter command")
-
-        break
-
-    print("Finished")
-
-
-if __name__ == "__main__":
-    pass

@@ -218,6 +218,7 @@ class CBIRCore:
 
         :param list_paths_to_images: images to use to train clusterer
         """
+
         # TODO: Handle case if some photo from list_paths_to_images not in index yet.
 
         # TODO: Memory. Loading full index. Fix it.
@@ -238,7 +239,6 @@ class CBIRCore:
                 else:
                     excerpt = slice(start_idx, start_idx + batchsize)
                 yield inputs[excerpt], targets[excerpt]
-
 
         ca = VocabularyTree(L=self.L, K=self.K).fit_batch_generator(batch_generator)
         CBIR._save_clusterer(self.database, self.name, ca)

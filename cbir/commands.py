@@ -2,12 +2,8 @@ import os
 from pathlib import Path
 
 import cbir
-from cbir import DATABASES
-from cbir.utils import basic
-from cbir import cbir_core
-from cbir.legacy_utils import draw_result
-
 import cbir_evaluation.start_evaluation
+from cbir import DATABASES
 
 
 def _prepare_place_for_database(database):
@@ -59,13 +55,13 @@ def _init_dirs(train_dir, test_dir, gt_dir, is_sample):
 
     return train_dir, test_dir, gt_dir
 
+
 def evaluate_with_all_descriptors(
         train_dir,
         test_dir,
         gt_dir,
         is_sample,
         **kwargs):
-
     train_dir, test_dir, gt_dir = _init_dirs(train_dir, test_dir, gt_dir, is_sample)
     cbir_evaluation.start_evaluation.start_train_test_all_descriptors_and_modes(
         train_dir,
@@ -82,7 +78,6 @@ def evaluate(
         sv,
         qe,
         **kwargs):
-
     train_dir, test_dir, gt_dir = _init_dirs(train_dir, test_dir, gt_dir, is_sample)
     cbir_evaluation.start_evaluation.start_train_test(
         train_dir,
