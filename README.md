@@ -34,13 +34,15 @@ yes | rm db.sqlite3;
 ```
 
 ## Profiling commands
-`mkdir -p profs/2`
+`mkdir -p profs/now`
 
-`python -m cProfile -o profs/2/create_database.prof ./manage.py create_database oxford data/Buildings/Original/Oxford/jpg`
+`python -m cProfile -o profs/now/create_database.prof ./manage.py create_database oxford data/Buildings/Original/Oxford/jpg`
 
-`python -m cProfile -o profs/2/create_index_for_database.prof ./manage.py create_index_for_database oxford index_oxford_1 data/Buildings/Original/Paris/jpg`
+`python -m cProfile -o profs/now/create_index_for_database.prof ./manage.py create_index_for_database oxford index_oxford_1 data/Buildings/Original/Paris/jpg`
 
-`python -m cProfile -o profs/2/create_event.prof ./manage.py create_event oxford index_oxford_1 data/Buildings/Original/Oxford/jpg/oriel_000062.jpg`
+`python -m cProfile -o profs/now/create_event.prof ./manage.py create_event oxford index_oxford_1 data/Buildings/Original/Oxford/jpg/oriel_000062.jpg`
+
+`python cbir_main.py evaluate_only oxford index_oxford_1 public/media/content/oxford/database_all data/Buildings/Original/Oxford/gt --sv --qe`
 
 profile evaluating commands?
 
