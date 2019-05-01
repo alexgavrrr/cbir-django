@@ -297,7 +297,7 @@ class Database(models.Model):
 
 class CBIRIndex(models.Model):
     # DES_TYPE = 'l2net'
-    DES_TYPE = 'HardNetHPatches'
+    DES_TYPE = 'HardNetAll'
     L = 4
     K = 10
     MAX_KEYPOINTS = 2000
