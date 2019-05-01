@@ -306,7 +306,9 @@ class CBIRCore:
         if not ca_loaded_before:
             self.set_ca(self.load_ca())
 
-        database_service.clean_word_photo_relations_table(self.db)
+        # TODO: Do not clean here?
+        # database_service.clean_word_photo_relations_table(self.db)
+        database_service.create_if_needed_word_photo_relations_table(self.db)
 
         data_dependent_params = self.load_data_dependent_params()
         freqs = data_dependent_params['freqs']
