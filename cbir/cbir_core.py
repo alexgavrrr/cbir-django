@@ -598,7 +598,7 @@ class CBIRCore:
             sv_candidates = sorted(sv_candidates + new_sv_candidates,
                                    key=lambda x: x[1], reverse=True)
 
-        if debug and qe_enable and new_query is None:
+        if qe_enable and new_query is None:
             print("Query Expansion got in {}s".format(time.time() - start))
 
         # if not fd_loaded_before:

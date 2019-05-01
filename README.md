@@ -40,7 +40,7 @@ yes | rm db.sqlite3;
 
 `python -m cProfile -o profs/now/create_index_for_database.prof ./manage.py create_index_for_database oxford index_oxford_1 data/Buildings/Original/Paris/jpg`
 
-`python -m cProfile -o profs/now/create_event.prof ./manage.py create_event oxford index_oxford_1 data/Buildings/Original/Oxford/jpg/oriel_000062.jpg`
+`python -m cProfile -o profs/now/create_event.prof ./manage.py create_event oxford index_oxford_1 data/Buildings/Original/Oxford/jpg/oriel_000062.jpg --sv --qe`
 
 `python cbir_main.py evaluate_only oxford index_oxford_1 public/media/content/oxford/database_all data/Buildings/Original/Oxford/gt --sv --qe`
 
