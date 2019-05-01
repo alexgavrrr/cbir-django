@@ -110,7 +110,7 @@ def get_photos_descriptors_by_names_iterator(
             # TODO: Order of photos is important or not?
             query = (Photo
                      .select(Photo.name, Photo.descriptor)
-                     .where(Photo.name in names))
+                     .where(Photo.name << names))
             return query.dicts().iterator()
 
 

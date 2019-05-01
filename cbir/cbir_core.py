@@ -456,12 +456,9 @@ class CBIRCore:
         if debug:
             print(len(candidates))
 
-        # TODO: In the future make candidates an iterator. Now Algorithm requires all candidates in RAM
+        # TODO: In the future make candidates an iterator. Now Algorithm keeps all candidates in RAM
         # because it applies sorting. But algorithm needs only top n_candidates.
         # Thus we can apply linear algorithm with heapq or tree and iterator will be enough.
-
-        print(f'type(next(iter(candidates))): {type(next(iter(candidates)))}')
-        print(f'next(iter(candidates)): {next(iter(candidates))}')
 
         # STEP 2. PRELIMINARY RANKING
         start = time.time()
