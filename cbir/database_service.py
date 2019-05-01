@@ -6,6 +6,7 @@ from playhouse.migrate import (migrate,
                                SqliteMigrator)
 
 from .database_schema import (Photo,
+                              PhotoBow,
                               Word,
                               WordPhoto)
 
@@ -27,6 +28,13 @@ def clean_word_photo_relations_table(db):
             WordPhoto.create_table()
 
 
+def create_if_needed_word_photo_relations_table(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
+            if not db.table_exists('wordphoto'):
+                WordPhoto.create_table()
+
+
 def sort_word_photo_relations_table(db):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
@@ -41,18 +49,18 @@ def get_db(path):
 
 def inited_properly(db):
     with MODELS_LOCK:
-        with db.bind_ctx([Photo, Word, WordPhoto]):
-            return Photo.table_exists() and Word.table_exists()
+        with db.bind_ctx([Photo, PhotoBow, Word]):
+            return Photo.table_exists() and PhotoBow.table_exists() and Word.table_exists()
 
 
 def create_empty(db):
     with MODELS_LOCK:
-        with db.bind_ctx([Photo, Word]):
-            db.create_tables([Photo, Word, WordPhoto])
+        with db.bind_ctx([Photo, PhotoBow, Word]):
+            db.create_tables([Photo, PhotoBow, Word])
     return db
 
 
-def add_photos(
+def add_photos_descriptors(
         db,
         photos):
     """
@@ -70,21 +78,21 @@ def add_photos(
                 Photo.insert_many(photos).execute()
 
 
-def update_bows(db, photos):
+def write_bows(db, photos_bows):
     """
     :param db:
-    :param photos: one photo: {
+    :param photos_bows: one photo: {
                         'name': ...,
                         'bow': ...,}
     """
     # TODO: Validate here that keys in objects are fine?
     with MODELS_LOCK:
-        with db.bind_ctx([Photo, Word]):
+        with db.bind_ctx([Photo, PhotoBow, Word]):
             with db.atomic():
-                photos = [Photo(name=photo['name'], bow=photo['bow'])
-                          for photo
-                          in photos]
-                Photo.bulk_update(photos, fields=[Photo.bow])
+                (PhotoBow
+                 .insert_many(photos_bows)
+                 .on_conflict('replace')
+                 .execute())
 
 
 def get_photos_descriptors_by_names_iterator(
@@ -92,13 +100,18 @@ def get_photos_descriptors_by_names_iterator(
         names):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
+            # return ({
+            #     'descriptor': Photo
+            #         .select(Photo.descriptor)
+            #         .where(Photo.name == name)[0].descriptor}
+            #     for name
+            #     in names)
+
             # TODO: Order of photos is important or not?
-            return ({
-                'descriptor': Photo
-                    .select(Photo.descriptor)
-                    .where(Photo.name == name)[0].descriptor}
-                for name
-                in names)
+            query = (Photo
+                     .select(Photo.name, Photo.descriptor)
+                     .where(Photo.name << names))
+            return query.dicts().iterator()
 
 
 def get_photos_descriptors_for_training_iterator(db):
@@ -115,7 +128,9 @@ def get_photos_descriptors_needed_to_add_to_index_iterator(db):
         with db.bind_ctx([Photo, Word]):
             query = (Photo
                      .select(Photo.name, Photo.descriptor)
-                     .where((Photo.to_index == True) & (Photo.bow == None)))
+                     # .where((Photo.to_index == True) & (Photo.indexed == False))
+                     .where((Photo.to_index == True))
+                     )
 
             return query.iterator()
 
@@ -131,7 +146,7 @@ def get_photos_by_words_iterator(
             return query.dicts().iterator()
 
 
-def is_image_indexed(db, name):
+def is_image_descriptor_computed(db, name):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
             return (Photo
@@ -140,7 +155,7 @@ def is_image_indexed(db, name):
                     == 1)
 
 
-def count_indexed(db):
+def count_for_indexing(db):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
             return (Photo
@@ -163,10 +178,6 @@ def add_word_photo_relations(db, relations):
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
             with db.atomic():
                 WordPhoto.insert_many(relations).execute()
-
-
-def clean_word_table(db):
-    raise NotImplemented
 
 
 def insert_or_replace_word(db, words_photos):
@@ -197,7 +208,7 @@ def get_word_photo_relations_sorted(db: peewee.Database):
 
 def get_bow(db: peewee.Database, name):
     with MODELS_LOCK:
-        with db.bind_ctx([Photo]):
-            photo = (Photo
-                     .get(name=name))
-            return {'bow': photo.bow}
+        with db.bind_ctx([PhotoBow]):
+            photo_bow = (PhotoBow
+                         .get(name=name))
+            return {'bow': photo_bow.bow}
