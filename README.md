@@ -8,6 +8,8 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
+`scp -r data gavr@104.45.144.192:~/main/cbir-django`
+
 
 ## Development
 
@@ -31,4 +33,16 @@ yes | rm db.sqlite3;
     ./clean_cbir_state.sh
 ```
 
-scp -r data/ gavr@104.45.144.192:~/main/cbir-django
+## Profiling commands
+`mkdir -p profs/2`
+
+`python -m cProfile -o profs/2/create_database.prof ./manage.py create_database oxford data/Buildings/Original/Oxford/jpg`
+
+`python -m cProfile -o profs/2/create_index_for_database.prof ./manage.py create_index_for_database oxford index_oxford_1 data/Buildings/Original/Paris/jpg`
+
+`python -m cProfile -o profs/2/create_event.prof ./manage.py create_event oxford index_oxford_1 data/Buildings/Original/Oxford/jpg/oriel_000062.jpg`
+
+profile evaluating commands?
+
+## Start snakeviz for visualizing profs
+`snakeviz [--server]`
