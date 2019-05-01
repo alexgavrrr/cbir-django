@@ -352,12 +352,18 @@ class CBIRCore:
             }
             database_service.write_bows(self.db, [photo_bow])
 
+        logger.info(f'Sorting word_photo relations')
+        start = time.time()
         database_service.sort_word_photo_relations_table(self.db)
+        finish = time.time()
+        logger.info(f'Finished sorting word_photo relations over {round(finish - start, 1)} sec = '
+                    f'{round((finish - start) / 60, 1)} min')
 
         # Sort by word and get word photo relations
         word_now = None
         word_photos_now = set()
-        for ind, word_photo_relation in enumerate(database_service.get_word_photo_relations_sorted(self.db)):
+        for ind, word_photo_relation in enumerate(tqdm(database_service.get_word_photo_relations_sorted(self.db),
+                                                       desc='Collecting word to photos and writing to database')):
             word_next = word_photo_relation['word']
             photo_next = word_photo_relation['photo']
             if word_now and word_now != word_next:
