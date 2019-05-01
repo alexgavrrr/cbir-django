@@ -510,7 +510,8 @@ class CBIRCore:
         start = time.time()
 
         # TODO: Do not return and get descriptors_kp if it is not needed.
-        [all_matches, all_matches_masks, all_transforms,
+        # candidates are rearranged (due to database_serivice specifics) and that is why returned
+        [candidates, all_matches, all_matches_masks, all_transforms,
          verified,
          descriptors_kp] = self.ransac(img_descriptor, kp, candidates,
                                        n_inliners_thr, max_verified)
@@ -579,7 +580,6 @@ class CBIRCore:
             for sv_candidate in sv_candidates[:qe_avg]:
                 # INDEX CANDIDATE NEEDED HERE
                 # bow_row = np.array(bow[r[0][0]].todense()).flatten()
-
                 sv_candidate_bow_raw = database_service.get_bow(self.db, sv_candidate[0][1])
                 sv_candidate_bow_raw = sv_candidate_bow_raw['bow']
                 sv_candidate_bow = self.deserialize_bow(sv_candidate_bow_raw)
@@ -616,11 +616,7 @@ class CBIRCore:
     def ransac(self, img_descriptor, kp, candidates,
                min_inliners, max_verified):
 
-        # index = self.load_index()
-        # descriptors = [index[img[1]] for img in candidates]
-        # descriptors, descriptors_kp = list(zip(*descriptors))
-
-        descriptors_raw_iterator = database_service.get_photos_descriptors_by_names_iterator(
+        photo_descriptors_raw_iterator = database_service.get_photos_descriptors_by_names_iterator(
             self.db,
             # TODO: `candidate[1]` because now it is this way for backward-compatibility.
             # In the future I will choose ind or name as the only indentifier of a photo
@@ -628,8 +624,9 @@ class CBIRCore:
              for candidate
              in candidates]
         )
-        descriptors_kp_pair_iterator = (self.deserialize_descriptor(descriptor_raw['descriptor'])
-                                        for descriptor_raw in descriptors_raw_iterator)
+        names_descriptors_kp_pair_iterator = ((photo_descriptor_raw['name'],
+                                               self.deserialize_descriptor(photo_descriptor_raw['descriptor']))
+                                        for photo_descriptor_raw in photo_descriptors_raw_iterator)
 
         # Brute force matcher
         bf = cv2.BFMatcher(cv2.NORM_L2)
@@ -638,6 +635,7 @@ class CBIRCore:
         all_matches = []
         all_matches_masks = []
         all_transforms = []
+        candidates_rearranged = []
 
         verified = []
         n_verified = 0
@@ -645,10 +643,14 @@ class CBIRCore:
         # TODO: Now it is for backward-compatibility. Remove in the future
         descriptors_kp = []
 
-        for i, descriptor_kp_pair in enumerate(descriptors_kp_pair_iterator):
-            descriptor = descriptor_kp_pair[0]
-            descriptor_kp = descriptor_kp_pair[1]
+        for i, name_descriptor_kp_pair in enumerate(names_descriptors_kp_pair_iterator):
+            name = name_descriptor_kp_pair[0]
+            descriptor = name_descriptor_kp_pair[1][0]
+            descriptor_kp = name_descriptor_kp_pair[1][1]
             descriptors_kp += [kp]
+
+            # One candidate is pair of (some_id, name) for backward-compatibility
+            candidates_rearranged += [(None, name)]
 
             matches = bf.match(img_descriptor, descriptor)
             if len(matches) > MIN_MATCH_COUNT:
@@ -676,7 +678,7 @@ class CBIRCore:
             if n_verified == max_verified:
                 break
 
-        return [all_matches, all_matches_masks, all_transforms,
+        return [candidates_rearranged, all_matches, all_matches_masks, all_transforms,
                 verified,
                 descriptors_kp]
 

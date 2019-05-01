@@ -100,13 +100,18 @@ def get_photos_descriptors_by_names_iterator(
         names):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
+            # return ({
+            #     'descriptor': Photo
+            #         .select(Photo.descriptor)
+            #         .where(Photo.name == name)[0].descriptor}
+            #     for name
+            #     in names)
+
             # TODO: Order of photos is important or not?
-            return ({
-                'descriptor': Photo
-                    .select(Photo.descriptor)
-                    .where(Photo.name == name)[0].descriptor}
-                for name
-                in names)
+            query = (Photo
+                     .select(Photo.name, Photo.descriptor)
+                     .where(Photo.name in names))
+            return query.dicts().iterator()
 
 
 def get_photos_descriptors_for_training_iterator(db):
