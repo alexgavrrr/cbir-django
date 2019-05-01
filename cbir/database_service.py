@@ -60,7 +60,7 @@ def create_empty(db):
     return db
 
 
-def add_photos(
+def add_photos_descriptors(
         db,
         photos):
     """
@@ -141,7 +141,7 @@ def get_photos_by_words_iterator(
             return query.dicts().iterator()
 
 
-def is_image_indexed(db, name):
+def is_image_descriptor_computed(db, name):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
             return (Photo
@@ -150,7 +150,7 @@ def is_image_indexed(db, name):
                     == 1)
 
 
-def count_indexed(db):
+def count_for_indexing(db):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
             return (Photo
@@ -173,10 +173,6 @@ def add_word_photo_relations(db, relations):
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
             with db.atomic():
                 WordPhoto.insert_many(relations).execute()
-
-
-def clean_word_table(db):
-    raise NotImplemented
 
 
 def insert_or_replace_word(db, words_photos):

@@ -164,19 +164,19 @@ class CBIRCore:
         count_defects = 0
         count_old = 0
         for path_to_image in tqdm(list_paths_to_images, desc='Computing descriptors for photos and saving in the database'):
-            if database_service.is_image_indexed(self.db, path_to_image):
+            if database_service.is_image_descriptor_computed(self.db, path_to_image):
                 count_old += 1
             else:
                 descriptor_now = self.get_descriptor(path_to_image, raw=True)
                 if descriptor_now[0] is not None:
                     count_new += 1
-                    new_photo = {
+                    new_photo_with_descriptor = {
                         'name': path_to_image,
                         'descriptor': self.serialize_descriptor(descriptor_now),
                         'to_index': to_index,
                         'for_training': for_training_clusterer
                     }
-                    database_service.add_photos(self.db, [new_photo])
+                    database_service.add_photos_descriptors(self.db, [new_photo_with_descriptor])
                 else:
                     count_defects += 1
                     print("No keypoints found for {}".format(path_to_image))
@@ -327,11 +327,11 @@ class CBIRCore:
 
             # TODO: photo.pk instead of photo.name must be in the future.
             database_service.add_word_photo_relations(self.db, word_photo_relations)
-            photo_to_update = {
+            photo_bow = {
                 'name': photo.name,
                 'bow': self.serialize_bow(photo_bow)
             }
-            database_service.update_bows(self.db, [photo_to_update])
+            database_service.write_bows(self.db, [photo_bow])
 
         database_service.sort_word_photo_relations_table(self.db)
 
@@ -374,7 +374,7 @@ class CBIRCore:
         most_frequent = freqs[-five_percent:]
         least_frequent = freqs[:five_percent]
 
-        total_count_photos_indexed = database_service.count_indexed(self.db)
+        total_count_photos_indexed = database_service.count_for_indexing(self.db)
         idf = compute_idf_lazy(freqs, total_count_photos_indexed)
 
         data_dependent_params = {}
