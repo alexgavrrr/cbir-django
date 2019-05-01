@@ -18,6 +18,9 @@ class Command(BaseCommand):
         parser.add_argument('index_name')
         parser.add_argument('query')
         parser.add_argument('--event_slug', required=False)
+        parser.add_argument('--sv', action='store_true', default=False)
+        parser.add_argument('--qe', action='store_true', default=False)
+
 
     def handle(self, *args, **options):
         database_name = options['database']
@@ -83,4 +86,16 @@ class Command(BaseCommand):
                                         is_query=True,
                                         database_photo=database_photo, )
         event_photo.save()
-        result_photos = event.init_if_needed_and_get_result_photos()
+
+
+        sv = options['sv']
+        qe = options['qe']
+        n_candidates = 100
+        topk = 5
+        search_params = {
+            'sv_enable': sv,
+            'qe_enable': qe,
+            'n_candidates': n_candidates,
+            'topk': topk
+        }
+        result_photos = event.init_if_needed_and_get_result_photos(search_params=search_params)

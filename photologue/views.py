@@ -201,7 +201,18 @@ def event_detail_view(request, slug):
             logger.info(f'event.database.slug: {event.database.slug}')
             return render(request, 'photologue/event_detail.html', context)
 
-    result_photos = event.init_if_needed_and_get_result_photos()
+    sv = True
+    qe = True
+    n_candidates = 100
+    topk = 5
+    search_params = {
+        'sv_enable': sv,
+        'qe_enable': qe,
+        'n_candidates': n_candidates,
+        'topk': topk
+    }
+
+    result_photos = event.init_if_needed_and_get_result_photos(search_params)
     result_photos_truncated = result_photos[:RESULT_PHOTOS_LIMIT]
 
     context['result_photos'] = result_photos_truncated

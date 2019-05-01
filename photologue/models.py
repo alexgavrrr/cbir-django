@@ -487,11 +487,11 @@ class Event(models.Model):
             self.description_file.save(path, ContentFile(self.description))
         super().save()
 
-    def init_if_needed_and_get_result_photos(self):
+    def init_if_needed_and_get_result_photos(self, search_params):
         result_photos = self.get_result_photos()
         event_inited = len(result_photos) > 0
         if not event_inited:
-            result_photos_names, result_photos_similarities = self._do_search()
+            result_photos_names, result_photos_similarities = self._do_search(search_params)
             self.set_result_photos_from_names(result_photos_names, result_photos_similarities)
             result_photos = self.get_result_photos()
         return result_photos
@@ -514,7 +514,7 @@ class Event(models.Model):
     def get_query_photos(self):
         return EventPhoto.objects.filter(event=self).filter(is_query=True)
 
-    def _do_search(self):
+    def _do_search(self, search_params):
         cbir_database_name = self.database.get_name()
         cbir_index_name = self.cbir_index.name
 
@@ -525,7 +525,7 @@ class Event(models.Model):
 
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
         cbir_core = CBIRCore.get_instance(cbir_database_name, cbir_index_name)
-        result_photos_raw = cbir_core.search(query, qe_enable=True)
+        result_photos_raw = cbir_core.search(query, **search_params)
         print(f'result_photos: {result_photos_raw}')
         print(f'result_photos[0]: {result_photos_raw[0]}')
         result_photos_names = [t[0][1] for t in result_photos_raw]
