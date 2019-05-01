@@ -19,5 +19,4 @@ class Command(BaseCommand):
         cbir_index_name = options['index_name']
 
         cbir_core = CBIRCore.get_instance(database_name, cbir_index_name)
-        # cbir_core.train_clusterer()
         cbir_core.add_images_to_index()

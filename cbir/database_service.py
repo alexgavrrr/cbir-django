@@ -15,7 +15,7 @@ MODELS_LOCK = threading.Lock()
 def clean_word_photo_relations_table(db):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
-            if db.table_exists(WordPhoto):
+            if db.table_exists('wordphoto'):
                 WordPhoto.drop_table()
 
             migrator = SqliteMigrator(db)
