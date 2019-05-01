@@ -524,8 +524,8 @@ class Event(models.Model):
             return []
 
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
-        cbir_index = CBIRCore.get_instance(cbir_database_name, cbir_index_name)
-        result_photos_raw = cbir_index.search(query, qe_enable=True)
+        cbir_core = CBIRCore.get_instance(cbir_database_name, cbir_index_name)
+        result_photos_raw = cbir_core.search(query, qe_enable=True)
         print(f'result_photos: {result_photos_raw}')
         print(f'result_photos[0]: {result_photos_raw[0]}')
         result_photos_names = [t[0][1] for t in result_photos_raw]
