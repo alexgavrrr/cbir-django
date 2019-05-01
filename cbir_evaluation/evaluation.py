@@ -165,7 +165,7 @@ def evaluate(train_dir, test_dir, gt_dir,
 
     answers_file = str(Path(cbir.BASE_DIR) / 'answers'
                        / '{des_type}_{sv_enable}_{qe_enable}'
-                         '_{train_dir}_{test_dir}.txt'.format(des_type=algo_params['des_type'],
+                         '_{train_dir}_{test_dir}.pkl'.format(des_type=algo_params['des_type'],
                                                               sv_enable=sv_enable,
                                                               qe_enable=qe_enable,
                                                               train_dir=str(Path(train_dir).name),

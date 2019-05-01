@@ -438,6 +438,7 @@ class CBIRCore:
         start = time.time()
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
+        # TODO: Duplicate computation here when qe_enable and new_query. Fix this.
         result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
 
         if len(result_tuple) != 3 or result_tuple[0] is None:
@@ -471,36 +472,22 @@ class CBIRCore:
         # STEP 2. PRELIMINARY RANKING
         start = time.time()
 
-        # bow = self.load_bow()
         idf = self.load_data_dependent_params()['idf']
 
-        # f_names = self.load_f_names()
-
         # TODO: Use heapq to obtain preliminary top n_candidates
-        # Getting all candidates in ram and sorting can infeasible.
+        # Getting all candidates in ram and sorting can be infeasible.
         ranks = []
         for candidate in candidates:
             candidate_bow_raw = database_service.get_bow(self.db, candidate)
             candidate_bow_raw = candidate_bow_raw['bow']
             candidate_bow = self.deserialize_bow(candidate_bow_raw)
-            # bow_row = np.array(bow[candidate].todense(), dtype=np.float).flatten()
             ranks.append((candidate, euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
                                                candidate_bow[:-1] / candidate_bow[-1] * idf)))
 
         ranks = sorted(ranks, key=lambda x: x[1])
-
         print(f'Ranks: {ranks}')
-
-        # candidates = [(i[0], f_names[i[0]]) for i in ranks[:n_candidates]]
-        # earlier [(ind_candidate, name_candidate)]
-
         candidates = [(None, rank[0]) for rank in ranks[:n_candidates]]
-
-        print(f'Candidates: {candidates}')
-
         print("Short list got in {}".format(time.time() - start))
-        if debug:
-            pass
 
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
@@ -522,25 +509,26 @@ class CBIRCore:
          descriptors_kp] = self.ransac(img_descriptor, kp, candidates,
                                        n_inliners_thr, max_verified)
 
-        print(f'all_matches: {type(all_matches)}')
-        print(f'all_matches[0]: {all_matches[0]}')
-        print(f'len(all_matches): {len(all_matches)}')
-
-        print(f'all_matches_masks: {type(all_matches_masks)}')
-        print(f'all_matches_masks[0]: {all_matches_masks[0]}')
-        print(f'len(all_matches_masks): {len(all_matches_masks)}')
-
-        print(f'all_transforms: {type(all_transforms)}')
-        print(f'all_transforms[0]: {all_transforms[0]}')
-        print(f'len(all_transforms): {len(all_transforms)}')
-
-        print(f'verified: {type(verified)}')
-        print(f'verified[0]: {verified[0]}')
-        print(f'len(verified): {len(verified)}')
-
-        print(f'descriptors_kp: {type(descriptors_kp)}')
-        print(f'descriptors_kp[0]: {descriptors_kp[0]}')
-        print(f'len(descriptors_kp): {len(descriptors_kp)}')
+        # TODO COMMENT
+        # print(f'all_matches: {type(all_matches)}')
+        # print(f'all_matches[0]: {all_matches[0]}')
+        # print(f'len(all_matches): {len(all_matches)}')
+        #
+        # print(f'all_matches_masks: {type(all_matches_masks)}')
+        # print(f'all_matches_masks[0]: {all_matches_masks[0]}')
+        # print(f'len(all_matches_masks): {len(all_matches_masks)}')
+        #
+        # print(f'all_transforms: {type(all_transforms)}')
+        # print(f'all_transforms[0]: {all_transforms[0]}')
+        # print(f'len(all_transforms): {len(all_transforms)}')
+        #
+        # print(f'verified: {type(verified)}')
+        # print(f'verified[0]: {verified[0]}')
+        # print(f'len(verified): {len(verified)}')
+        #
+        # print(f'descriptors_kp: {type(descriptors_kp)}')
+        # print(f'descriptors_kp[0]: {descriptors_kp[0]}')
+        # print(f'len(descriptors_kp): {len(descriptors_kp)}')
 
         print('Spatial verification got in {}s'.format(time.time() - start))
         if debug:
@@ -584,15 +572,12 @@ class CBIRCore:
             start = time.time()
             top_res = []
             for sv_candidate in sv_candidates[:qe_avg]:
-                # INDEX CANDIDATE NEEDED HERE
-                # bow_row = np.array(bow[r[0][0]].todense()).flatten()
                 sv_candidate_bow_raw = database_service.get_bow(self.db, sv_candidate[0][1])
                 sv_candidate_bow_raw = sv_candidate_bow_raw['bow']
                 sv_candidate_bow = self.deserialize_bow(sv_candidate_bow_raw)
                 top_res.append(sv_candidate_bow)
 
             one_more_query = (sum(top_res) + img_bovw) / (len(top_res) + 1)
-
             new_sv_candidates = self.search(img_path, n_candidates,
                                             topk, n_inliners_thr, max_verified,
                                             qe_avg, qe_limit, one_more_query,
@@ -602,11 +587,8 @@ class CBIRCore:
             old = set(sv_candidates[i][0][0] for i in range(len(sv_candidates)))
             new = set(new_sv_candidates[i][0][0] for i in range(len(new_sv_candidates)))
             duplicates = set(old) & set(new)
-
             new_sv_candidates = [el for el in new_sv_candidates
                                  if el[0][0] not in duplicates]
-
-            # CANDIDATES' RANKS VALUES ARE NEEDED HERE.
             sv_candidates = sorted(sv_candidates + new_sv_candidates,
                                    key=lambda x: x[1], reverse=True)
 
@@ -629,8 +611,7 @@ class CBIRCore:
             # In the future I will choose ind or name as the only indentifier of a photo
             [candidate[1]
              for candidate
-             in candidates]
-        )
+             in candidates])
         names_descriptors_kp_pair_iterator = ((photo_descriptor_raw['name'],
                                                self.deserialize_descriptor(photo_descriptor_raw['descriptor']))
                                         for photo_descriptor_raw in photo_descriptors_raw_iterator)
@@ -666,7 +647,6 @@ class CBIRCore:
 
                 M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
                 matchesMask = mask.ravel().tolist()
-
             else:
                 print("Not enough matches are found - {}/{}".format(len(matches),
                                                                     MIN_MATCH_COUNT))
