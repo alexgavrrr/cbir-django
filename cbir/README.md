@@ -2,20 +2,15 @@
 
 ## CLI
 
-### Register
-`python main.py build_cbir_index <name> <path>`
-`python main.py build_cbir_index buildings /Users/alexgavr/main/Developer/Data/Buildings/Original/Oxford_sample/jpg`
-
-### Search
-`python main.py search buildings /Users/alexgavr/main/Developer/Data/Buildings/Original/Paris_sample/jpg/paris_defense_000004.jpg`
-`python main.py search buildings /Users/alexgavr/main/Developer/Data/Buildings/Original/Paris_sample/jpg/paris_defense_000004.jpg --save --tag first`
-
 ### Testing
 #### Evaluating CBIRCore pipeline
-in root directory perform:
-`env PYTHONPATH="." python tests/evaluation.py`
-`env PYTHONPATH="." python tests/test.py`
-`.` must be root directory
+`python cbir_main.py evaluate_with_all_descriptors [--train_dir --test_dir --gt_dir] [--is_sample]`
+
+`python cbir_main.py evaluate [--train_dir <train_dir> --test_dir <test_dir> --gt_dir <gt_dir>] [--is_sample] --des_type <des_type> [--sv] [--qe]`
+
+#### examples
+`python cbir_main.py evaluate_with_all_descriptors --is_sample`
+`python cbir_main.py evaluate --is_sample --des_type l2net --sv --qe`
 
 ## Contributing
 
