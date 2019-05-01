@@ -189,6 +189,62 @@ def evaluate(train_dir, test_dir, gt_dir,
     return mAPs
 
 
+def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
+                  sv_enable=True, qe_enable=True,
+                  topk=5, n_test_candidates=100, ):
+    cbir_core = CBIRCore.get_instance(database_name, index_name)
+
+    queries, ok_answers, good_answers, junk_answers = load_gt(database_photos_dir, gt_dir)
+    scores = []
+    answers = []
+    for trial in range(5):
+        answers_trial = []
+        queries_trial = queries[trial]
+        ok_answers_trial = ok_answers[trial]
+        good_answers_trial = good_answers[trial]
+        right_answers_trial = [ok_answers_trial[j] + good_answers_trial[j] for j, _ in enumerate(ok_answers_trial)]
+        queries_gt_trial = list(zip(queries_trial, right_answers_trial))
+
+        for query_gt_now in tqdm(queries_gt_trial):
+            similar_images = cbir_core.search(
+                query_gt_now[0],
+                n_candidates=n_test_candidates,
+                topk=topk,
+                sv_enable=sv_enable,
+                qe_enable=qe_enable, )
+
+            # TODO DEBUG
+            print(f'similar_images: {similar_images}')
+
+            scores.append(AP(query_gt_now, similar_images))
+            answers_trial.append([query_gt_now[0], [s[0][1] for s in similar_images]])
+
+        answers.append(answers_trial)
+
+    answers_file = str(Path(cbir.BASE_DIR) / 'answers'
+                       / '{sv_enable}_{qe_enable}'
+                         '_{database_name}.pkl'.format(sv_enable=sv_enable,
+                                                       qe_enable=qe_enable,
+                                                       database_name=database_name))
+    if not os.path.exists(str(Path(cbir.BASE_DIR) / 'answers')):
+        os.mkdir(str(Path(cbir.BASE_DIR) / 'answers'))
+    with open(answers_file, 'wb') as fout:
+        pickle.dump(answers, fout, pickle.HIGHEST_PROTOCOL)
+
+    mAP_overall = numpy.mean(scores)
+    mAPs = [mAP_overall]
+    limit_mAPs_len = 10
+    len_mAPs = min(len(scores), limit_mAPs_len)
+
+    for index_mAP in range(1, len_mAPs + 1):
+        mAPs += [numpy.mean(scores[:index_mAP])]
+
+    print(f'answers: {answers}')
+    print(f'scores: {scores}')
+    print(f'mAPs: {mAPs}')
+    return mAPs
+
+
 def show_example_ap():
     query_gt = [None, ('p/1', 'p/3', 'p/5', 'p/7')]
 

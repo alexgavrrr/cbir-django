@@ -22,17 +22,15 @@ def create_parser():
     prepare_directory_structure_parser.add_argument('--persistent_state', required=False,
                                                     help="Root directory for cbir's persistent_state")
 
-    evaluate_with_all_descriptors_parser = subparsers.add_parser(
-        'evaluate_with_all_descriptors',
-        help='Evaluate CBIRCore pipeline with all descriptors')
+    evaluate_with_all_descriptors_parser = subparsers.add_parser('evaluate_with_all_descriptors',
+                                                                 help='Evaluate CBIRCore pipeline with all descriptors')
     evaluate_with_all_descriptors_parser.add_argument('--train_dir', default=None)
     evaluate_with_all_descriptors_parser.add_argument('--test_dir', default=None)
     evaluate_with_all_descriptors_parser.add_argument('--gt_dir', default=None)
     evaluate_with_all_descriptors_parser.add_argument('--is_sample', action='store_true', default=False, help='Whether not to use all data')
 
-    evaluate_parser = subparsers.add_parser(
-        'evaluate',
-        help='Evaluate CBIRCore pipeline chosen descriptor')
+    evaluate_parser = subparsers.add_parser('evaluate',
+                                            help='Evaluate CBIRCore pipeline chosen descriptor')
     evaluate_parser.add_argument('--train_dir', default=None)
     evaluate_parser.add_argument('--test_dir', default=None)
     evaluate_parser.add_argument('--gt_dir', default=None)
@@ -41,6 +39,15 @@ def create_parser():
     evaluate_parser.add_argument('--des_type', required=True)
     evaluate_parser.add_argument('--sv', action='store_true', default=False)
     evaluate_parser.add_argument('--qe', action='store_true', default=False)
+
+    evaluate_only_parser = subparsers.add_parser('evaluate_only',
+                                                 help='Evaluate CBIRCore pipeline witn already built index')
+    evaluate_only_parser.add_argument('database_name')
+    evaluate_only_parser.add_argument('index_name')
+    evaluate_only_parser.add_argument('database_photos_dir')
+    evaluate_only_parser.add_argument('gt_dir')
+    evaluate_only_parser.add_argument('--sv', action='store_true', default=False)
+    evaluate_only_parser.add_argument('--qe', action='store_true', default=False)
 
     return parser
 

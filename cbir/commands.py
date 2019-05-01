@@ -88,3 +88,11 @@ def evaluate(
         des_type=des_type,
         sv=sv,
         qe=qe)
+
+def evaluate_only(
+        database_name, index_name, database_photos_dir, gt_dir,
+        sv, qe,
+        **kwargs):
+    cbir_evaluation.start_evaluation.start_test(
+        database_name, index_name, database_photos_dir, gt_dir,
+        sv, qe)

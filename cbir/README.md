@@ -8,11 +8,15 @@
 
 `python cbir_main.py evaluate [--train_dir <train_dir> --test_dir <test_dir> --gt_dir <gt_dir>] [--is_sample] --des_type <des_type> [--sv] [--qe]`
 
+`python cbir_main.py evaluate_only <database_name> <index_name> <database_photos_dir> <gt_dir> [--sv] [--qe]`
+
+
 #### examples
 
 TODO: think to rewrite them so that building index is not performed if it is not needed
 `python cbir_main.py evaluate_with_all_descriptors --is_sample`
 `python cbir_main.py evaluate --is_sample --des_type l2net --sv --qe`
+`python cbir_main.py evaluate_only oxford index_oxford_1 public/media/content/oxford/database_all data/Buildings/Original/Oxford/gt --sv --qe`
 
 ## Contributing
 

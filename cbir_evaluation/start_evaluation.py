@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import cbir
-from cbir_evaluation.evaluation import evaluate
+from cbir_evaluation.evaluation import (evaluate, evaluate_only)
 
 MAX_KEYPOINTS = 2000
 K = 10
@@ -11,7 +11,7 @@ L = 4
 
 def do_train_test(train_dir, test_dir, gt_dir,
                   algo_params,
-                  sv=True, qe=True, ):
+                  sv=True, qe=True):
     mAPs = evaluate(train_dir, test_dir, gt_dir,
                     algo_params=algo_params,
                     sv_enable=sv, qe_enable=qe)
@@ -95,6 +95,26 @@ def start_train_test_all_descriptors_and_modes(
             info = f'{des_type}\t{mode_name}\t{str(Path(train_dir).name)}\t{str(Path(test_dir).name)}\t{mAPs}'
             with open(results_file, 'a') as fout:
                 print(info, file=fout)
+
+
+def start_test(
+        database_name, index_name, database_photos_dir, gt_dir,
+        sv, qe):
+    results_file = str(Path(cbir.BASE_DIR) / 'results'
+                       / '{database_name}_{index_name}_{sv}_{qe}.txt'.format(database_name=database_name,
+                                                                             index_name=index_name,
+                                                                             sv=sv,
+                                                                             qe=qe))
+    if not os.path.exists(str(Path(cbir.BASE_DIR) / 'results')):
+        os.mkdir(str(Path(cbir.BASE_DIR) / 'results'))
+
+    mAPs = evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
+                         sv_enable=sv, qe_enable=qe)
+
+
+    info = f'{mAPs}'
+    with open(results_file, 'a') as fout:
+        print(info, file=fout)
 
 
 if __name__ == "__main__":
