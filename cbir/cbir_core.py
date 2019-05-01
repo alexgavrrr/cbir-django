@@ -3,6 +3,7 @@ import os
 import pickle
 import time
 from pathlib import Path
+import functools
 
 import cv2
 import numpy as np
@@ -29,6 +30,32 @@ MAX_KEYPOINTS = 2000
 # Use DATABASES_RELATIVE_TO_BASE_DIR instead of DATABASES
 
 class CBIRCore:
+    # staticmethod. Look bottom of the class
+    def decorator_load_fd_if_needed(func):
+        @functools.wraps(func)
+        def wrap(self, *args, **kwargs):
+            fd_loaded_before = self.fd is not None
+            if not fd_loaded_before:
+                self.set_fd(self.load_fd())
+            result = func(self, *args, **kwargs)
+            if not fd_loaded_before:
+                self.unset_fd()
+            return result
+        return wrap
+
+    # staticmethod. Look bottom of the class
+    def decorator_load_ca_if_needed(func):
+        @functools.wraps(func)
+        def wrap(self, *args, **kwargs):
+            ca_loaded_before = self.ca is not None
+            if not ca_loaded_before:
+                self.set_ca(self.load_ca())
+            result = func(self, *args, **kwargs)
+            if not ca_loaded_before:
+                self.unset_ca()
+            return result
+        return wrap
+
     @classmethod
     def get_instance(cls, database, name):
         if not cls.exists(database, name):
@@ -143,6 +170,7 @@ class CBIRCore:
         inverted_index = self.load_inverted_index()
         return len(inverted_index) == 0
 
+    @decorator_load_fd_if_needed
     def compute_descriptors(self,
                             list_paths_to_images,
                             to_index,
@@ -155,11 +183,6 @@ class CBIRCore:
         :param to_index: whether these photos to be indexed
         :param for_training_clusterer: whether to use these photos for training clusterer
         """
-        # TODO: fd_ready_decorator and ca_ready_decorator
-        fd_loaded_before = self.fd is not None
-        if not fd_loaded_before:
-            self.set_fd(self.load_fd())
-
         count_new = 0
         count_defects = 0
         count_old = 0
@@ -180,9 +203,6 @@ class CBIRCore:
                 else:
                     count_defects += 1
                     print("No keypoints found for {}".format(path_to_image))
-
-        if not fd_loaded_before:
-            self.unset_fd()
 
         print(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
 
@@ -294,6 +314,7 @@ class CBIRCore:
         ca = VocabularyTree(L=self.L, K=self.K).fit(mmap_descriptos)
         CBIRCore._save_clusterer(self.database, self.name, ca)
 
+    @decorator_load_ca_if_needed
     def add_images_to_index(self):
         """
         Adds images marked for indexing,
@@ -301,10 +322,6 @@ class CBIRCore:
         If images have already been indexed before (bow is not null) then ignores it.
         """
         logger.info(f'Adding photos to index {self.name} in database {self.database}')
-        # TODO: fd_ready_decorator and ca_ready_decorator
-        ca_loaded_before = self.ca is not None
-        if not ca_loaded_before:
-            self.set_ca(self.load_ca())
 
         # TODO: Do not clean here?
         # database_service.clean_word_photo_relations_table(self.db)
@@ -404,6 +421,8 @@ class CBIRCore:
         candidates_iterator_modified = (candidate['photos'] for candidate in candidates_iterator)
         return list(candidates_iterator_modified)
 
+    @decorator_load_fd_if_needed
+    @decorator_load_ca_if_needed
     def search(self,
                img_path,
                n_candidates=100,
@@ -419,21 +438,10 @@ class CBIRCore:
         start = time.time()
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
-        # TODO: fd_ready_decorator and ca_ready_decorator
-        fd_loaded_before = self.fd is not None
-        if not fd_loaded_before:
-            self.set_fd(self.load_fd())
-
-        ca_loaded_before = self.ca is not None
-        if not ca_loaded_before:
-            self.set_ca(self.load_ca())
-
         result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
 
         if len(result_tuple) != 3 or result_tuple[0] is None:
             message = f'Could not get descriptor for image {img_path}'
-            if not fd_loaded_before:
-                self.unset_fd()
             raise ValueError(message)
 
         img_descriptor, img_bovw, kp = result_tuple
@@ -498,10 +506,11 @@ class CBIRCore:
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
-            if not fd_loaded_before:
-                self.unset_fd()
-            if not ca_loaded_before:
-                self.unset_ca()
+
+            # if not fd_loaded_before:
+            #     self.unset_fd()
+            # if not ca_loaded_before:
+            #     self.unset_ca()
             return candidates[:topk]
 
         start = time.time()
@@ -604,10 +613,11 @@ class CBIRCore:
         if debug and qe_enable and new_query is None:
             print("Query Expansion got in {}s".format(time.time() - start))
 
-        if not fd_loaded_before:
-            self.unset_fd()
-        if not ca_loaded_before:
-            self.unset_ca()
+        # if not fd_loaded_before:
+        #     self.unset_fd()
+        # if not ca_loaded_before:
+        #     self.unset_ca()
+
         return sv_candidates[:topk]
 
     def ransac(self, img_descriptor, kp, candidates,
@@ -857,7 +867,7 @@ class CBIRCore:
 
     def load_fd(self):
         max_keypoints = self.max_keypoints
-
+        print(f"Loading cbir_pretrained network {self.des_type}...")
         if self.des_type == 'sift':
             fd = SIFT(max_keypoints=max_keypoints)
         elif self.des_type == 'surf':
@@ -876,9 +886,11 @@ class CBIRCore:
         return fd
 
     def set_fd(self, fd):
+        print('Setting fd')
         self.fd = fd
 
     def unset_fd(self):
+        print('Unsetting fd')
         self.fd = None
 
     def load_ca(self):
@@ -918,6 +930,10 @@ class CBIRCore:
 
     def deserialize_word_photos(self, word_photos):
         return pickle.loads(word_photos)
+
+    decorator_load_ca_if_needed = staticmethod(decorator_load_ca_if_needed)
+
+    decorator_load_fd_if_needed = staticmethod(decorator_load_fd_if_needed)
 
 
 def compute_idf_lazy(freqs, total_count_documents):

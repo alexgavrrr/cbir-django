@@ -186,7 +186,6 @@ class L2net_des:
                  model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/l2net_L_N+.pt',  # TODO: change path to model to be absolute.
                  use_cuda=True):
 
-        print("Loading cbir_pretrained network...")
         self.use_cuda = use_cuda
         self.net = L2net()
 
