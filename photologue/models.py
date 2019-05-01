@@ -25,6 +25,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
+from django.utils.crypto import get_random_string
 
 from .utils.reflection import add_reflection
 from .utils.watermark import apply_watermark
@@ -574,8 +575,19 @@ class ImageModel(models.Model):
         path_to_new_photo = get_storage_path_for_image(
             self,
             filename=Path(full_path_to_original_photo).name)
-
         full_path_to_new_photo = os.path.join(settings.MEDIA_ROOT, path_to_new_photo)
+
+        if os.path.exists(full_path_to_new_photo):
+            random_suffix =  get_random_string(length=7)
+
+            name_part, ext_part = os.path.splitext(full_path_to_new_photo)
+            name_part += random_suffix
+            full_path_to_new_photo = f'{name_part}{ext_part}'
+
+            name_part, ext_part = os.path.splitext(path_to_new_photo)
+            name_part += random_suffix
+            path_to_new_photo = f'{name_part}{ext_part}'
+
         shutil.copyfile(full_path_to_original_photo, full_path_to_new_photo)
         self.image = path_to_new_photo
 
