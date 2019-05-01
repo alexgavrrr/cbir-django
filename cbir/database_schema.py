@@ -36,10 +36,18 @@ class Photo(BaseModel):
                      unique=True,
                      index=True)
     descriptor = BlobField()
-    bow = BlobField(null=True)
-
     to_index = BooleanField()
     for_training = BooleanField()
+
+
+class PhotoBow(BaseModel):
+    # pk = PrimaryKeyField()
+    name = CharField(max_length=250,
+                     primary_key=True,
+                     unique=True,
+                     index=True)
+    bow = BlobField(null=False)
+
 
 
 class Word(BaseModel):
@@ -55,4 +63,6 @@ class WordPhoto(BaseModel):
     Class for fast adding word - photo relation
     """
     word = IntegerField()
-    photo = ForeignKeyField(Photo)
+
+    # photo = ForeignKeyField(Photo)  Foreigh key slower?
+    photo = CharField(max_length=250)
