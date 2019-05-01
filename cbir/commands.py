@@ -48,7 +48,9 @@ def _init_dirs(train_dir, test_dir, gt_dir, is_sample):
         suffix = "_sample" if is_sample else ""
         paris = 'Paris' + suffix
         oxford = 'Oxford' + suffix
-        data_building_root = str(Path(cbir.BASE_DIR) / 'data' / 'Buildings' / 'Original')
+
+        # data_building_root = str(Path(cbir.BASE_DIR) / 'data' / 'Buildings' / 'Original')
+        data_building_root = str(Path('data') / 'Buildings' / 'Original')
         train_dir = str(Path(data_building_root) / paris / 'jpg')
         test_dir = str(Path(data_building_root) / oxford / 'jpg')
         gt_dir = str(Path(data_building_root) / oxford / 'gt')
