@@ -241,3 +241,5 @@ project/example_storages/*
 project/fixtures/*
 .cbir/
 !/data/Buildings/Original/get_oxford_paris.sh
+results/
+answers/

@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 import re
@@ -7,11 +8,12 @@ import cv2
 import numpy
 from tqdm import tqdm
 
+from cbir.cbir_core import CBIRCore
 from cbir.legacy_utils import find_image_files
-# from cbir.photo_storage_inverted_file import Storage
+import cbir
 
 
-def load_gt(img_path, gt_path):
+def load_gt(images_path, gt_path):
     all_files_in_gt_path = find_image_files(gt_path, ['txt'])
     ok = [img for img in all_files_in_gt_path if img.find('ok') != -1]
     good = [img for img in all_files_in_gt_path if img.find('good') != -1]
@@ -42,9 +44,9 @@ def load_gt(img_path, gt_path):
             text = f.readline().split()
             prefix = text[0].split("_")[1]
             if label == 'paris':
-                f_name = os.path.join(img_path, prefix, text[0] + '.jpg')
+                f_name = os.path.join(images_path, prefix, text[0] + '.jpg')
             elif label == 'oxford':
-                f_name = os.path.join(img_path, text[0][5:] + '.jpg')
+                f_name = os.path.join(images_path, text[0][5:] + '.jpg')
             x1 = round(float(text[1]))
             y1 = round(float(text[2]))
             x2 = round(float(text[3]))
@@ -58,96 +60,168 @@ def load_gt(img_path, gt_path):
         with open(ok[i], 'r') as ok_f:
             tmp = []
             for line in ok_f:
-                f_name = os.path.join(img_path, line[:-1] + '.jpg')
+                f_name = os.path.join(images_path, line[:-1] + '.jpg')
                 tmp.append(f_name)
             ok_answers[n].append(tmp)
 
         with open(good[i], 'r') as good_f:
             tmp = []
             for line in good_f:
-                f_name = os.path.join(img_path, line[:-1] + '.jpg')
+                f_name = os.path.join(images_path, line[:-1] + '.jpg')
                 tmp.append(f_name)
             good_answers[n].append(tmp)
 
         with open(junk[i], 'r') as junk_f:
             tmp = []
             for line in junk_f:
-                f_name = os.path.join(img_path, line[:-1] + '.jpg')
+                f_name = os.path.join(images_path, line[:-1] + '.jpg')
                 tmp.append(f_name)
             junk_answers[n].append(tmp)
 
     return queries, ok_answers, good_answers, junk_answers
 
 
-def AP(query, similar, debug=False):
-    score = 0.0
-    rel = 0
-    for i, s in enumerate(similar):
-        for gt in query[1]:
-            if os.path.split(s[0][1])[1] == os.path.split(gt)[1]:
-                rel += 1
-                score += rel / float(i + 1)
-                if debug:
-                    print("{}/{}".format(rel, i + 1))
-                break
-    return score / float(len(similar))
+def AP(query_and_gt_images, answer_images, debug=False):
+    query = query_and_gt_images[0]
+    gt_images = query_and_gt_images[1]
+    gt_images_suffixes = [os.path.split(gt_image)[1] for gt_image in gt_images]
+
+    sum_precision = 0.0
+    true_positive = 0
+    for index_answer_image, answer_image in enumerate(answer_images):
+        if os.path.split(answer_image[0][1])[1] in gt_images_suffixes:
+            true_positive += 1
+            sum_precision += true_positive / float(index_answer_image + 1)
+
+            if debug:
+                print("{}/{}".format(true_positive, index_answer_image + 1))
+        elif debug:
+            print("-")
+
+    return sum_precision / float(len(answer_images))
 
 
-def evaluate(test_dir, train_dir, des_type, gt_dir, label,
-             topk=5, n_test=100, sv_enable=True, qe_enable=True):
-    storage_dir = test_dir
-    storage = Storage(storage_dir, test_dir, train_dir, des_type, label=label,
-                      max_keypoints=2000, L=5, K=10)
+def evaluate(train_dir, test_dir, gt_dir,
+             algo_params,
+             sv_enable=True, qe_enable=True,
+             topk=5, n_test_candidates=100, ):
+    def _validate_algo_params(params):
+        for key in ['des_type', 'max_keypoints', 'K', 'L']:
+            if key not in params.keys():
+                raise ValueError(f'Bad algo params: {params}')
+
+    _validate_algo_params(algo_params)
+
+    test_database_name = f'test_database_{str(Path(train_dir).name)}_{str(Path(test_dir).name)}'
+    test_index_name = (
+        f'index_{algo_params["des_type"]}_{algo_params["max_keypoints"]}'
+        f'_{algo_params["K"]}_{algo_params["L"]}')
+
+    CBIRCore.create_empty_if_needed(
+        test_database_name, test_index_name,
+        **algo_params, )
+
+    cbir_core = CBIRCore.get_instance(test_database_name, test_index_name)
+
+    list_paths_to_images_to_train_clusterer = find_image_files(train_dir, ['jpg'], recursive=False)
+    list_paths_to_images_to_index = find_image_files(test_dir, ['jpg'], recursive=False)
+
+    cbir_core.compute_descriptors(list_paths_to_images_to_index,
+                                  to_index=True,
+                                  for_training_clusterer=False)
+
+    cbir_core.compute_descriptors(list_paths_to_images_to_train_clusterer,
+                                  to_index=False,
+                                  for_training_clusterer=True)
+    cbir_core.train_clusterer()
+    cbir_core.add_images_to_index()
+
     queries, ok_answers, good_answers, junk_answers = load_gt(test_dir, gt_dir)
     scores = []
-    results = []
+    answers = []
+    for trial in range(5):
+        answers_trial = []
+        queries_trial = queries[trial]
+        ok_answers_trial = ok_answers[trial]
+        good_answers_trial = good_answers[trial]
+        right_answers_trial = [ok_answers_trial[j] + good_answers_trial[j] for j, _ in enumerate(ok_answers_trial)]
+        queries_gt_trial = list(zip(queries_trial, right_answers_trial))
 
-    for i in range(5):
-        res = []
-        i_q = queries[i]
-        i_ok = ok_answers[i]
-        i_good = good_answers[i]
-        right_answers = [i_ok[j] + i_good[j] for j, _ in enumerate(i_ok)]
-        i_q = list(zip(i_q, right_answers))
-        for q in tqdm(i_q):
-            similar = storage.get_similar(q[0], n_test, topk,
-                                          sv_enable=sv_enable,
-                                          qe_enable=qe_enable)
-            scores.append(AP(q, similar))
-            res.append([q[0], [s[0][1] for s in similar]])
-        results.append(res)
+        for query_gt_now in tqdm(queries_gt_trial):
+            similar_images = cbir_core.search(
+                query_gt_now[0],
+                n_candidates=n_test_candidates,
+                topk=topk,
+                sv_enable=sv_enable,
+                qe_enable=qe_enable, )
 
-    output_file = './answers/{}_{}_{}_{}.pkl'.format(des_type,
-                                                     label,
-                                                     sv_enable,
-                                                     qe_enable)
-    if not os.path.exists('./answers'):
-        os.mkdir('./answers')
+            # TODO DEBUG
+            print(f'similar_images: {similar_images}')
 
-    with open(output_file, 'wb') as f:
-        pickle.dump(results, f, pickle.HIGHEST_PROTOCOL)
+            scores.append(AP(query_gt_now, similar_images))
+            answers_trial.append([query_gt_now[0], [s[0][1] for s in similar_images]])
 
-    print(scores)
-    mAP = numpy.mean(scores)
-    return mAP
+        answers.append(answers_trial)
+
+    answers_file = str(Path(cbir.BASE_DIR) / 'answers'
+                       / '{des_type}_{sv_enable}_{qe_enable}'
+                         '_{train_dir}_{test_dir}.txt'.format(des_type=algo_params['des_type'],
+                                                              sv_enable=sv_enable,
+                                                              qe_enable=qe_enable,
+                                                              train_dir=str(Path(train_dir).name),
+                                                              test_dir=str(Path(test_dir).name), ))
+    if not os.path.exists(str(Path(cbir.BASE_DIR) / 'answers')):
+        os.mkdir(str(Path(cbir.BASE_DIR) / 'answers'))
+    with open(answers_file, 'wb') as fout:
+        pickle.dump(answers, fout, pickle.HIGHEST_PROTOCOL)
+
+    mAP_overall = numpy.mean(scores)
+    mAPs = [mAP_overall]
+    limit_mAPs_len = 10
+    len_mAPs = min(len(scores), limit_mAPs_len)
+
+    for index_mAP in range(1, len_mAPs + 1):
+        mAPs += [numpy.mean(scores[:index_mAP])]
+
+    print(f'answers: {answers}')
+    print(f'scores: {scores}')
+    print(f'mAPs: {mAPs}')
+    return mAPs
 
 
 def show_example_ap():
-    answer = [[[0, 'p/3']], [[0, 'p/7']], [[0, 'p/2']]]
-    query = [None, ('p/1', 'p/3', 'p/5', 'p/7')]
-    print(AP(query, answer, debug=True))
+    query_gt = [None, ('p/1', 'p/3', 'p/5', 'p/7')]
+
+    answer = [
+        [[0, 'p/3'], None],
+        [[0, 'p/2'], None],
+        [[0, 'p/7'], None],
+    ]
+
+    print(AP(query_gt, answer, debug=True))
 
 
 def show_example_gt():
-    data_buildings_root = os.environ.get('DATA_BUILDINGS_ROOT') or '~/main/data'
-    test_dir = os.path.join(data_buildings_root, 'Paris_sample', 'jpg')
-    gt_dir = os.path.join(data_buildings_root, 'Paris_sample', 'gt')
+    data_building_root = str(Path(cbir.BASE_DIR) / 'data' / 'Buildings' / 'Original')
+    test_dir = str(Path(data_building_root) / 'Oxford' / 'jpg')
+    gt_dir = str(Path(data_building_root) / 'Oxford' / 'gt')
 
     queries, ok_answers, good_answers, junk_answers = load_gt(test_dir, gt_dir)
-    # print(queries)
-    print('\n\n'.join(map(lambda lst: '\n'.join(map(str, lst)), ok_answers[0])))
+    print(list(map(len, [queries[0], ok_answers[0], good_answers[0], junk_answers[0]])))
+    for trial in range(5):
+        for index_now in range(11):
+            print(f'query_now: {queries[trial][index_now]}')
+            print(f'ok_answers_now: {ok_answers[trial][index_now]}')
+            print(f'good_answers_now: {good_answers[trial][index_now]}')
+            print(f'junk_answers_now: {junk_answers[trial][index_now]}')
+
+            print('_' * 50)
+        print(f"{'_' * 50}\n{'_' * 50}")
 
 
 if __name__ == "__main__":
+    print('Example AP')
     show_example_ap()
+
+    print('Example load gt')
     show_example_gt()
