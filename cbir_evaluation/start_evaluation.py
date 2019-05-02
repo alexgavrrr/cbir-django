@@ -12,10 +12,10 @@ L = 4
 def do_train_test(train_dir, test_dir, gt_dir,
                   algo_params,
                   sv=True, qe=True):
-    mAPs = evaluate(train_dir, test_dir, gt_dir,
+    mAP, mAP_new = evaluate(train_dir, test_dir, gt_dir,
                     algo_params=algo_params,
                     sv_enable=sv, qe_enable=qe)
-    return mAPs
+    return mAP, mAP_new
 
 
 def start_train_test(
@@ -40,13 +40,13 @@ def start_train_test(
     if not os.path.exists(str(Path(cbir.BASE_DIR) / 'results')):
         os.mkdir(str(Path(cbir.BASE_DIR) / 'results'))
 
-    mAPs = do_train_test(
+    mAP, mAP_new = do_train_test(
         train_dir=train_dir, test_dir=test_dir, gt_dir=gt_dir,
         algo_params=algo_params,
         sv=sv,
         qe=qe, )
 
-    info = f'{mAPs}'
+    info = f'{(mAP, mAP_new)}'
 
     with open(results_file, 'a') as fout:
         print(info, file=fout)
@@ -86,13 +86,13 @@ def start_train_test_all_descriptors_and_modes(
     for mode_name, mode_params in modes_params.items():
         for des_type in descriptors:
             algo_params['des_type'] = des_type
-            mAPs = do_train_test(
+            mAP, mAP_new = do_train_test(
                 train_dir=train_dir, test_dir=test_dir, gt_dir=gt_dir,
                 algo_params=algo_params,
                 sv=mode_params[0],
                 qe=mode_params[1], )
 
-            info = f'{des_type}\t{mode_name}\t{str(Path(train_dir).name)}\t{str(Path(test_dir).name)}\t{mAPs}'
+            info = f'{des_type}\t{mode_name}\t{str(Path(train_dir).name)}\t{str(Path(test_dir).name)}\t{(mAP, mAP_new)}'
             with open(results_file, 'a') as fout:
                 print(info, file=fout)
 
@@ -108,11 +108,11 @@ def start_test(
     if not os.path.exists(str(Path(cbir.BASE_DIR) / 'results')):
         os.mkdir(str(Path(cbir.BASE_DIR) / 'results'))
 
-    mAPs = evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
+    mAP, mAP_new = evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
                          sv_enable=sv, qe_enable=qe)
 
 
-    info = f'{mAPs}'
+    info = f'{(mAP, mAP_new)}'
     with open(results_file, 'a') as fout:
         print(info, file=fout)
 

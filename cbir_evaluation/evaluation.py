@@ -100,6 +100,26 @@ def AP(query_and_gt_images, answer_images, debug=False):
 
     return sum_precision / float(len(answer_images))
 
+def AP_new(query_and_gt_images, answer_images, debug=False):
+    query = query_and_gt_images[0]
+    gt_images = query_and_gt_images[1]
+    gt_images_suffixes = [os.path.split(gt_image)[1] for gt_image in gt_images]
+
+    max_gt_possible = min(len(gt_images), len(answer_images))
+    sum_precision = 0.0
+    true_positive = 0
+    for index_answer_image, answer_image in enumerate(answer_images):
+        if os.path.split(answer_image[0][1])[1] in gt_images_suffixes:
+            true_positive += 1
+            sum_precision += true_positive / float(index_answer_image + 1)
+
+            if debug:
+                print("{}/{}".format(true_positive, index_answer_image + 1))
+        elif debug:
+            print("-")
+
+    return sum_precision / float(max_gt_possible)
+
 
 def evaluate(train_dir, test_dir, gt_dir,
              algo_params,
@@ -138,6 +158,7 @@ def evaluate(train_dir, test_dir, gt_dir,
 
     queries, ok_answers, good_answers, junk_answers = load_gt(test_dir, gt_dir)
     scores = []
+    scores_new = []
     answers = []
     for trial in range(5):
         answers_trial = []
@@ -159,6 +180,7 @@ def evaluate(train_dir, test_dir, gt_dir,
             print(f'similar_images: {similar_images}')
 
             scores.append(AP(query_gt_now, similar_images))
+            scores_new.append(AP_new(query_gt_now, similar_images))
             answers_trial.append([query_gt_now[0], [s[0][1] for s in similar_images]])
 
         answers.append(answers_trial)
@@ -175,18 +197,13 @@ def evaluate(train_dir, test_dir, gt_dir,
     with open(answers_file, 'wb') as fout:
         pickle.dump(answers, fout, pickle.HIGHEST_PROTOCOL)
 
-    mAP_overall = numpy.mean(scores)
-    mAPs = [mAP_overall]
-    limit_mAPs_len = 10
-    len_mAPs = min(len(scores), limit_mAPs_len)
-
-    for index_mAP in range(1, len_mAPs + 1):
-        mAPs += [numpy.mean(scores[:index_mAP])]
-
+    mAP = numpy.mean(scores)
+    mAP_new = numpy.mean(scores_new)
     print(f'answers: {answers}')
     print(f'scores: {scores}')
-    print(f'mAPs: {mAPs}')
-    return mAPs
+    print(f'mAP: {mAP}')
+    print(f'mAP_mew: {mAP_new}')
+    return mAP, mAP_new
 
 
 def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
@@ -196,6 +213,7 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
 
     queries, ok_answers, good_answers, junk_answers = load_gt(database_photos_dir, gt_dir)
     scores = []
+    scores_new = []
     answers = []
     for trial in range(5):
         answers_trial = []
@@ -217,6 +235,7 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
             print(f'similar_images: {similar_images}')
 
             scores.append(AP(query_gt_now, similar_images))
+            scores_new.append(AP_new(query_gt_now, similar_images))
             answers_trial.append([query_gt_now[0], [s[0][1] for s in similar_images]])
 
         answers.append(answers_trial)
@@ -231,18 +250,15 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
     with open(answers_file, 'wb') as fout:
         pickle.dump(answers, fout, pickle.HIGHEST_PROTOCOL)
 
-    mAP_overall = numpy.mean(scores)
-    mAPs = [mAP_overall]
-    limit_mAPs_len = 10
-    len_mAPs = min(len(scores), limit_mAPs_len)
-
-    for index_mAP in range(1, len_mAPs + 1):
-        mAPs += [numpy.mean(scores[:index_mAP])]
+    mAP = numpy.mean(scores)
+    mAP_new = numpy.mean(scores_new)
 
     print(f'answers: {answers}')
     print(f'scores: {scores}')
-    print(f'mAPs: {mAPs}')
-    return mAPs
+    print(f'scores: {scores_new}')
+    print(f'mAP: {mAP}')
+    print(f'mAP_new: {mAP_new}')
+    return mAP, mAP_new
 
 
 def show_example_ap():
