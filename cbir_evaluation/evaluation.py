@@ -44,7 +44,7 @@ def load_gt(images_path, gt_path):
             text = f.readline().split()
             prefix = text[0].split("_")[1]
             if label == 'paris':
-                f_name = os.path.join(images_path, prefix, text[0] + '.jpg')
+                f_name = os.path.join(images_path, text[0] + '.jpg')
             elif label == 'oxford':
                 f_name = os.path.join(images_path, text[0][5:] + '.jpg')
             x1 = round(float(text[1]))
