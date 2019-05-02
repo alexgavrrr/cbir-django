@@ -142,6 +142,7 @@ def evaluate(train_dir, test_dir, gt_dir,
         **algo_params, )
 
     cbir_core = CBIRCore.get_instance(test_database_name, test_index_name)
+    cbir_core.set_fd(cbir_core.load_fd())
 
     list_paths_to_images_to_train_clusterer = find_image_files(train_dir, ['jpg'], recursive=False)
     list_paths_to_images_to_index = find_image_files(test_dir, ['jpg'], recursive=False)
@@ -153,6 +154,7 @@ def evaluate(train_dir, test_dir, gt_dir,
     cbir_core.compute_descriptors(list_paths_to_images_to_train_clusterer,
                                   to_index=False,
                                   for_training_clusterer=True)
+    cbir_core.set_ca(cbir_core.load_ca())
     cbir_core.train_clusterer()
     cbir_core.add_images_to_index()
 
@@ -185,6 +187,9 @@ def evaluate(train_dir, test_dir, gt_dir,
 
         answers.append(answers_trial)
 
+    cbir_core.unset_fd()
+    cbir_core.unset_ca()
+
     answers_file = str(Path(cbir.BASE_DIR) / 'answers'
                        / '{des_type}_{sv_enable}_{qe_enable}'
                          '_{train_dir}_{test_dir}.pkl'.format(des_type=algo_params['des_type'],
@@ -210,6 +215,8 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
                   sv_enable=True, qe_enable=True,
                   topk=5, n_test_candidates=100, ):
     cbir_core = CBIRCore.get_instance(database_name, index_name)
+    cbir_core.set_fd(cbir_core.load_fd())
+    cbir_core.set_ca(cbir_core.load_ca())
 
     queries, ok_answers, good_answers, junk_answers = load_gt(database_photos_dir, gt_dir)
     scores = []
@@ -239,6 +246,9 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
             answers_trial.append([query_gt_now[0], [s[0][1] for s in similar_images]])
 
         answers.append(answers_trial)
+
+    cbir_core.unset_fd()
+    cbir_core.unset_ca()
 
     answers_file = str(Path(cbir.BASE_DIR) / 'answers'
                        / '{sv_enable}_{qe_enable}'
