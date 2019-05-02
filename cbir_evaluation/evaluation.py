@@ -206,6 +206,7 @@ def evaluate(train_dir, test_dir, gt_dir,
     mAP_new = numpy.mean(scores_new)
     print(f'answers: {answers}')
     print(f'scores: {scores}')
+    print(f'scores: {scores_new}')
     print(f'mAP: {mAP}')
     print(f'mAP_mew: {mAP_new}')
     return mAP, mAP_new
