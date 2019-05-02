@@ -66,7 +66,7 @@ def start_train_test_all_descriptors_and_modes(
     descriptors = [
         'l2net',
         'HardNetAll',
-        'surf',
+        # 'surf',
         # 'DeepCompare',
         # 'sift'
     ]
@@ -74,7 +74,7 @@ def start_train_test_all_descriptors_and_modes(
     modes_params = {
         'BoW': (False, False),
         'SV': (True, False),
-        'SV+QE': (True, True),
+        # 'SV+QE': (True, True),
     }
 
     results_file = str(Path(cbir.BASE_DIR) / 'results'
