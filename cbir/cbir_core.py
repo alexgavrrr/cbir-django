@@ -641,7 +641,7 @@ class CBIRCore:
             name = name_descriptor_kp_pair[0]
             descriptor = name_descriptor_kp_pair[1][0]
             descriptor_kp = name_descriptor_kp_pair[1][1]
-            descriptors_kp += [kp]
+            descriptors_kp += [descriptor_kp]
 
             # One candidate is pair of (some_id, name) for backward-compatibility
             candidates_rearranged += [(None, name)]
