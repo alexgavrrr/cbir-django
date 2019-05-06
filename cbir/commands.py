@@ -89,6 +89,7 @@ def evaluate(
         sv=sv,
         qe=qe)
 
+
 def evaluate_only(
         database_name, index_name, database_photos_dir, gt_dir,
         sv, qe,

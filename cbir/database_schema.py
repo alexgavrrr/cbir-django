@@ -49,7 +49,6 @@ class PhotoBow(BaseModel):
     bow = BlobField(null=False)
 
 
-
 class Word(BaseModel):
     """
     Class for retrieving by word

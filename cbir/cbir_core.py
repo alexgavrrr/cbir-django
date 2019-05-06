@@ -1,9 +1,9 @@
+import functools
 import logging
 import os
 import pickle
 import time
 from pathlib import Path
-import functools
 
 import cv2
 import numpy as np
@@ -41,6 +41,7 @@ class CBIRCore:
             if not fd_loaded_before:
                 self.unset_fd()
             return result
+
         return wrap
 
     # staticmethod. Look bottom of the class
@@ -54,6 +55,7 @@ class CBIRCore:
             if not ca_loaded_before:
                 self.unset_ca()
             return result
+
         return wrap
 
     @classmethod
@@ -620,7 +622,7 @@ class CBIRCore:
              in candidates])
         names_descriptors_kp_pair_iterator = ((photo_descriptor_raw['name'],
                                                self.deserialize_descriptor(photo_descriptor_raw['descriptor']))
-                                        for photo_descriptor_raw in photo_descriptors_raw_iterator)
+                                              for photo_descriptor_raw in photo_descriptors_raw_iterator)
 
         # Brute force matcher
         bf = cv2.BFMatcher(cv2.NORM_L2)
