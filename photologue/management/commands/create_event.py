@@ -1,11 +1,12 @@
+import logging
 import os
 from pathlib import Path
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.shortcuts import get_object_or_404
+
 from photologue import models
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,6 @@ class Command(BaseCommand):
         parser.add_argument('--event_slug', required=False)
         parser.add_argument('--sv', action='store_true', default=False)
         parser.add_argument('--qe', action='store_true', default=False)
-
 
     def handle(self, *args, **options):
         database_name = options['database']
@@ -86,7 +86,6 @@ class Command(BaseCommand):
                                         is_query=True,
                                         database_photo=database_photo, )
         event_photo.save()
-
 
         sv = options['sv']
         qe = options['qe']

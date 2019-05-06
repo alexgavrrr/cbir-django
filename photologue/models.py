@@ -1,7 +1,6 @@
-import shutil
-from argparse import Namespace
 import logging
 import os
+import shutil
 from datetime import datetime
 from inspect import isclass
 from io import BytesIO
@@ -11,29 +10,25 @@ import exifread
 from PIL import (Image,
                  ImageFile,
                  ImageFilter,
-                 ImageEnhance,)
+                 ImageEnhance, )
+from django.conf import settings
 from django.core.exceptions import ValidationError
-
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
+from django.utils.crypto import get_random_string
 from django.utils.encoding import force_text, filepath_to_uri, smart_str
 from django.utils.functional import curry
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
-from django.conf import settings
-from django.utils.crypto import get_random_string
 
+from cbir.cbir_core import CBIRCore
+from cbir.legacy_utils import find_image_files
 from .utils.reflection import add_reflection
 from .utils.watermark import apply_watermark
-
-import cbir
-import cbir.commands
-from cbir.legacy_utils import find_image_files
-from cbir.cbir_core import CBIRCore
 
 logger = logging.getLogger('photologue.models')
 
@@ -135,9 +130,6 @@ IMAGE_FILTERS_HELP_TEXT = _('Chain multiple filters using the following pattern 
                             % (', '.join(filter_names)))
 
 size_method_map = {}
-
-
-
 
 
 def get_path_to_database(database, relative_to):
@@ -338,7 +330,6 @@ class CBIRIndex(models.Model):
 
         unique_together = (('database', 'name'),)
 
-
     def __str__(self):
         return self.title
 
@@ -369,9 +360,9 @@ class CBIRIndex(models.Model):
                                         K=CBIRIndex.K, L=CBIRIndex.L)
         cbir_core = CBIRCore.get_instance(database_name, cbir_index_name)
         cbir_core.compute_descriptors(list(set(list_paths_to_images_to_index)
-                                                 | set(list_paths_to_images_to_train_clusterer)),
-                                        to_index=True,
-                                        for_training_clusterer=True)
+                                           | set(list_paths_to_images_to_train_clusterer)),
+                                      to_index=True,
+                                      for_training_clusterer=True)
         cbir_core.train_clusterer()
         cbir_core.add_images_to_index()
         self.built = True
@@ -442,8 +433,8 @@ class CBIRIndex(models.Model):
 
         list_paths_to_photos_from_database_whose_descriptors_not_computed_yet = None  # TODO
         cbir_core.compute_descriptors(list_paths_to_photos_from_database_whose_descriptors_not_computed_yet,
-                                            to_index=True,
-                                            for_training_clusterer=True)
+                                      to_index=True,
+                                      for_training_clusterer=True)
         cbir_core.train_clusterer()
         cbir_core.add_images_to_index()
         self.built = True
@@ -578,7 +569,7 @@ class ImageModel(models.Model):
         full_path_to_new_photo = os.path.join(settings.MEDIA_ROOT, path_to_new_photo)
 
         if os.path.exists(full_path_to_new_photo):
-            random_suffix =  get_random_string(length=7)
+            random_suffix = get_random_string(length=7)
 
             name_part, ext_part = os.path.splitext(full_path_to_new_photo)
             name_part += random_suffix
@@ -611,6 +602,7 @@ class ImageModel(models.Model):
                 return mark_safe(u'<a href="{}"><img src="{}"></a>'.format(self.get_absolute_url(), func()))
             else:
                 return mark_safe(u'<a href="{}"><img src="{}"></a>'.format(self.image.url, func()))
+
     admin_thumbnail.short_description = _('Thumbnail')
     admin_thumbnail.allow_tags = True
 
@@ -640,7 +632,7 @@ class ImageModel(models.Model):
             self.create_size(photosize)
         try:
             return Image.open(self.image.storage.open(
-            self._get_SIZE_filename(size))).size
+                self._get_SIZE_filename(size))).size
         except:
             return None
 
@@ -718,7 +710,7 @@ class ImageModel(models.Model):
             new_dimensions = (int(round(cur_width * ratio)),
                               int(round(cur_height * ratio)))
             if new_dimensions[0] > cur_width or \
-               new_dimensions[1] > cur_height:
+                    new_dimensions[1] > cur_height:
                 if not photosize.upscale:
                     return im
             im = im.resize(new_dimensions, Image.ANTIALIAS)
@@ -874,6 +866,7 @@ class BaseEffect(models.Model):
 
     def admin_sample(self):
         return u'<img src="%s">' % self.sample_url()
+
     admin_sample.short_description = 'Sample'
     admin_sample.allow_tags = True
 
@@ -915,7 +908,6 @@ class BaseEffect(models.Model):
 
 
 class PhotoEffect(BaseEffect):
-
     """ A pre-defined effect to apply to photos """
     transpose_method = models.CharField(_('rotate or flip'),
                                         max_length=15,
@@ -1002,7 +994,7 @@ class Watermark(BaseEffect):
 
     def delete(self):
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." \
-            % (self._meta.object_name, self._meta.pk.attname)
+                                               % (self._meta.object_name, self._meta.pk.attname)
         super(Watermark, self).delete()
         self.image.storage.delete(self.image.name)
 
@@ -1012,7 +1004,6 @@ class Watermark(BaseEffect):
 
 
 class PhotoSize(models.Model):
-
     """About the Photosize name: it's used to create get_PHOTOSIZE_url() methods,
     so the name has to follow the same restrictions as any Python method name,
     e.g. no spaces or non-ascii characters."""
@@ -1025,7 +1016,7 @@ class PhotoSize(models.Model):
                                 '"thumbnail", "display", "small", "main_page_widget".'),
                             validators=[RegexValidator(regex='^[a-z0-9_]+$',
                                                        message='Use only plain lowercase letters (ASCII), numbers and '
-                                                       'underscores.'
+                                                               'underscores.'
                                                        )]
                             )
     width = models.PositiveIntegerField(_('width'),
@@ -1035,7 +1026,7 @@ class PhotoSize(models.Model):
     height = models.PositiveIntegerField(_('height'),
                                          default=0,
                                          help_text=_(
-        'If height is set to "0" the image will be scaled to the supplied width'))
+                                             'If height is set to "0" the image will be scaled to the supplied width'))
     quality = models.PositiveIntegerField(_('quality'),
                                           choices=JPEG_QUALITY_CHOICES,
                                           default=70,
@@ -1099,7 +1090,7 @@ class PhotoSize(models.Model):
 
     def delete(self):
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." \
-            % (self._meta.object_name, self._meta.pk.attname)
+                                               % (self._meta.object_name, self._meta.pk.attname)
         self.clear_cache()
         super(PhotoSize, self).delete()
 
@@ -1108,6 +1099,7 @@ class PhotoSize(models.Model):
 
     def _set_size(self, value):
         self.width, self.height = value
+
     size = property(_get_size, _set_size)
 
 
@@ -1140,25 +1132,6 @@ def init_size_method_map():
             {'base_name': '_get_SIZE_filename', 'size': size}
 
 
-# def add_default_site(instance, created, **kwargs):
-#     """
-#     Called via Django's signals when an instance is created.
-#     In case PHOTOLOGUE_MULTISITE is False, the current site (i.e.
-#     ``settings.SITE_ID``) will always be added to the site relations if none are
-#     present.
-#     """
-#     if not created:
-#         return
-#     if getattr(settings, 'PHOTOLOGUE_MULTISITE', False):
-#         return
-#     if instance.sites.exists():
-#         return
-#     instance.sites.add(Site.objects.get_current())
-# post_save.connect(add_default_site, sender=Gallery)
-# post_save.connect(add_default_site, sender=Photo)
-
-
-
 class DatabasePhoto(ImageModel):
     slug = models.SlugField('slug',
                             unique=True, )
@@ -1180,7 +1153,7 @@ class DatabasePhoto(ImageModel):
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = (('database', 'name'), )
+        unique_together = (('database', 'name'),)
 
     def __str__(self):
         return f'{self.slug} from {self.database}'
@@ -1198,9 +1171,7 @@ class DatabasePhoto(ImageModel):
         return reverse('photologue:database_photo_detail', args=[self.slug])
 
 
-
 class EventPhoto(ImageModel):
-
     # TODO: Make slug unique?
     slug = models.SlugField('slug',
                             unique=False, )

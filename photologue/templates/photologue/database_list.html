@@ -5,41 +5,43 @@
 
 {% block content %}
 
-    <div class="row col-lg-12">
-        <h1 class="page-header">{% trans "All databases" %}</h1>
-    </div>
+<div class="row col-lg-12">
+    <h1 class="page-header">{% trans "All databases" %}</h1>
+</div>
 
-    <h4>
-        <a href="{% url 'photologue:database_create' %}">
-            Create new database
-        </a>
-    </h4>
+<h4>
+    <a href="{% url 'photologue:database_create' %}">
+        Create new database
+    </a>
+</h4>
 
-    {% if object_list %}
-        {% for database in object_list %}
-            <div class="row col-lg-12">
-                <h2><a href="{{ database.get_absolute_url }}">{{ database.title }}</a></h2>
-                <p class="muted"><small>{% trans "Published" %} {{ database.date_added }}</small></p>
-                {% if database.description %}
-                    <h4>Description</h4>
-                    <p style="text-indent: 3%">{{ database.description|safe }}</p>
-                {% endif %}
-
-                <h4>Events</h4>
-                <ul>
-                {% for event in database.get_events %}
-                    <li>
-                        <a href="{{ event.get_absolute_url }}">{{ event.title }}</a>
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>
-        {% endfor %}
-    {% else %}
-        <div class="row col-lg-12">{% trans "No databases were found" %}.</div>
+{% if object_list %}
+{% for database in object_list %}
+<div class="row col-lg-12">
+    <h2><a href="{{ database.get_absolute_url }}">{{ database.title }}</a></h2>
+    <p class="muted">
+        <small>{% trans "Published" %} {{ database.date_added }}</small>
+    </p>
+    {% if database.description %}
+    <h4>Description</h4>
+    <p style="text-indent: 3%">{{ database.description|safe }}</p>
     {% endif %}
 
-    <!--TODO: Research how paginator works-->
-    <!--include "photologue/includes/paginator.html"-->
+    <h4>Events</h4>
+    <ul>
+        {% for event in database.get_events %}
+        <li>
+            <a href="{{ event.get_absolute_url }}">{{ event.title }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+{% else %}
+<div class="row col-lg-12">{% trans "No databases were found" %}.</div>
+{% endif %}
+
+<!--TODO: Research how paginator works-->
+<!--include "photologue/includes/paginator.html"-->
 
 {% endblock %}

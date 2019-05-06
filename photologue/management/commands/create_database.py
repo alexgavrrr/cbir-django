@@ -1,13 +1,10 @@
 import logging
 import os
-import shutil
 from pathlib import Path
 
-from tqdm import tqdm
-
-from django.core.management.base import BaseCommand, CommandError
-from django.shortcuts import get_object_or_404
 from django.conf import settings
+from django.core.management.base import BaseCommand
+from tqdm import tqdm
 
 from cbir.legacy_utils import find_image_files
 from photologue import models

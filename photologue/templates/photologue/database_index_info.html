@@ -5,25 +5,25 @@
 
 {% block content %}
 
-	<div class="row col-lg-12">
-        <h2 class="page-header">{{ database.title }} indexes info</h2>
+<div class="row col-lg-12">
+    <h2 class="page-header">{{ database.title }} indexes info</h2>
 
-        {% if cbir_indexes %}
-            <ul>
-            {% for cbir_index in cbir_indexes %}
-                    <li>
-                        <a href="{{ cbir_index.get_absolute_url }}">
-                            {{ cbir_index }}
-                        </a>
-                        - TODO how many indexed
-                    </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            No indexes
-        {% endif %}
+    {% if cbir_indexes %}
+    <ul>
+        {% for cbir_index in cbir_indexes %}
+        <li>
+            <a href="{{ cbir_index.get_absolute_url }}">
+                {{ cbir_index }}
+            </a>
+            - TODO how many indexed
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    No indexes
+    {% endif %}
 
-        <div><a href="{% url 'photologue:database_detail' database.slug %}" class="btn btn-default">Database {{ database }}</a></div>
-	</div>
+    <div><a href="{% url 'photologue:database_detail' database.slug %}" class="btn btn-default">Database {{ database }}</a></div>
+</div>
 
 {% endblock %}

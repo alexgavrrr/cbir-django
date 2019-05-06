@@ -5,16 +5,14 @@ from io import BytesIO
 from pathlib import Path
 
 from PIL import Image
+from django.contrib import messages
 from django.core.files.base import ContentFile
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse
-from django.utils.text import slugify
-from django.contrib import messages
 from django.views.generic import ListView, DetailView
 from tqdm import tqdm
-
 
 from . import forms
 from . import models
@@ -90,7 +88,7 @@ def database_create_view(request):
                         if request:
                             messages.warning(request,
                                              'Could not process file "{0}" in the .zip archive.'
-                                                .format(filename),
+                                             .format(filename),
                                              fail_silently=True)
                         continue
 

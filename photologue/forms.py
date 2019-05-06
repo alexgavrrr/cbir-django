@@ -59,7 +59,7 @@ class EventForm(ModelForm):
 
 class CbirIndexForm(ModelForm):
     set_as_default = forms.BooleanField(required=False,
-                                     initial=False,)
+                                        initial=False, )
 
     class Meta:
         model = CBIRIndex
