@@ -319,6 +319,7 @@ class CBIRCore:
 
         data_dependent_params = self.load_data_dependent_params()
         freqs = data_dependent_params['freqs']
+
         for photo in tqdm(database_service
                                   .get_photos_descriptors_needed_to_add_to_index_iterator(self.db),
                           desc='Applying clusterer, updaing bow and inverted index '
@@ -349,6 +350,16 @@ class CBIRCore:
         logger.info(f'Finished sorting word_photo relations over {round(finish - start, 1)} sec = '
                     f'{round((finish - start) / 60, 1)} min')
 
+        def _prepare_word_photos(word_, word_photos_):
+            word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
+            word_photos_old = (set() if not word_photos_old_raw
+                               else self.deserialize_word_photos(word_photos_old_raw[0]['photos']))
+            prepared = {
+                'word': word_,
+                'photos': self.serialize_word_photos(word_photos_ | word_photos_old)
+            }
+            return prepared
+
         # Sort by word and get word photo relations
         word_now = None
         word_photos_now = set()
@@ -357,30 +368,15 @@ class CBIRCore:
             word_next = word_photo_relation['word']
             photo_next = word_photo_relation['photo']
             if word_now and word_now != word_next:
-                word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
-                word_photos_old = set()
-                if word_photos_old_raw:
-                    word_photos_old = self.deserialize_word_photos(word_photos_old_raw[0]['photos'])
-                word_to_insert = {
-                    'word': word_now,
-                    'photos': self.serialize_word_photos(word_photos_now | word_photos_old)
-                }
-                database_service.insert_or_replace_word(self.db, [word_to_insert])
+                word_to_insert = _prepare_word_photos(word_now, word_photos_now)
+                database_service.insert_or_replace_words(self.db, [word_to_insert])
                 word_photos_now = set()
-
             word_now = word_next
             word_photos_now.add(photo_next)
 
         if word_now:
-            word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
-            word_photos_old = set()
-            if word_photos_old_raw:
-                word_photos_old = self.deserialize_word_photos(word_photos_old_raw[0]['photos'])
-            word_to_insert = {
-                'word': word_now,
-                'photos': self.serialize_word_photos(word_photos_now | word_photos_old)
-            }
-            database_service.insert_or_replace_word(self.db, [word_to_insert])
+            word_to_insert = _prepare_word_photos(word_now, word_photos_now)
+            database_service.insert_or_replace_words(self.db, [word_to_insert])
 
         database_service.clean_word_photo_relations_table(self.db)
 
