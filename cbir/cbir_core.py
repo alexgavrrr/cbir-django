@@ -167,11 +167,6 @@ class CBIRCore:
     def __str__(self):
         return f'CBIRCore {self.database} {self.name}'
 
-    def empty(self):
-        # TODO: Rewrite or delete.
-        inverted_index = self.load_inverted_index()
-        return len(inverted_index) == 0
-
     @decorator_load_fd_if_needed
     def compute_descriptors(self,
                             list_paths_to_images,
@@ -288,12 +283,6 @@ class CBIRCore:
             count_photos_for_training += 1
             count_descriptors_flattened_for_training += deserialized_descriptor_without_kp.shape[0]
 
-            # TODO: Remove comment
-            # print(f'deserialized_descriptor.shape: {deserialized_descriptor.shape}')
-            # print(f'end_now: {end_now}')
-            # print(f'begin_placehoder: {begin_placehoder}')
-            # print(f'end_now - begin_placehoder: {end_now - begin_placehoder}')
-
             placeholder[begin_placehoder:end_now] = deserialized_descriptor_without_kp[0: end_now - begin_placehoder]
             begin_placehoder = end_now
             if end_now == placeholder.shape[0]:
@@ -325,8 +314,6 @@ class CBIRCore:
         """
         logger.info(f'Adding photos to index {self.name} in database {self.database}')
 
-        # TODO: Do not clean here?
-        # database_service.clean_word_photo_relations_table(self.db)
         database_service.create_if_needed_word_photo_relations_table(self.db)
 
         data_dependent_params = self.load_data_dependent_params()
@@ -334,7 +321,7 @@ class CBIRCore:
         for photo in tqdm(database_service
                                   .get_photos_descriptors_needed_to_add_to_index_iterator(self.db),
                           desc='Applying clusterer, updaing bow and inverted index '
-                               'for every photo to needed to add to index'):
+                               'for every photo needed to add to index'):
             word_photo_relations = []
             photo_descriptor = self.deserialize_descriptor(photo.descriptor)
             photo_words = self.ca.predict(photo_descriptor[0])
@@ -409,7 +396,6 @@ class CBIRCore:
         data_dependent_params['idf'] = idf
         data_dependent_params['most_frequent'] = most_frequent
         data_dependent_params['least_frequent'] = least_frequent
-
         CBIRCore._save_data_dependent_params(self.database, self.name, data_dependent_params)
 
     def get_candidates_raw(self, query, filter=True):

@@ -17,7 +17,6 @@ def detect(detector, image, max_keypoints, out=None):
     Detector object must have method 'detect()'
     '''
     kp = detector.detect(image)
-    # kp = filter_points(kp)
     return sorted(kp,
                   key=lambda x: x.response,
                   reverse=True)[:max_keypoints]
@@ -36,9 +35,6 @@ def compute(model, image, patch_size, kp, expansion_coef=1.3,
                                             k.pt),
                           (patch_size, patch_size))
                for k in kp]
-    # N_DRAW = 30
-    # patches_to_draw = random.sample(patches, N_DRAW)
-    # draw_patches(patches_to_draw)
 
     patches = Variable(torch.FloatTensor(np.array(patches).reshape(-1, 1, patch_size, patch_size)))
     it = int(patches.size()[0] / bs)
@@ -183,7 +179,7 @@ class HardNetVanilla(nn.Module):
 
 class L2net_des:
     def __init__(self, max_keypoints=200, patch_size=32,
-                 model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/l2net_L_N+.pt',  # TODO: change path to model to be absolute.
+                 model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/l2net_L_N+.pt',
                  use_cuda=True):
 
         self.use_cuda = use_cuda
@@ -209,7 +205,7 @@ class L2net_des:
 
 
 class HardNetBrown_des:
-    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/6Brown/hardnetBr6.pth',  # TODO: change path to model to be absolute.
+    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/6Brown/hardnetBr6.pth',
                  patch_size=32, max_keypoints=200, use_cuda=True):
         self.use_cuda = use_cuda
         self.detector = cv2.xfeatures2d.SURF_create(350)
@@ -228,7 +224,7 @@ class HardNetBrown_des:
 
 
 class HardNetAll_des:
-    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/pretrained_all_datasets/HardNet++.pth',  # TODO: change path to model to be absolute.
+    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/pretrained_all_datasets/HardNet++.pth',
                  patch_size=32, max_keypoints=500, use_cuda=True):
         self.use_cuda = use_cuda
         self.detector = cv2.xfeatures2d.SURF_create(350)
@@ -252,7 +248,7 @@ class HardNetAll_des:
 
 
 class HardNetHPatches_des:
-    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/3rd_party/HardNetPS/HardNetPS.pth',  # TODO: change path to model to be absolute.
+    def __init__(self, model_src=Path(cbir.BASE_DIR) / 'cbir_pretrained/3rd_party/HardNetPS/HardNetPS.pth',
                  patch_size=32, max_keypoints=200, use_cuda=True):
         self.use_cuda = use_cuda
         self.detector = cv2.xfeatures2d.SURF_create(350)

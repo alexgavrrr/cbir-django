@@ -21,7 +21,6 @@ class VocabularyTree:
         self.n_images = None
 
     def fit(self, data):
-        logging.getLogger('cbir.vocabulary_tree').warning('Memory ineffiient logging')
         self.ca = []
         self.ca.append(MiniBatchKMeans(n_clusters=self.K,
                                        batch_size=1000).fit(data))
