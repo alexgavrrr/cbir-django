@@ -315,6 +315,7 @@ class CBIRCore:
         logger.info(f'Adding photos to index {self.name} in database {self.database}')
 
         database_service.create_if_needed_word_photo_relations_table(self.db)
+        database_service.delete_index_if_needed_in_word_photo_relations(self.db)
 
         data_dependent_params = self.load_data_dependent_params()
         freqs = data_dependent_params['freqs']

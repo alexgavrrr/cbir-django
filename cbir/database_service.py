@@ -35,6 +35,16 @@ def create_if_needed_word_photo_relations_table(db):
                 WordPhoto.create_table()
 
 
+def delete_index_if_needed_in_word_photo_relations(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
+                migrator = SqliteMigrator(db)
+                try:
+                    migrate(migrator.drop_index('wordphoto', 'wordphoto_word'), )
+                except peewee.OperationalError as exc:
+                    pass
+
+
 def sort_word_photo_relations_table(db):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
@@ -180,7 +190,7 @@ def add_word_photo_relations(db, relations):
                 WordPhoto.insert_many(relations).execute()
 
 
-def insert_or_replace_word(db, words_photos):
+def insert_or_replace_words(db, words_photos):
     """
     :param db:
     :param words_photos: one word = {
