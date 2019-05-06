@@ -1,4 +1,3 @@
-import json
 import os
 import pickle
 import re
@@ -8,9 +7,9 @@ import cv2
 import numpy
 from tqdm import tqdm
 
+import cbir
 from cbir.cbir_core import CBIRCore
 from cbir.legacy_utils import find_image_files
-import cbir
 
 
 def load_gt(images_path, gt_path):
@@ -99,6 +98,7 @@ def AP(query_and_gt_images, answer_images, debug=False):
             print("-")
 
     return sum_precision / float(len(answer_images))
+
 
 def AP_new(query_and_gt_images, answer_images, debug=False):
     query = query_and_gt_images[0]

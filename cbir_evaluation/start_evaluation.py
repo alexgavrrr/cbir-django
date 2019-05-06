@@ -13,8 +13,8 @@ def do_train_test(train_dir, test_dir, gt_dir,
                   algo_params,
                   sv=True, qe=True):
     mAP, mAP_new = evaluate(train_dir, test_dir, gt_dir,
-                    algo_params=algo_params,
-                    sv_enable=sv, qe_enable=qe)
+                            algo_params=algo_params,
+                            sv_enable=sv, qe_enable=qe)
     return mAP, mAP_new
 
 
@@ -109,8 +109,7 @@ def start_test(
         os.mkdir(str(Path(cbir.BASE_DIR) / 'results'))
 
     mAP, mAP_new = evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
-                         sv_enable=sv, qe_enable=qe)
-
+                                 sv_enable=sv, qe_enable=qe)
 
     info = f'{(mAP, mAP_new)}'
     with open(results_file, 'a') as fout:
