@@ -28,15 +28,10 @@
         <li>
             <h5>{{ query }}</h5>
             {{ query.description }}
-            <p>
-                <a href="{{ query.get_absolute_url }}">
-                    Event query link
-                </a>
-            </p>
 
             <p>
                 <a href="{{ query.database_photo.get_absolute_url }}">
-                    Corresponding database photo link
+                    database_photo link
                 </a>
             </p>
             <img src="{{ query.get_display_url }}" class="thumbnail" alt="{{ query.title }}">
@@ -59,7 +54,7 @@
 
             <p>
                 <a href="{{ photo.database_photo.get_absolute_url }}">
-                    Corresponding database photo link
+                    database_photo
                 </a>
             </p>
             <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
