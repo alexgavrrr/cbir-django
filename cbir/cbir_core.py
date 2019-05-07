@@ -22,9 +22,6 @@ from cbir.vocabulary_tree import VocabularyTree
 
 logger = logging.getLogger('cbir.photo_storage_inverted_file')
 
-DES_TYPE = 'l2net'
-MAX_KEYPOINTS = 2000
-
 
 class CBIRCore:
     # staticmethod. Look bottom of the class
