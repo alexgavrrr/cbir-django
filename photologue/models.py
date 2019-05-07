@@ -335,14 +335,14 @@ class CBIRIndex(models.Model):
     def get_absolute_url(self):
         return reverse('photologue:database_index_detail', args=[self.slug])
 
-    def build_if_needed(self):
+    def build_if_needed(self, algo_params):
         if self.building_needed():
-            self.build()
+            self.build(algo_params)
 
     def building_needed(self):
         return not self.built and not self.being_built()
 
-    def build(self):
+    def build(self, algo_params):
         """
         Creates and builds index completely. For training algo uses all and only images from database.
         Not recommended.
@@ -353,8 +353,9 @@ class CBIRIndex(models.Model):
 
         database_name = self.database.slug
         cbir_index_name = self.name
+        des_type = algo_params.get('des_type') or CBIRIndex.DES_TYPE
         CBIRCore.create_empty_if_needed(database_name, cbir_index_name,
-                                        des_type=CBIRIndex.DES_TYPE,
+                                        des_type=des_type,
                                         max_keypoints=CBIRIndex.MAX_KEYPOINTS,
                                         K=CBIRIndex.K, L=CBIRIndex.L)
         cbir_core = CBIRCore.get_instance(database_name, cbir_index_name)

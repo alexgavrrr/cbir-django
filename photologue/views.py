@@ -334,9 +334,11 @@ def database_index_create_view(request):
         if form.is_valid():
             cbir_index = form.save(commit=False)
             cbir_index.database = database
+            des_type = form.cleaned_data.get('des_type')
+            algo_params = {'des_type': des_type}
 
             # TODO: Make call to build index asynchronous
-            cbir_index.build_if_needed()
+            cbir_index.build_if_needed(algo_params)
 
             cbir_index.save()
 

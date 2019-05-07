@@ -60,6 +60,12 @@ class EventForm(ModelForm):
 class CbirIndexForm(ModelForm):
     set_as_default = forms.BooleanField(required=False,
                                         initial=False, )
+    des_type = forms.ChoiceField(choices=(
+        ('HardNetAll', 'HardNetAll'),
+        ('l2net', 'l2net'),
+        ('sift', 'sift'),
+        (None, 'default')
+    ))
 
     class Meta:
         model = CBIRIndex
