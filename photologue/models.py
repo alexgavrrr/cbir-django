@@ -491,7 +491,6 @@ class Event(models.Model):
     def set_result_photos_from_names(self, result_photos_names, result_photos_similarities):
         database_photos_names = [Path(photo_name).name for photo_name in result_photos_names]
         for database_photo_name, result_photo_similarity in zip(database_photos_names, result_photos_similarities):
-            print(f'database_photo_name: {database_photo_name}')
             database_photo = self.database.get_photo_by_name(name=database_photo_name)
             event_photo = EventPhoto(slug='',
                                      event=self,
@@ -518,8 +517,7 @@ class Event(models.Model):
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
         cbir_core = CBIRCore.get_instance(cbir_database_name, cbir_index_name)
         result_photos_raw = cbir_core.search(query, **search_params)
-        print(f'result_photos: {result_photos_raw}')
-        print(f'result_photos[0]: {result_photos_raw[0]}')
+        logger.debug(f'result_photos: {result_photos_raw}')
         result_photos_names = [t[0][1] for t in result_photos_raw]
         result_photos_similarities = [t[1] for t in result_photos_raw]
         return result_photos_names, result_photos_similarities
