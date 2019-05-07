@@ -26,9 +26,6 @@ DES_TYPE = 'l2net'
 MAX_KEYPOINTS = 2000
 
 
-# TODO:
-# Use DATABASES_RELATIVE_TO_BASE_DIR instead of DATABASES
-
 class CBIRCore:
     # staticmethod. Look bottom of the class
     def decorator_load_fd_if_needed(func):
@@ -85,13 +82,13 @@ class CBIRCore:
 
     @classmethod
     def prepare_place_for_database_if_needed(cls, database):
-        if not os.path.exists(Path(cbir.DATABASES) / database):
-            os.mkdir(Path(cbir.DATABASES) / database)
+        if not os.path.exists(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / database):
+            os.mkdir(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / database)
 
     @classmethod
     def prepare_place_for_cbir_index_if_needed(cls, database, name):
-        if not os.path.exists(Path(cbir.DATABASES) / database / name):
-            os.mkdir(Path(cbir.DATABASES) / database / name)
+        if not os.path.exists(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / database / name):
+            os.mkdir(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / database / name)
 
     @classmethod
     def create_empty_if_needed(cls, database, name,
@@ -609,7 +606,7 @@ class CBIRCore:
                 matchesMask = mask.ravel().tolist()
             else:
                 logger.debug("Not enough matches are found - {}/{}".format(len(matches),
-                                                                    MIN_MATCH_COUNT))
+                                                                           MIN_MATCH_COUNT))
                 matchesMask = None
 
             all_matches.append(matches)
@@ -632,7 +629,7 @@ class CBIRCore:
     # Very common
     @classmethod
     def get_storage_path(cls, database, name):
-        return str(Path(cbir.DATABASES) / database / name)
+        return str(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / database / name)
 
     @classmethod
     def _save_params(cls, database, name,
@@ -795,15 +792,15 @@ class CBIRCore:
     def get_databases(cls):
         return [
             filename
-            for filename in os.listdir(cbir.DATABASES)
-            if os.path.isdir(Path(cbir.DATABASES) / filename)]
+            for filename in os.listdir(cbir.DATABASES_RELATIVE_TO_BASE_DIR)
+            if os.path.isdir(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / filename)]
 
     @classmethod
     def get_cbir_indexes_of_database(cls, database):
         return [
             filename
-            for filename in os.listdir(Path(cbir.DATABASES) / database)
-            if os.path.isdir(Path(cbir.DATABASES) / database / filename)]
+            for filename in os.listdir(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / database)
+            if os.path.isdir(Path(cbir.DATABASES_RELATIVE_TO_BASE_DIR) / database / filename)]
 
     def load_fd(self):
         max_keypoints = self.max_keypoints
