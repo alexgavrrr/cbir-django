@@ -199,9 +199,9 @@ class CBIRCore:
                     database_service.add_photos_descriptors(self.db, [new_photo_with_descriptor])
                 else:
                     count_defects += 1
-                    print("No keypoints found for {}".format(path_to_image))
+                    logger.debug("No keypoints found for {}".format(path_to_image))
 
-        print(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
+        logger.info(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
 
     def get_descriptor(self, path_to_image, raw=False, both=False, total_count_coordinate_for_bow=True):
         if type(path_to_image) is str:
@@ -209,7 +209,7 @@ class CBIRCore:
         elif type(path_to_image) is np.ndarray:
             image = path_to_image
         else:
-            print("Unknown type")
+            logger.debug(f"Unknown type: {type(path_to_image)}")
             image = None
 
         if image is None or self.fd is None:
@@ -437,7 +437,7 @@ class CBIRCore:
             raise ValueError(message)
 
         img_descriptor, img_bovw, kp = result_tuple
-        print("Descriptor for query got in {}".format(time.time() - start))
+        logger.info("Descriptor for query got in {}".format(time.time() - start))
 
         start = time.time()
 
@@ -452,9 +452,7 @@ class CBIRCore:
         candidates = set()
         for candidate_raw in candidates_raw:
             candidates |= self.deserialize_word_photos(candidate_raw)
-        print("Candidates got in {}".format(time.time() - start))
-        if debug:
-            print(len(candidates))
+        logger.info(f"{len(candidates)} candidates by words got in {time.time() - start}")
 
         # TODO: In the future make candidates an iterator. Now Algorithm keeps all candidates in RAM
         # because it applies sorting. But algorithm needs only top n_candidates.
@@ -476,52 +474,28 @@ class CBIRCore:
                                                candidate_bow[:-1] / candidate_bow[-1] * idf)))
 
         ranks = sorted(ranks, key=lambda x: x[1])
-        print(f'Ranks: {ranks}')
+        logger.debug(f'Ranks[:3]: {ranks[:3]}')
+
+        # TODO: Get rid of redundant None here `(None, rank[0])` which is for backward-compatibility now.
         candidates = [(None, rank[0]) for rank in ranks[:n_candidates]]
-        print("Short list got in {}".format(time.time() - start))
+        logger.info("Short list got in {}".format(time.time() - start))
 
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
-
-            # if not fd_loaded_before:
-            #     self.unset_fd()
-            # if not ca_loaded_before:
-            #     self.unset_ca()
             return candidates[:topk]
 
         start = time.time()
 
-        # TODO: Do not return and get descriptors_kp if it is not needed.
-        # candidates are rearranged (due to database_serivice specifics) and that is why returned
+        # TODO: Refactor ransac so that it does not return things for debug.
+        # candidates are rearranged (due to database_serivice specifics) and that is why ransac returns it.
         [candidates, all_matches, all_matches_masks, all_transforms,
          verified,
          descriptors_kp] = self.ransac(img_descriptor, kp, candidates,
                                        n_inliners_thr, max_verified)
 
-        # TODO COMMENT
-        # print(f'all_matches: {type(all_matches)}')
-        # print(f'all_matches[0]: {all_matches[0]}')
-        # print(f'len(all_matches): {len(all_matches)}')
-        #
-        # print(f'all_matches_masks: {type(all_matches_masks)}')
-        # print(f'all_matches_masks[0]: {all_matches_masks[0]}')
-        # print(f'len(all_matches_masks): {len(all_matches_masks)}')
-        #
-        # print(f'all_transforms: {type(all_transforms)}')
-        # print(f'all_transforms[0]: {all_transforms[0]}')
-        # print(f'len(all_transforms): {len(all_transforms)}')
-        #
-        # print(f'verified: {type(verified)}')
-        # print(f'verified[0]: {verified[0]}')
-        # print(f'len(verified): {len(verified)}')
-        #
-        # print(f'descriptors_kp: {type(descriptors_kp)}')
-        # print(f'descriptors_kp[0]: {descriptors_kp[0]}')
-        # print(f'len(descriptors_kp): {len(descriptors_kp)}')
-
-        print('Spatial verification got in {}s'.format(time.time() - start))
+        logger.info('Spatial verification got in {}s'.format(time.time() - start))
         if debug:
             n = 1
             draw_params = dict(matchColor=(0, 255, 0),
@@ -547,10 +521,10 @@ class CBIRCore:
             img3 = cv2.drawMatches(img1, kp,
                                    img2, descriptors_kp[n],
                                    all_matches[n], None, **draw_params)
-            print(img3.shape)
+            logger.debug(img3.shape)
             img3[:, :, 0], img3[:, :, 2] = img3[:, :, 2], img3[:, :, 0]
             plt.imshow(img3)
-            print(all_transforms)
+            logger.debug(all_transforms)
             plt.show()
 
         sv_candidates = sorted([(candidates[i],
@@ -584,12 +558,7 @@ class CBIRCore:
                                    key=lambda x: x[1], reverse=True)
 
         if qe_enable and new_query is None:
-            print("Query Expansion got in {}s".format(time.time() - start))
-
-        # if not fd_loaded_before:
-        #     self.unset_fd()
-        # if not ca_loaded_before:
-        #     self.unset_ca()
+            logger.info("Query Expansion got in {}s".format(time.time() - start))
 
         return sv_candidates[:topk]
 
@@ -639,7 +608,7 @@ class CBIRCore:
                 M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
                 matchesMask = mask.ravel().tolist()
             else:
-                print("Not enough matches are found - {}/{}".format(len(matches),
+                logger.debug("Not enough matches are found - {}/{}".format(len(matches),
                                                                     MIN_MATCH_COUNT))
                 matchesMask = None
 
@@ -838,7 +807,7 @@ class CBIRCore:
 
     def load_fd(self):
         max_keypoints = self.max_keypoints
-        print(f"Loading cbir_pretrained network {self.des_type}...")
+        logger.info(f"Loading cbir_pretrained network {self.des_type}...")
         if self.des_type == 'sift':
             fd = SIFT(max_keypoints=max_keypoints)
         elif self.des_type == 'surf':
@@ -857,11 +826,11 @@ class CBIRCore:
         return fd
 
     def set_fd(self, fd):
-        print('Setting fd')
+        logger.debug('Setting fd')
         self.fd = fd
 
     def unset_fd(self):
-        print('Unsetting fd')
+        logger.debug('Unsetting fd')
         self.fd = None
 
     def load_ca(self):
