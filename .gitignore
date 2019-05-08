@@ -243,3 +243,5 @@ project/fixtures/*
 !/data/Buildings/Original/get_oxford_paris.sh
 results/
 answers/
+notebooks/
+profs/
