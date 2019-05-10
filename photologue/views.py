@@ -197,7 +197,7 @@ def event_detail_view(request, slug):
                                           f'First, go and create search index')
             logger.info(f'event.database: {event.database}')
             logger.info(f'event.database.slug: {event.database.slug}')
-            return render(request, 'photologue/event_detail.html', context)
+            return render(request, 'photologue/event_detail_ready.html', context)
 
     sv = True
     qe = True
@@ -215,7 +215,7 @@ def event_detail_view(request, slug):
 
     context['result_photos'] = result_photos_truncated
     context['query_photos'] = event.get_query_photos()
-    return render(request, 'photologue/event_detail.html', context)
+    return render(request, 'photologue/event_detail_ready.html', context)
 
 
 def event_create_view(request):
@@ -317,7 +317,7 @@ def database_index_detail_view(request, slug):
     database_index = get_object_or_404(models.CBIRIndex, slug=slug)
     context = {}
     context['database_index'] = database_index
-    return render(request, 'photologue/database_index_detail.html', context)
+    return render(request, 'photologue/database_index_detail_ready.html', context)
 
 
 def database_index_management_view(request):
