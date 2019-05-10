@@ -189,20 +189,26 @@ def event_detail_view(request, slug):
     event = get_object_or_404(models.Event, slug=slug)
     context['event'] = event
 
-    event_life_stage = 'ready'  # ['search', 'basket', 'ready']
-    if event_life_stage == 'search':
+    if request.method == 'POST':
+        form = forms.EventDetailBasketForm(request.POST)
+
+        event.status = 'ready'
+        event.save()
+        raise NotImplementedError
+
+    event_status = event.status  # ['search', 'basket', 'ready']
+    if event_status == 'search':
+        context['query_photos'] = event.get_query_photos()
         return render(request, 'photologue/event_detail_search.html', context)
-    elif event_life_stage == 'basket':
+    elif event_status == 'basket':
         return render(request, 'photologue/event_detail_basket.html', context)
-    elif event_life_stage == 'ready':
-        RESULT_PHOTOS_LIMIT = 10
+    elif event_status == 'ready':
         result_photos = event.get_result_photos()
-        result_photos_truncated = result_photos[:RESULT_PHOTOS_LIMIT]
-        context['result_photos'] = result_photos_truncated
+        context['result_photos'] = result_photos
         context['query_photos'] = event.get_query_photos()
         return render(request, 'photologue/event_detail_ready.html', context)
     else:
-        raise ValueError(f'event life_stage: {event_life_stage} is wrong')
+        raise ValueError(f'event status: {event_status} is wrong')
 
 
 def event_create_view(request):
@@ -215,6 +221,7 @@ def event_create_view(request):
         form = forms.EventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save(commit=False)
+            event.status = 'search'
             event.save()
 
             # Handling images chosen from existing ones in a database
@@ -281,7 +288,10 @@ def event_create_view(request):
                 'similarity_threshold': similarity_threshold,
             }
             # TODO: Async job
-            event.init_if_needed_and_get_result_photos(search_params)
+            # event.status = 'search'  # This is already above
+            event.init(search_params)
+            event.status = 'basket'
+            event.save()
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
     else:
         form = forms.EventForm(initial={'cbir_index': database.cbir_index_default,

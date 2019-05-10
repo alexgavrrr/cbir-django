@@ -99,3 +99,7 @@ class CbirIndexForm(ModelForm):
     class Meta:
         model = CBIRIndex
         fields = ['date_added', 'title', 'slug', 'name', 'description', 'database']
+
+
+class EventDetailBasketForm(ModelForm):
+    pass

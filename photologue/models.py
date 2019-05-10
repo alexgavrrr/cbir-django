@@ -440,7 +440,14 @@ class CBIRIndex(models.Model):
         raise NotImplementedError('list_paths_to_photos_from_database_whose_descriptors_not_computed_yet must find')
 
 
+EVENT_STATUS_CHOICES = (
+    ('search', 'search'),
+    ('basket', 'basket'),
+    ('ready', 'ready'),
+)
+
 class Event(models.Model):
+
     date_added = models.DateTimeField(_('date published'),
                                       default=now)
     title = models.CharField(_('title'),
@@ -462,6 +469,9 @@ class Event(models.Model):
                                    on_delete=models.SET_NULL,
                                    null=True,
                                    blank=True)
+    status = models.CharField('status',
+                              max_length=20,
+                              choices=EVENT_STATUS_CHOICES)
 
     def __str__(self):
         return self.title
@@ -481,10 +491,13 @@ class Event(models.Model):
         result_photos = self.get_result_photos()
         event_inited = len(result_photos) > 0
         if not event_inited:
-            result_photos_names, result_photos_similarities = self._do_search(search_params)
-            self.set_result_photos_from_names(result_photos_names, result_photos_similarities)
+            self.init(search_params)
             result_photos = self.get_result_photos()
         return result_photos
+
+    def init(self, search_params):
+        result_photos_names, result_photos_similarities = self._do_search(search_params)
+        self.set_result_photos_from_names(result_photos_names, result_photos_similarities)
 
     def set_result_photos_from_names(self, result_photos_names, result_photos_similarities):
         database_photos_names = [Path(photo_name).name for photo_name in result_photos_names]
