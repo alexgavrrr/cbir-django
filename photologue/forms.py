@@ -56,7 +56,24 @@ class EventForm(ModelForm):
 
     class Meta:
         model = Event
-        fields = ['date_added', 'title', 'slug', 'description', 'cbir_index']
+        fields = ['date_added', 'title', 'slug', 'description', 'database', 'cbir_index']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        database = cleaned_data.get('database')
+
+        if not database:
+            return cleaned_data
+        else:
+            cleaned_data['cbir_index'] = cleaned_data['cbir_index'] or database.cbir_index_default
+            cbir_index = cleaned_data['cbir_index']
+
+            if not cbir_index:
+                self.add_error('cbir_index', f'There are no indexes for database {database}. Firstly, create index.')
+            elif cbir_index.database != database:
+                self.add_error('cbir_index', f'Chosen cbir_index {cbir_index} corresponds to another database')
+
+            return cleaned_data
 
 
 class CbirIndexForm(ModelForm):
@@ -71,7 +88,6 @@ class CbirIndexForm(ModelForm):
         ),
         required=False
     )
-
 
     class Meta:
         model = CBIRIndex

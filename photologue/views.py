@@ -229,17 +229,8 @@ def event_create_view(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.database = database
-            event.cbir_index = form.cleaned_data.get('cbir_index')
             qe = form.cleaned_data.get('qe')
             sv = form.cleaned_data.get('sv')
-
-            if event.cbir_index.database != database:
-                logger.warning(f'User chose incorrect cbir_index connected to database {event.cbir_index.database}. '
-                               f'But intends to create an event for {database} database')
-                event.cbir_index = database.cbir_index_default
-
-            if not event.cbir_index:
-                event.cbir_index = database.cbir_index_default
             event.save()
 
             # Handling images chosen from existing ones in a database
@@ -292,7 +283,8 @@ def event_create_view(request):
 
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
     else:
-        form = forms.EventForm(initial={'cbir_index': database.cbir_index_default})
+        form = forms.EventForm(initial={'cbir_index': database.cbir_index_default,
+                                        'database': database})
 
     context['form'] = form
     return render(request, 'photologue/event_create.html', context)
