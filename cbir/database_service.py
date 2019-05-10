@@ -84,7 +84,7 @@ def add_photos_descriptors(
     # TODO: Validate here that keys in objects are fine?
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
-            with db.atomic():
+            # with db.atomic():
                 Photo.insert_many(photos).execute()
 
 
@@ -98,7 +98,7 @@ def write_bows(db, photos_bows):
     # TODO: Validate here that keys in objects are fine?
     with MODELS_LOCK:
         with db.bind_ctx([Photo, PhotoBow, Word]):
-            with db.atomic():
+            # with db.atomic():
                 (PhotoBow
                  .insert_many(photos_bows)
                  .on_conflict('replace')
@@ -186,7 +186,7 @@ def count_for_training(db):
 def add_word_photo_relations(db, relations):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
-            with db.atomic():
+            # with db.atomic():
                 WordPhoto.insert_many(relations).execute()
 
 
@@ -200,7 +200,7 @@ def insert_or_replace_words(db, words_photos):
     """
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word, WordPhoto]):
-            with db.atomic():
+            # with db.atomic():
                 (Word
                  .insert_many(words_photos)
                  .on_conflict('replace')
