@@ -267,13 +267,18 @@ def event_create_view(request):
 
             qe = form.cleaned_data.get('qe')
             sv = form.cleaned_data.get('sv')
-            n_candidates = 100
-            topk = 5
+            topk = form.cleaned_data.get('topk')
+            n_candidates = 100 if 100 >= topk else topk * 2
+            max_verified = 20 if 20 > n_candidates else topk
+            similarity_threshold = form.cleaned_data.get('similarity_threshold')
+
             search_params = {
                 'sv_enable': sv,
                 'qe_enable': qe,
+                'topk': topk,
                 'n_candidates': n_candidates,
-                'topk': topk
+                'max_verified': max_verified,
+                'similarity_threshold': similarity_threshold,
             }
             # TODO: Async job
             event.init_if_needed_and_get_result_photos(search_params)

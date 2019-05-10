@@ -416,6 +416,7 @@ class CBIRCore:
                topk=5, n_inliners_thr=20, max_verified=20,
                qe_avg=50, qe_limit=30, new_query=None,
                sv_enable=True, qe_enable=True, debug=False,
+               similarity_threshold=None,
                precomputed_img_descriptor=None, precomputed_kp=None):
         """
         :param list_paths_to_images: query images
@@ -423,6 +424,10 @@ class CBIRCore:
         """
         logger.info(f'Performing search in database {self.database} on index {self.name}. '
                     f'Path to query: {img_path}')
+        logger.info(f'Search params: , topk: {topk}, '
+                     f'n_candidates: {n_candidates}, max_verified: {max_verified}, '
+                     f'similarity_threshold: {similarity_threshold}, '
+                     f'sv_enable: {sv_enable}, qe_enable: {qe_enable}')
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
         if new_query is not None:

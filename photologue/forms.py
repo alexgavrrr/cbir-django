@@ -51,8 +51,15 @@ class EventForm(ModelForm):
     query_photos_from_database = forms.ModelMultipleChoiceField(DatabasePhoto.objects.all(),
                                                                 required=False,
                                                                 label='query photos from database')
-    qe = forms.BooleanField(required=False, initial=False, label='query expansion')
-    sv = forms.BooleanField(required=False, initial=False, label='rerank by spatial verification')
+    qe = forms.BooleanField(required=False, initial=False, label='qe',
+                            help_text='Query expansion')
+    sv = forms.BooleanField(required=False, initial=False, label='sv',
+                            help_text='Rerank by spatial verification')
+    topk = forms.IntegerField(required=False, initial=10, label='topk',
+                              help_text='Maximum count resulting photos')
+    similarity_threshold = forms.IntegerField(required=False, initial=None, label='similarity_threshold',
+                                              help_text='Photos with similarity value below than threshold are not returned. '
+                                                        'Default is none which means -inf.')
 
     class Meta:
         model = Event
