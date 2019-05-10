@@ -185,28 +185,24 @@ def database_edit_view(request, slug):
 
 
 def event_detail_view(request, slug):
-    RESULT_PHOTOS_LIMIT = 10
     context = {}
     event = get_object_or_404(models.Event, slug=slug)
     context['event'] = event
 
-    sv = True
-    qe = True
-    n_candidates = 100
-    topk = 5
-    search_params = {
-        'sv_enable': sv,
-        'qe_enable': qe,
-        'n_candidates': n_candidates,
-        'topk': topk
-    }
-
-    result_photos = event.init_if_needed_and_get_result_photos(search_params)
-    result_photos_truncated = result_photos[:RESULT_PHOTOS_LIMIT]
-
-    context['result_photos'] = result_photos_truncated
-    context['query_photos'] = event.get_query_photos()
-    return render(request, 'photologue/event_detail_ready.html', context)
+    event_life_stage = 'ready'  # ['search', 'basket', 'ready']
+    if event_life_stage == 'search':
+        return render(request, 'photologue/event_detail_search.html', context)
+    elif event_life_stage == 'basket':
+        return render(request, 'photologue/event_detail_basket.html', context)
+    elif event_life_stage == 'ready':
+        RESULT_PHOTOS_LIMIT = 10
+        result_photos = event.get_result_photos()
+        result_photos_truncated = result_photos[:RESULT_PHOTOS_LIMIT]
+        context['result_photos'] = result_photos_truncated
+        context['query_photos'] = event.get_query_photos()
+        return render(request, 'photologue/event_detail_ready.html', context)
+    else:
+        raise ValueError(f'event life_stage: {event_life_stage} is wrong')
 
 
 def event_create_view(request):
@@ -271,9 +267,16 @@ def event_create_view(request):
 
             qe = form.cleaned_data.get('qe')
             sv = form.cleaned_data.get('sv')
-
-
-
+            n_candidates = 100
+            topk = 5
+            search_params = {
+                'sv_enable': sv,
+                'qe_enable': qe,
+                'n_candidates': n_candidates,
+                'topk': topk
+            }
+            # TODO: Async job
+            event.init_if_needed_and_get_result_photos(search_params)
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
     else:
         form = forms.EventForm(initial={'cbir_index': database.cbir_index_default,
@@ -324,10 +327,9 @@ def database_index_create_view(request):
             des_type = form.cleaned_data.get('des_type')
             algo_params = {'des_type': des_type}
 
+            cbir_index.save()
             # TODO: Make call to build index asynchronous
             cbir_index.build_if_needed(algo_params)
-
-            cbir_index.save()
 
             set_default = form.cleaned_data.get('set_default')
             database_has_default_cbir_index = bool(database.cbir_index_default)
