@@ -32,11 +32,9 @@ from .utils.watermark import apply_watermark
 
 logger = logging.getLogger('photologue.models')
 
-# Default limit for gallery.latest
-LIMIT_PHOTOS = 10
-
-# Number of random images from the gallery to display.
-SAMPLE_SIZE = LIMIT_PHOTOS
+LIMIT_PHOTOS_IN_DATABASE = None
+LIMIT_EVENTS_IN_DATABASE = None
+LIMIT_PHOTOS_IN_EVENT = None
 
 # max_length setting for the ImageModel ImageField
 IMAGE_FIELD_MAX_LENGTH = 100
@@ -252,16 +250,16 @@ class Database(models.Model):
 
     def sample_photos(self, limit=None):
         if not limit:
-            limit = LIMIT_PHOTOS
+            limit = LIMIT_PHOTOS_IN_DATABASE
         return self.databasephoto_set.all()[:limit]
 
     def latest(self, limit=None):
         if not limit:
-            limit = LIMIT_PHOTOS
+            limit = LIMIT_PHOTOS_IN_DATABASE
         raise NotImplemented
 
-    def get_events(self, limit=10):
-        limit = limit or LIMIT_PHOTOS
+    def get_events(self, limit=None):
+        limit = limit or LIMIT_EVENTS_IN_DATABASE
         events = self.event_set.all()[:limit]
         logger.info(f'events: {events}')
         return events
