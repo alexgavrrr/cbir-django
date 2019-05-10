@@ -413,33 +413,30 @@ class CBIRCore:
                n_candidates=100,
                topk=5, n_inliners_thr=20, max_verified=20,
                qe_avg=50, qe_limit=30, new_query=None,
-               sv_enable=True, qe_enable=True, debug=False):
+               sv_enable=True, qe_enable=True, debug=False,
+               precomputed_img_descriptor=None, precomputed_kp=None):
         """
         :param list_paths_to_images: query images
         :return: list paths images most similar to the query
         """
         logger.info(f'Performing search in database {self.database} on index {self.name}. '
                     f'Path to query: {img_path}')
-        start = time.time()
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
-        # TODO: Duplicate computation here when qe_enable and new_query. Fix this.
-        result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
-
-        if len(result_tuple) != 3 or result_tuple[0] is None:
-            message = f'Could not get descriptor for image {img_path}'
-            raise ValueError(message)
-
-        img_descriptor, img_bovw, kp = result_tuple
-        logger.info("Descriptor for query got in {}".format(time.time() - start))
-
-        start = time.time()
-
         if new_query is not None:
+            img_descriptor = precomputed_img_descriptor
+            kp = precomputed_kp
             img_bovw = new_query.astype(np.float32)
         else:
-            img_bovw = img_bovw.astype(np.float32)
+            start = time.time()
+            result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
+            if len(result_tuple) != 3 or result_tuple[0] is None:
+                message = f'Could not get descriptor for image {img_path}'
+                raise ValueError(message)
+            img_descriptor, img_bovw, kp = result_tuple
+            logger.info("Descriptor for query got in {}".format(time.time() - start))
 
+        start = time.time()
         candidates_raw = self.get_candidates_raw(img_bovw[:-1])
         if len(candidates_raw) == 0:
             candidates_raw = self.get_candidates_raw(img_bovw[:-1], filter=False)
@@ -541,7 +538,9 @@ class CBIRCore:
                                             topk, n_inliners_thr, max_verified,
                                             qe_avg, qe_limit, one_more_query,
                                             qe_enable=qe_enable, sv_enable=sv_enable,
-                                            debug=debug)
+                                            debug=debug,
+                                            precomputed_img_descriptor=img_descriptor,
+                                            precomputed_kp=kp)
 
             old = set(sv_candidates[i][0][0] for i in range(len(sv_candidates)))
             new = set(new_sv_candidates[i][0][0] for i in range(len(new_sv_candidates)))
