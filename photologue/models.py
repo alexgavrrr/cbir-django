@@ -512,7 +512,7 @@ class Event(models.Model):
         query_photos = self.get_query_photos()
         if len(query_photos) == 0:
             logger.warning(f'Event {self} does not have query photos')
-            return []
+            return [], []
 
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
         cbir_core = CBIRCore.get_instance(cbir_database_name, cbir_index_name)
