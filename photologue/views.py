@@ -228,7 +228,6 @@ def event_create_view(request):
         form = forms.EventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save(commit=False)
-            event.database = database
             qe = form.cleaned_data.get('qe')
             sv = form.cleaned_data.get('sv')
             event.save()
