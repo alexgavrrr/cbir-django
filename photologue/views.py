@@ -351,15 +351,19 @@ def database_index_create_view(request):
 
 
 def database_photo_detail_view(request, slug):
-    LIMIT = 10
-    photo = get_object_or_404(models.DatabasePhoto, slug=slug)
+    database_photo = get_object_or_404(models.DatabasePhoto, slug=slug)
 
-    photo.eventphoto_set.all()
-    events = [event_photo.event for event_photo in photo.eventphoto_set.all()]
-    queries = [None] * len(events)
+    events = [event_photo.event for event_photo in database_photo.eventphoto_set.all()]
+    event_id_to_element_id = dict()
+    for element_id, event in enumerate(events):
+        event_id_to_element_id[event.id] = element_id
 
+    queries_flattened = models.EventPhoto.objects.filter(event__in=events, is_query=True)
+    queries = [[]] * len(events)
+    for query in queries_flattened:
+        queries[event_id_to_element_id[query.event.id]] = query
     context = {}
-    context['photo'] = photo
+    context['photo'] = database_photo
     context['events_queries_pairs'] = list(zip(events, queries))
 
     return render(request, 'photologue/database_photo_detail.html', context)
