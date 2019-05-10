@@ -230,8 +230,10 @@ def event_create_view(request):
             event = form.save(commit=False)
             event.database = database
             event.cbir_index = form.cleaned_data.get('cbir_index')
+            qe = form.cleaned_data.get('qe')
+            sv = form.cleaned_data.get('sv')
+
             if event.cbir_index.database != database:
-                # TODO: Fine that user's cbir_index is ignored silently? User is not told about it.
                 logger.warning(f'User chose incorrect cbir_index connected to database {event.cbir_index.database}. '
                                f'But intends to create an event for {database} database')
                 event.cbir_index = database.cbir_index_default

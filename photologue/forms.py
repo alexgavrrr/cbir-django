@@ -51,6 +51,8 @@ class EventForm(ModelForm):
     query_photos_from_database = forms.ModelMultipleChoiceField(DatabasePhoto.objects.all(),
                                                                 required=False,
                                                                 label='query photos from database')
+    qe = forms.BooleanField(required=False, initial=False, label='query expansion')
+    sv = forms.BooleanField(required=False, initial=False, label='rerank by spatial verification')
 
     class Meta:
         model = Event
@@ -60,12 +62,16 @@ class EventForm(ModelForm):
 class CbirIndexForm(ModelForm):
     set_as_default = forms.BooleanField(required=False,
                                         initial=False, )
-    des_type = forms.ChoiceField(choices=(
-        ('HardNetAll', 'HardNetAll'),
-        ('l2net', 'l2net'),
-        ('sift', 'sift'),
-        (None, 'default')
-    ))
+    des_type = forms.ChoiceField(
+        choices=(
+            ('HardNetAll', 'HardNetAll'),
+            ('l2net', 'l2net'),
+            ('sift', 'sift'),
+            (None, 'default')
+        ),
+        required=False
+    )
+
 
     class Meta:
         model = CBIRIndex
