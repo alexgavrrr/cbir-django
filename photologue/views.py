@@ -190,15 +190,6 @@ def event_detail_view(request, slug):
     event = get_object_or_404(models.Event, slug=slug)
     context['event'] = event
 
-    if not event.has_cbir_index():
-        is_cbir_index_set = event.set_default_cbir_index_and_return_whether_success()
-        if not is_cbir_index_set:
-            context['warning_message'] = (f'Photos in the database {event.database} have not been indexed yet. '
-                                          f'First, go and create search index')
-            logger.info(f'event.database: {event.database}')
-            logger.info(f'event.database.slug: {event.database.slug}')
-            return render(request, 'photologue/event_detail_ready.html', context)
-
     sv = True
     qe = True
     n_candidates = 100
@@ -228,8 +219,6 @@ def event_create_view(request):
         form = forms.EventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save(commit=False)
-            qe = form.cleaned_data.get('qe')
-            sv = form.cleaned_data.get('sv')
             event.save()
 
             # Handling images chosen from existing ones in a database
@@ -279,6 +268,11 @@ def event_create_view(request):
                                                 is_query=True,
                                                 database_photo=database_photo, )
                 event_photo.save()
+
+            qe = form.cleaned_data.get('qe')
+            sv = form.cleaned_data.get('sv')
+
+
 
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
     else:
