@@ -19,6 +19,20 @@
         {% endif %}
     </p>
 
+    <h4>Count photos</h4>
+    <p style="text-indent: 3%">{{database.count}}
+
+    <h4>Default CBIR Index</h4>
+    <p style="text-indent: 3%">
+        {% if database.cbir_index_default %}
+        <a href="{% url 'photologue:database_index_detail' database.cbir_index_default.slug %}">
+        {{database.cbir_index_default}}
+        </a>
+        {% else %}
+        --
+        {% endif %}
+    </p>
+
     <h4>
         <a href="{% url 'photologue:database_edit' database.slug %}">
             Edit database

@@ -235,6 +235,7 @@ class Database(models.Model):
                                               on_delete=models.SET_NULL,
                                               null=True,
                                               blank=True)
+    count = models.PositiveIntegerField(blank=True)
 
     class Meta:
         ordering = ['-date_added']

@@ -51,14 +51,16 @@ def database_create_view(request):
         form = forms.DatabaseForm(request.POST, request.FILES)
         if form.is_valid():
             database = form.save(commit=False)
+            database.count = 0
             database.save()
+            total_count_files = 0
 
             zip_file = form.cleaned_data['zip_file']
+            count_files_from_zip = 0
             if zip_file:
                 # Handling files from zip
                 logger.info('Handling files from zip archive')
                 zip = zipfile.ZipFile(zip_file)
-                count_files_from_zip = 1
                 for filename in tqdm(sorted(zip.namelist())):
                     # logger.debug('Reading file "{0}".'.format(filename))
 
@@ -105,6 +107,7 @@ def database_create_view(request):
                     database_photo.image.save(filename, contentfile)
                     database_photo.name = Path(database_photo.image.name).name
                     database_photo.save()
+                    total_count_files += 1
 
                 zip.close()
 
@@ -115,7 +118,7 @@ def database_create_view(request):
 
             # Handling files
             logger.info('Handling files')
-            count_files = 1
+            count_files = 0
             for file_image in tqdm(request.FILES.getlist('photos')):
                 while True:
                     slug = f'{database.slug}-{count_files}'
@@ -128,7 +131,10 @@ def database_create_view(request):
                                                       database=database,
                                                       image=file_image)
                 database_photo.save_when_name_not_inited()
+                total_count_files += 1
 
+            database.count = total_count_files
+            database.save()
             return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
     else:
         form = forms.DatabaseForm()
@@ -289,6 +295,7 @@ def event_create_view(request):
                 event_photo.save()
 
             # Handling new uploaded images
+            count_uploaded_photos = 0
             for file_image in request.FILES.getlist('query_photos'):
                 while True:
                     event_photo_slug = f'{event.slug}-{count_event_photo}'
@@ -316,6 +323,10 @@ def event_create_view(request):
                                                 is_query=True,
                                                 database_photo=database_photo, )
                 event_photo.save()
+                count_uploaded_photos += 1
+
+            database.count = database.count + count_uploaded_photos
+            database.save()
 
             qe = form.cleaned_data.get('qe')
             sv = form.cleaned_data.get('sv')
@@ -373,32 +384,33 @@ def database_index_management_view(request):
 
 
 def database_index_create_view(request):
-    database_slug = request.GET.get('database')
-    database = get_object_or_404(models.Database, slug=database_slug)
-
     context = {}
-    context['database'] = database
 
     if request.method == 'POST':
         form = forms.CbirIndexForm(request.POST)
         if form.is_valid():
             cbir_index = form.save(commit=False)
-            cbir_index.database = database
-            des_type = form.cleaned_data.get('des_type')
-            algo_params = {'des_type': des_type}
-
             cbir_index.save()
-            # TODO: Make call to build index asynchronous
-            cbir_index.build_if_needed(algo_params)
-
+            database = get_object_or_404(models.Database, id=cbir_index.database.id)
             set_default = form.cleaned_data.get('set_default')
             database_has_default_cbir_index = bool(database.cbir_index_default)
             if set_default or not database_has_default_cbir_index:
                 database.cbir_index_default = cbir_index
                 database.save()
 
+            des_type = form.cleaned_data.get('des_type')
+            algo_params = {'des_type': des_type}
+            # TODO: Make call to build index asynchronous
+            cbir_index.build_if_needed(algo_params)
+
             return HttpResponseRedirect(reverse('photologue:database_index_detail', kwargs={'slug': cbir_index.slug}))
     else:
+
+        database_slug = request.GET.get('database')
+        try:
+            database = models.Database.objects.get(slug=database_slug)
+        except models.Database.DoesNotExist:
+            database = None
         form = forms.CbirIndexForm(initial={'database': database})
 
     context['form'] = form
