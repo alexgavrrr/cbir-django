@@ -15,8 +15,8 @@
     <p style="text-indent: 3%">{{ database_index.description }}</p>
     {% endif %}
 
-{% block index_detail_content %}
-{% endblock %}
+    {% block index_detail_content %}
+    {% endblock %}
 
     <div><a href="{% url 'photologue:database_index_info' %}?database={{database_index.database.slug}}" class="btn btn-default">
         {{ database_index.database }} indexes info </a></div>

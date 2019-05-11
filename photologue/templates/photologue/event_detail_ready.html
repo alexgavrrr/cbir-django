@@ -2,23 +2,23 @@
 {% load i18n %}
 
 {% block event_detail_content %}
-    <h4>Event photos</h4>
-    <ul>
-        <form method="post" action="" name="doform" onsubmit="OnSubmitFormEventBasket()" target="_blank">
-            {% csrf_token %}
-            <input type="submit" value="do"><br>
-            Action:<br>
-            <select name="do">
-                <option value="add">Add</option>
-            </select>
-            <br>
-            Event basket:<br>
-            <select name="event_basket">
-                {% for event_basket in event_baskets %}
-                <option value="{{event_basket.id}}">{{event_basket}}</option>
-                {% endfor %}
-            </select>
-            <br><br>
+<h4>Event photos</h4>
+<ul>
+    <form method="post" action="" name="doform" onsubmit="OnSubmitFormEventBasket()" target="_blank">
+        {% csrf_token %}
+        <input type="submit" value="do"><br>
+        Action:<br>
+        <select name="do">
+            <option value="add">Add</option>
+        </select>
+        <br>
+        Event basket:<br>
+        <select name="event_basket">
+            {% for event_basket in event_baskets %}
+            <option value="{{event_basket.id}}">{{event_basket}}</option>
+            {% endfor %}
+        </select>
+        <br><br>
         {% for photo in result_photos %}
         <li>
             <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
@@ -30,14 +30,14 @@
             <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
         </li>
         {% endfor %}
-            <br>
-        </form>
-    </ul>
+        <br>
+    </form>
+</ul>
 
-    <div><a href="{% url 'photologue:database_detail' event.database.slug %}"
-            class="btn btn-default">
-        Database {{event.database}}
-        </a>
-    </div>
+<div><a href="{% url 'photologue:database_detail' event.database.slug %}"
+        class="btn btn-default">
+    Database {{event.database}}
+</a>
+</div>
 
 {% endblock %}
