@@ -39,10 +39,10 @@
             <a href="{{ photo.database_photo.get_absolute_url }}">
                 <p>{{ photo }}</p>
             </a>
-            <p>Description: {{ photo.description }}</p>
-            {{ photo.description }}
+            <input type="text" name="description" value=
+                    "{% if photo.description %}{{photo.description}}{% elif photo.database_photo.description %}{{photo.database_photo.description}}{% else %}{{photo.database_photo}}{% endif %}">
+            <br>
             <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
-
         </li>
         {% endfor %}
         </form>

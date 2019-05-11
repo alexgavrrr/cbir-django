@@ -214,11 +214,13 @@ def event_detail_view(request, slug):
                     logger.warning('Supressed integirty Error')
             return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
         elif do == 'commit':
+            descriptions = request.POST.getlist('description')
             chosen_photos = models.EventBasketChosenPhoto.objects.filter(event=event)
-            for chosen_photo in chosen_photos:
+            logger.info(f'len(descriptions): {len(descriptions)}, len(chosen_photos): {len(chosen_photos)}')
+            for index_chosen_photo, chosen_photo in enumerate(chosen_photos):
                 event_photo = models.EventPhoto(
                     slug='',
-                    description=chosen_photo.description,
+                    description=descriptions[index_chosen_photo],
                     is_query=False,
                     event=event,
                     database_photo=chosen_photo.database_photo)
