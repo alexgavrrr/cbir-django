@@ -197,7 +197,6 @@ def event_detail_view(request, slug):
     event_status = event.status  # ['search', 'basket', 'ready']
 
     if request.method == 'POST':
-        print(f'AA request.POST: {request.POST}')
         dos = ['add', 'remove', 'commit']
         do = request.POST.get('do')
 
@@ -233,22 +232,7 @@ def event_detail_view(request, slug):
                 return HttpResponseBadRequest(f'Bad do `{do}`. Must be one of {dos}')
         else:
             # event.status != 'basket'
-            if do == 'add':
-                event_basket_id = request.POST.get('event_basket')
-                event_basket = models.Event.objects.get(id=event_basket_id)
-                for photo_id in request.POST.getlist('chosen_photo'):
-                    database_photo = get_object_or_404(models.DatabasePhoto, id=photo_id)
-                    event_basket_chosen_photo = models.EventBasketChosenPhoto(
-                        description=database_photo.description or str(database_photo),
-                        event=event_basket,
-                        database_photo=database_photo)
-                    try:
-                        event_basket_chosen_photo.save()
-                    except IntegrityError:
-                        logger.warning('Supressed integirty Error')
-                return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
-            else:
-                return HttpResponseBadRequest(f'Bad do `{do}` for event with status != basket.')
+            return HttpResponseBadRequest(f'Bad status: {event.status}. Must be `basket`')
     else:
         # request.method != 'POST'
         if event_status == 'search':
