@@ -17,7 +17,7 @@ Reload from scratch command
 ```
 yes | rm db.sqlite3;
     rm -rf photologue/migrations/*; touch photologue/migrations/__init__.py && \
-    python manage.py makemigrations && \
+    python manage.py makemigrations && cp backup/0002_photosize_data.py photologue/migrations && \
     python manage.py migrate && \
     ./createsuper.sh && \
     ./clean_content.sh && \
@@ -26,6 +26,7 @@ yes | rm db.sqlite3;
 
 ```
 yes | rm db.sqlite3;
+    touch photologue/migrations/__init__.py && \
     python manage.py makemigrations && \
     python manage.py migrate && \
     ./createsuper.sh && \
