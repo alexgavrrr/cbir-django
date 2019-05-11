@@ -19,7 +19,7 @@
 {% endblock %}
 
     <div><a href="{% url 'photologue:database_index_info' %}?database={{database_index.database.slug}}" class="btn btn-default">
-        All database {{ database_index.database }} indexes info </a></div>
+        {{ database_index.database }} indexes info </a></div>
 </div>
 
 {% endblock %}
