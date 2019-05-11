@@ -2,27 +2,19 @@
 {% load i18n %}
 
 {% block event_detail_content %}
-    <h4>Result photos</h4>
+    <h4>Event photos</h4>
     <ul>
-        {% if result_photos %}
         {% for photo in result_photos %}
         <li>
-            <h5>{{ photo }}</h5>
-            <p>Similarity: {{ photo.similarity }}</p>
-            {{ photo.description }}
-
-            <p>
-                <a href="{{ photo.database_photo.get_absolute_url }}">
-                    database_photo
-                </a>
-            </p>
-            <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
+            <a href="{{ photo.database_photo.get_absolute_url }}">
+                <p>{{ photo }}</p>
+            </a>
+            description: {% if photo.description %} {{ photo.description }} {% else %} -- {% endif %}
+            <br>
+            <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
 
         </li>
         {% endfor %}
-        {% else %}
-        No result photos
-        {% endif %}
     </ul>
 
     <div><a href="{% url 'photologue:database_detail' event.database.slug %}"

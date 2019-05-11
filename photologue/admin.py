@@ -7,6 +7,8 @@ admin.site.register(models.Database)
 admin.site.register(models.Event)
 admin.site.register(models.DatabasePhoto)
 admin.site.register(models.EventPhoto)
+admin.site.register(models.EventBasketPhoto)
+admin.site.register(models.EventBasketChosenPhoto)
 admin.site.register(models.CBIRIndex)
 
 

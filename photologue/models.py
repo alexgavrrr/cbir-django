@@ -503,18 +503,22 @@ class Event(models.Model):
         database_photos_names = [Path(photo_name).name for photo_name in result_photos_names]
         for database_photo_name, result_photo_similarity in zip(database_photos_names, result_photos_similarities):
             database_photo = self.database.get_photo_by_name(name=database_photo_name)
-            event_photo = EventPhoto(slug='',
-                                     event=self,
-                                     is_query=False,
-                                     database_photo=database_photo,
-                                     similarity=result_photo_similarity)
-            event_photo.save()
+            event_basket_photo = EventBasketPhoto(event=self,
+                                                  database_photo=database_photo,
+                                                  similarity=result_photo_similarity)
+            event_basket_photo.save()
 
     def get_result_photos(self):
         return EventPhoto.objects.filter(event=self).filter(is_query=False)
 
     def get_query_photos(self):
         return EventPhoto.objects.filter(event=self).filter(is_query=True)
+
+    def get_found_photos(self):
+        return EventBasketPhoto.objects.filter(event=self)
+
+    def get_chosen_photos(self):
+        return EventBasketChosenPhoto.objects.filter(event=self)
 
     def _do_search(self, search_params):
         cbir_database_name = self.database.get_name()
@@ -576,6 +580,9 @@ class ImageModel(models.Model):
             self,
             filename=Path(full_path_to_original_photo).name)
         full_path_to_new_photo = os.path.join(settings.MEDIA_ROOT, path_to_new_photo)
+
+        if not os.path.exists(str(Path(full_path_to_new_photo).parent)):
+            os.mkdir(str(Path(full_path_to_new_photo).parent))
 
         if os.path.exists(full_path_to_new_photo):
             random_suffix = get_random_string(length=7)
@@ -1213,3 +1220,32 @@ class EventPhoto(ImageModel):
         full_path_to_original_photo = os.path.join(settings.MEDIA_ROOT, self.database_photo.image.name)
         self.copy_photo_and_assign_image_field(full_path_to_original_photo)
         super().save()
+
+
+class EventBasketPhoto(models.Model):
+    event = models.ForeignKey(to=Event,
+                              on_delete=models.CASCADE)
+    database_photo = models.ForeignKey(to=DatabasePhoto,
+                                       on_delete=models.SET_NULL,
+                                       null=True)
+    similarity = models.FloatField(null=True,
+                                   blank=True)
+
+    def __str__(self):
+        return f'{self.database_photo}'
+
+
+class EventBasketChosenPhoto(models.Model):
+    description = models.TextField('description',
+                                   blank=True)
+    event = models.ForeignKey(to=Event,
+                              on_delete=models.CASCADE)
+    database_photo = models.ForeignKey(to=DatabasePhoto,
+                                       on_delete=models.SET_NULL,
+                                       null=True)
+
+    class Meta:
+        unique_together = (('event', 'database_photo'),)
+
+    def __str__(self):
+        return f'{self.database_photo}'

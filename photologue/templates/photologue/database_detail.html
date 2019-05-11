@@ -10,10 +10,14 @@
     <p class="muted">
         <small>{% trans "Published" %} {{ database.date_added }}</small>
     </p>
-    {% if database.description %}
     <h4>Description</h4>
-    <p style="text-indent: 3%">{{ database.description }}</p>
-    {% endif %}
+    <p style="text-indent: 3%">
+        {% if database.description %}
+        {{ database.description }}
+        {% else %}
+        --
+        {% endif %}
+    </p>
 
     <h4>
         <a href="{% url 'photologue:database_edit' database.slug %}">
@@ -39,9 +43,9 @@
         </a>
     </h4>
 
-    {% if events %}
     <h4>Events</h4>
     <ul>
+        {% if events %}
         {% for event in events %}
         <li>
             <a href="{{ event.get_absolute_url }}">
@@ -50,22 +54,28 @@
         </li>
 
         {% endfor %}
+        {% else %}
+        --
+        {% endif %}
     </ul>
 
-    {% else %}
-    <p>No events yet</p>
-    {% endif %}
 
     <h4>Photos</h4>
     <ul>
+        {% if database.sample_photos %}
         {% for photo in database.sample_photos %}
         <li>
             <a href="{{ photo.get_absolute_url }}">
                 {{ photo }}
-                <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
             </a>
+            <br>
+            <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
+
         </li>
         {% endfor %}
+        {% else %}
+        --
+        {% endif %}
     </ul>
 
 

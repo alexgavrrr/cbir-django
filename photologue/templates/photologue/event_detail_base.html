@@ -15,6 +15,8 @@
     <h4> {{ warning_message }}</h4>
     {% endif %}
 
+    <h4>Status</h4>
+    <p style="text-indent: 3%">{{event.status|upper}}</p>
 
     {% if event.description %}
     <h4>Description</h4>
@@ -26,16 +28,12 @@
         {% if query_photos %}
         {% for query in query_photos %}
         <li>
-            <h5>{{ query }}</h5>
-            {{ query.description }}
-
-            <p>
-                <a href="{{ query.database_photo.get_absolute_url }}">
-                    database_photo link
-                </a>
-            </p>
+            <a href="{{ query.database_photo.get_absolute_url }}">
+                <p>{{ query }}</p>
+            </a>
+            Description: {% if query.description %} {{ query.description|safe }}{% else %}--{% endif %}
+            <br>
             <img src="{{ query.get_display_url }}" class="thumbnail" alt="{{ query.title }}">
-
         </li>
         {% endfor %}
         {% else %}

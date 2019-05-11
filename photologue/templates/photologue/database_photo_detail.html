@@ -7,38 +7,40 @@
 
 <div class="row col-lg-12">
     <h1 class="page-header">{{ photo.title }}</h1>
-    <p class="muted">
-        <small>{% trans "Published" %} {{ photo.date_added }}</small>
-    </p>
 
     <h2>{{ photo }}</h2>
-    {{ photo.description }}
     <p>
         <a href="{{ photo.image.url }}">
             <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
         </a>
     </p>
 
-
-    {% if photo.description %}
     <h4>Description</h4>
-    <p style="text-indent: 3%">{{ photo.description|safe }}</p>
-    {% endif %}
+    <p style="text-indent: 3%">
+        {% if photo.description %}
+        {{ photo.description|safe }}
+        {% else %}
+        --
+        {% endif %}
+    </p>
 
-    {% if events_queries_pairs %}
-    <h4>Events links</h4>
 
+    <h4>Events</h4>
     <ul>
+        {% if not events_queries_pairs %}
+        --
+        {% else %}
         {% for event_query_pair in events_queries_pairs %}
         <li>
             <a href="{{ event_query_pair.0.get_absolute_url }}">
                 Event {{ event_query_pair.0 }}
-                <img src="{{ event_query_pair.1.get_thumbnail_url }}" class="thumbnail">
             </a>
+            <br>
+            <img src="{{ event_query_pair.1.get_thumbnail_url }}" class="thumbnail">
         </li>
         {% endfor %}
+        {% endif %}
     </ul>
-    {% endif %}
 
 
     <div><a href="{% url 'photologue:database_detail' photo.database.slug %}" class="btn btn-default">{% trans "Database "%}</a></div>

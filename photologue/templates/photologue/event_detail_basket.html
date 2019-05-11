@@ -2,27 +2,50 @@
 {% load i18n %}
 
 {% block event_detail_content %}
-    <h4>Result photos</h4>
+    <h3>Found photos:</h3>
     <ul>
-        {% if result_photos %}
-        {% for photo in result_photos %}
+        <form method="post" action="" name="do">
+            {% csrf_token %}
+            <input type="submit" value="do"><br>
+            Acion:<br>
+            <select name="do">
+                <option value="add">Add</option>
+                <option value="remove">Remove</option>
+            </select>
+            <br><br>
+        {% for photo in found_photos %}
         <li>
-            <h5>{{ photo }}</h5>
+             <input type="checkbox" value="{{photo.id}}" name="chosen_photo">
+            <a href="{{ photo.database_photo.get_absolute_url }}">
+                <p>{{ photo }}</p>
+            </a>
             <p>Similarity: {{ photo.similarity }}</p>
-            {{ photo.description }}
+            <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
+        </li>
+        {% endfor %}
+            <br>
 
-            <p>
-                <a href="{{ photo.database_photo.get_absolute_url }}">
-                    database_photo
-                </a>
-            </p>
-            <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
+        </form>
+    </ul>
+
+    <h3>Chosen photos:</h3>
+    <ul>
+        <form method="post" action="" name="commit">
+            {% csrf_token %}
+            <input type="submit" value="commit"><br>
+            <input type="hidden" name="do" value="commit"><br>
+        {% for photo in chosen_photos %}
+        <li>
+            <a href="{{ photo.database_photo.get_absolute_url }}">
+                <p>{{ photo }}</p>
+            </a>
+            <p>Description: {{ photo.description }}</p>
+            {{ photo.description }}
+            <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
 
         </li>
         {% endfor %}
-        {% else %}
-        No result photos
-        {% endif %}
+        </form>
     </ul>
 
     <div><a href="{% url 'photologue:database_detail' event.database.slug %}"

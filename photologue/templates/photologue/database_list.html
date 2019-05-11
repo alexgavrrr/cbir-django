@@ -29,11 +29,16 @@
 
     <h4>Events</h4>
     <ul>
+        {% if database.get_events %}
         {% for event in database.get_events %}
         <li>
             <a href="{{ event.get_absolute_url }}">{{ event.title }}</a>
         </li>
         {% endfor %}
+        {% else %}
+        --
+        {% endif %}
+
     </ul>
 </div>
 {% endfor %}
