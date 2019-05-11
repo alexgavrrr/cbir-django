@@ -376,6 +376,7 @@ def database_index_detail_view(request, slug):
     database_index = get_object_or_404(models.CBIRIndex, slug=slug)
     context = {}
     context['database_index'] = database_index
+    context['difference'] = database_index.database.count - database_index.count_photos_indexed
     return render(request, 'photologue/database_index_detail_ready.html', context)
 
 
@@ -390,8 +391,13 @@ def database_index_create_view(request):
         form = forms.CbirIndexForm(request.POST)
         if form.is_valid():
             cbir_index = form.save(commit=False)
-            cbir_index.save()
             database = get_object_or_404(models.Database, id=cbir_index.database.id)
+            count_photos_indexed = database.count
+            cbir_index.count_photos_indexed = count_photos_indexed
+            cbir_index.count_photos_for_training_from_database = count_photos_indexed
+            cbir_index.count_photos_for_training_external = 0
+            cbir_index.save()
+
             set_default = form.cleaned_data.get('set_default')
             database_has_default_cbir_index = bool(database.cbir_index_default)
             if set_default or not database_has_default_cbir_index:

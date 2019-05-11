@@ -3,9 +3,20 @@
 
 {% block index_detail_content %}
 
-<h4>
-    TODO: Statistics about index.
-</h4>
+<h4>In database:</h4>
+<p style="text-indent: 3%">{{ database_index.database.count }}</p>
+
+<h4>Indexed:</h4>
+<p style="text-indent: 3%">{{ database_index.count_photos_indexed }}</p>
+
+<h4>In database but not indexed:</h4>
+<p style="text-indent: 3%">{{ difference }}</p>
+
+<h4>Used for training from database:</h4>
+<p style="text-indent: 3%">{{ database_index.count_photos_for_training_from_database }}</p>
+
+<h4>Used for training external:</h4>
+<p style="text-indent: 3%">{{ database_index.count_photos_for_training_external }}</p>
 
 
 {% endblock %}

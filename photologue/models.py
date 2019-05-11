@@ -316,8 +316,14 @@ class CBIRIndex(models.Model):
                                  null=True)
     count_photos_indexed = models.PositiveIntegerField('count_photos_indexed',
                                                        null=False,
-                                                       blank=True,
-                                                       default=0)
+                                                       blank=True, )
+    count_photos_for_training_from_database = models.PositiveIntegerField('count_photos_for_training_from_database',
+                                                                          null=False,
+                                                                          blank=True, )
+    count_photos_for_training_external = models.PositiveIntegerField('count_photos_for_training_external',
+                                                                     null=False,
+                                                                     blank=True, )
+
     built = models.BooleanField('built',
                                 null=False,
                                 blank=False,
