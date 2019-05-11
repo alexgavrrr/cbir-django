@@ -449,8 +449,8 @@ EVENT_STATUS_CHOICES = (
     ('ready', 'ready'),
 )
 
-class Event(models.Model):
 
+class Event(models.Model):
     date_added = models.DateTimeField(_('date published'),
                                       default=now)
     title = models.CharField(_('title'),
