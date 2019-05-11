@@ -4,17 +4,34 @@
 {% block event_detail_content %}
     <h4>Event photos</h4>
     <ul>
+        <form method="post" action="" name="doform" onsubmit="OnSubmitFormEventBasket()" target="_blank">
+            {% csrf_token %}
+            <input type="submit" value="do"><br>
+            Action:<br>
+            <select name="do">
+                <option value="add">Add</option>
+            </select>
+            <br>
+            Event basket:<br>
+            <select name="event_basket">
+                {% for event_basket in event_baskets %}
+                <option value="{{event_basket.id}}">{{event_basket}}</option>
+                {% endfor %}
+            </select>
+            <br><br>
         {% for photo in result_photos %}
         <li>
+            <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
             <a href="{{ photo.database_photo.get_absolute_url }}">
                 <p>{{ photo }}</p>
             </a>
             description: {% if photo.description %} {{ photo.description }} {% else %} -- {% endif %}
             <br>
             <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
-
         </li>
         {% endfor %}
+            <br>
+        </form>
     </ul>
 
     <div><a href="{% url 'photologue:database_detail' event.database.slug %}"

@@ -185,6 +185,11 @@ def database_edit_view(request, slug):
     return render(request, 'photologue/database_edit.html', context)
 
 
+def event_detail_by_id_view(request, id):
+    event = get_object_or_404(models.Event, id=id)
+    return event_detail_view(request, slug=event.slug)
+
+
 def event_detail_view(request, slug):
     context = {}
     event = get_object_or_404(models.Event, slug=slug)
@@ -192,61 +197,79 @@ def event_detail_view(request, slug):
     event_status = event.status  # ['search', 'basket', 'ready']
 
     if request.method == 'POST':
-        if event_status != 'basket':
-            return HttpResponseBadRequest("event's status must be basket basket")
         print(f'AA request.POST: {request.POST}')
         dos = ['add', 'remove', 'commit']
         do = request.POST.get('do')
-        if do not in dos:
-            return HttpResponseBadRequest(f'do must one of {dos} but `{do}` given')
 
-        if do == 'add':
-            for photo_id in request.POST.getlist('chosen_photo'):
-                event_basket_photo = get_object_or_404(models.EventBasketPhoto, id=photo_id)
-                database_photo = get_object_or_404(models.DatabasePhoto, id=event_basket_photo.database_photo.id)
-                event_basket_chosen_photo = models.EventBasketChosenPhoto(
-                    description=database_photo.description,
-                    event=event,
-                    database_photo=database_photo)
-                try:
-                    event_basket_chosen_photo.save()
-                except IntegrityError:
-                    logger.warning('Supressed integirty Error')
-            return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
-        elif do == 'commit':
-            descriptions = request.POST.getlist('description')
-            chosen_photos = models.EventBasketChosenPhoto.objects.filter(event=event)
-            logger.info(f'len(descriptions): {len(descriptions)}, len(chosen_photos): {len(chosen_photos)}')
-            for index_chosen_photo, chosen_photo in enumerate(chosen_photos):
-                event_photo = models.EventPhoto(
-                    slug='',
-                    description=descriptions[index_chosen_photo],
-                    is_query=False,
-                    event=event,
-                    database_photo=chosen_photo.database_photo)
-                event_photo.save()
-            event.status = 'ready'
-            event.save()
-            return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
-
-
-    if event_status == 'search':
-        context['query_photos'] = event.get_query_photos()
-        return render(request, 'photologue/event_detail_search.html', context)
-    elif event_status == 'basket':
-        context['query_photos'] = event.get_query_photos()
-        found_photos = event.get_found_photos()
-        context['found_photos'] = found_photos
-        chosen_photos = event.get_chosen_photos()
-        context['chosen_photos'] = chosen_photos
-        return render(request, 'photologue/event_detail_basket.html', context)
-    elif event_status == 'ready':
-        result_photos = event.get_result_photos()
-        context['result_photos'] = result_photos
-        context['query_photos'] = event.get_query_photos()
-        return render(request, 'photologue/event_detail_ready.html', context)
+        if event.status == 'basket':
+            if do == 'add':
+                for photo_id in request.POST.getlist('chosen_photo'):
+                    database_photo = get_object_or_404(models.DatabasePhoto, id=photo_id)
+                    event_basket_chosen_photo = models.EventBasketChosenPhoto(
+                        description=database_photo.description or str(database_photo),
+                        event=event,
+                        database_photo=database_photo)
+                    try:
+                        event_basket_chosen_photo.save()
+                    except IntegrityError:
+                        logger.warning('Supressed integirty Error')
+                return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
+            elif do == 'commit':
+                descriptions = request.POST.getlist('description')
+                chosen_photos = models.EventBasketChosenPhoto.objects.filter(event=event)
+                logger.info(f'len(descriptions): {len(descriptions)}, len(chosen_photos): {len(chosen_photos)}')
+                for index_chosen_photo, chosen_photo in enumerate(chosen_photos):
+                    event_photo = models.EventPhoto(
+                        slug='',
+                        description=descriptions[index_chosen_photo],
+                        is_query=False,
+                        event=event,
+                        database_photo=chosen_photo.database_photo)
+                    event_photo.save()
+                event.status = 'ready'
+                event.save()
+                return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
+            else:
+                return HttpResponseBadRequest(f'Bad do `{do}`. Must be one of {dos}')
+        else:
+            # event.status != 'basket'
+            if do == 'add':
+                event_basket_id = request.POST.get('event_basket')
+                event_basket = models.Event.objects.get(id=event_basket_id)
+                for photo_id in request.POST.getlist('chosen_photo'):
+                    database_photo = get_object_or_404(models.DatabasePhoto, id=photo_id)
+                    event_basket_chosen_photo = models.EventBasketChosenPhoto(
+                        description=database_photo.description or str(database_photo),
+                        event=event_basket,
+                        database_photo=database_photo)
+                    try:
+                        event_basket_chosen_photo.save()
+                    except IntegrityError:
+                        logger.warning('Supressed integirty Error')
+                return HttpResponseRedirect(reverse('photologue:event_detail', kwargs={'slug': event.slug}))
+            else:
+                return HttpResponseBadRequest(f'Bad do `{do}` for event with status != basket.')
     else:
-        raise ValueError(f'event status: {event_status} is wrong')
+        # request.method != 'POST'
+        if event_status == 'search':
+            context['query_photos'] = event.get_query_photos()
+            return render(request, 'photologue/event_detail_search.html', context)
+        elif event_status == 'basket':
+            context['query_photos'] = event.get_query_photos()
+            found_photos = event.get_found_photos()
+            context['found_photos'] = found_photos
+            chosen_photos = event.get_chosen_photos()
+            context['chosen_photos'] = chosen_photos
+            return render(request, 'photologue/event_detail_basket.html', context)
+        elif event_status == 'ready':
+            result_photos = event.get_result_photos()
+            context['result_photos'] = result_photos
+            context['query_photos'] = event.get_query_photos()
+            event_baskets = event.database.get_event_baskets()
+            context['event_baskets'] = event_baskets
+            return render(request, 'photologue/event_detail_ready.html', context)
+        else:
+            raise ValueError(f'event status: {event_status} is wrong')
 
 
 def event_create_view(request):

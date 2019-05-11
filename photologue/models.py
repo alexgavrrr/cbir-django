@@ -264,6 +264,9 @@ class Database(models.Model):
         logger.info(f'events: {events}')
         return events
 
+    def get_event_baskets(self, limit=None):
+        return Event.objects.filter(status='basket', database=self)
+
     def save(self):
         if not self.description_file:
             logger.info('No description file')

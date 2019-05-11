@@ -48,5 +48,17 @@
 <script src="{{ STATIC_URL }}js/jquery.js"></script>
 <script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
 <script src="{{ STATIC_URL }}js/project.js"></script>
+<script>
+function OnSubmitFormEventBasket()
+{
+  console.log("here")
+  select_field = document.doform.event_basket
+  event_id = select_field.options[select_field.selectedIndex].value
+  new_action = "/photologue/event_by_id/" + event_id + "/"
+  document.doform.action = new_action
+  return true;
+}
+</script>
+
 </body>
 </html>

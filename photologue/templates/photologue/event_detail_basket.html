@@ -7,15 +7,14 @@
         <form method="post" action="" name="do">
             {% csrf_token %}
             <input type="submit" value="do"><br>
-            Acion:<br>
+            Action:<br>
             <select name="do">
                 <option value="add">Add</option>
-                <option value="remove">Remove</option>
             </select>
             <br><br>
         {% for photo in found_photos %}
         <li>
-             <input type="checkbox" value="{{photo.id}}" name="chosen_photo">
+             <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
             <a href="{{ photo.database_photo.get_absolute_url }}">
                 <p>{{ photo }}</p>
             </a>
@@ -24,7 +23,6 @@
         </li>
         {% endfor %}
             <br>
-
         </form>
     </ul>
 
@@ -39,8 +37,7 @@
             <a href="{{ photo.database_photo.get_absolute_url }}">
                 <p>{{ photo }}</p>
             </a>
-            <input type="text" name="description" value=
-                    "{% if photo.description %}{{photo.description}}{% elif photo.database_photo.description %}{{photo.database_photo.description}}{% else %}{{photo.database_photo}}{% endif %}">
+            <input type="text" name="description" value="{{photo.description}}">
             <br>
             <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
         </li>
@@ -50,7 +47,7 @@
 
     <div><a href="{% url 'photologue:database_detail' event.database.slug %}"
             class="btn btn-default">
-        {% trans "View all events in database" %}
+        Database {{event.database}}
         </a>
     </div>
 
