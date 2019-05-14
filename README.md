@@ -49,3 +49,19 @@ profile evaluating commands?
 
 ## Start snakeviz for visualizing profs
 `snakeviz [--server]`
+
+## logs/ column names
+**computing_descriptors**
+elapsed
+
+**training_clusterer**
+time_copying_descriptors_to_memmap, time_fitting_vocabulary_tree, time_saving_vocabulary_tree
+
+**add_images_to_index.txt**
+time_writing_bows, time_creating_index_by_word, time_building_inv
+
+**retrieving_candidates**
+n_candidatesl, elapsed, whether_qe_stage
+
+**preliminary_sorting.txt**
+elapsed, whether_qe_stage

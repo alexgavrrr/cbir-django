@@ -8,6 +8,8 @@ import cbir.configuration
 base_parser = argparse.ArgumentParser(add_help=False, prog='CBIRCore')
 base_parser.add_argument('-c', '--config',
                          help='Path to config')
+base_parser.add_argument('-l', '--log_prefix',
+                         help='Log prefix')
 
 
 def create_parser():
@@ -49,6 +51,35 @@ def create_parser():
     evaluate_only_parser.add_argument('--sv', action='store_true', default=False)
     evaluate_only_parser.add_argument('--qe', action='store_true', default=False)
 
+    create_index_parser = subparsers.add_parser('create_index',
+                                                 help='Create CBIR Index')
+    create_index_parser.add_argument('database_name')
+    create_index_parser.add_argument('index_name')
+    create_index_parser.add_argument('path_to_images')
+    create_index_parser.add_argument('--des_type', required=False)
+    create_index_parser.add_argument('--max_keypoints', type=int, required=False)
+    create_index_parser.add_argument('--K', type=int, required=True)
+    create_index_parser.add_argument('--L', type=int, required=True)
+
+    change_params_parser = subparsers.add_parser('change_params',
+                                                 help='Change K, L and maybe other params')
+    change_params_parser.add_argument('database_name')
+    change_params_parser.add_argument('index_name')
+    change_params_parser.add_argument('--des_type', required=False)
+    change_params_parser.add_argument('--max_keypoints', type=int, required=False)
+    change_params_parser.add_argument('--K', type=int, required=True)
+    change_params_parser.add_argument('--L', type=int, required=True)
+
+    search_parser = subparsers.add_parser('search',
+                                          help='Search')
+    search_parser.add_argument('database_name')
+    search_parser.add_argument('index_name')
+    search_parser.add_argument('query')
+    search_parser.add_argument('--n_candidates', type=int, required=False)
+    search_parser.add_argument('--topk', type=int, required=False)
+    search_parser.add_argument('--sv', action='store_true', default=None)
+    search_parser.add_argument('--qe', action='store_true', default=None)
+
     return parser
 
 
@@ -66,7 +97,7 @@ def main(argv):
 
     # config_path = args.config
     # config = cbir.configuration.make_config(config_path)
-
+    cbir.configuration.configure_logging(log_level='INFO', prefix=args.log_prefix)
     command(**vars(args))
 
 

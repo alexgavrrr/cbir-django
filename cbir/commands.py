@@ -1,9 +1,14 @@
+import numpy as np
 import os
 from pathlib import Path
+import logging
 
 import cbir
 import cbir_evaluation.start_evaluation
 from cbir import DATABASES
+from cbir.cbir_core import CBIRCore
+from cbir.legacy_utils import find_image_files
+from cbir.utils.basic import timeit_my
 
 
 def _prepare_place_for_database(database):
@@ -97,3 +102,123 @@ def evaluate_only(
     cbir_evaluation.start_evaluation.start_test(
         database_name, index_name, database_photos_dir, gt_dir,
         sv, qe)
+
+
+def create_empty_if_needed(
+        database_name, index_name,
+        des_type, max_keypoints,
+        K, L,
+        **kwargs):
+    des_type = des_type or cbir.DES_TYPE
+    max_keypoints = max_keypoints or cbir.MAX_KEYPOINTS
+    CBIRCore.create_empty_if_needed(database_name, index_name,
+                                    des_type=des_type,
+                                    max_keypoints=max_keypoints,
+                                    K=K, L=L)
+
+
+def compute_descriptors(
+        database_name, index_name, path_to_images,
+        **kwargs):
+    list_paths_to_images = find_image_files(path_to_images, ['jpg'], recursive=True)
+    cbir_core = CBIRCore.get_instance(database_name, index_name)
+    cbir_core.compute_descriptors(list_paths_to_images,
+                                  to_index=True,
+                                  for_training_clusterer=True)
+
+
+def train_clusterer(
+        database_name, index_name,
+        **kwargs):
+    cbir_core = CBIRCore.get_instance(database_name, index_name)
+    cbir_core.train_clusterer()
+
+
+def compute_bow_and_inv(
+        database_name, index_name,
+        **kwargs):
+    cbir_core = CBIRCore.get_instance(database_name, index_name)
+    cbir_core.add_images_to_index()
+
+
+def create_index(
+        database_name, index_name, path_to_images,
+        des_type, max_keypoints,
+        K, L,
+        **kwargs):
+    create_empty_if_needed(
+        database_name, index_name,
+        des_type, max_keypoints,
+        K, L, )
+    elapsed, _ = timeit_my(compute_descriptors)(
+        database_name, index_name, path_to_images)
+    logging.getLogger('profile.computing_descriptors').info(f'{elapsed}')
+
+    train_clusterer(database_name, index_name)
+    compute_bow_and_inv(database_name, index_name)
+
+
+def change_params(
+        database_name, index_name,
+        des_type, max_keypoints,
+        K, L,
+        **kwargs):
+    if not CBIRCore.exists(database_name, index_name):
+        raise ValueError(f'{database_name} {index_name} does not exists. You can just create index')
+
+    logger = logging.getLogger('change_params')
+
+    cbir_core = CBIRCore.get_instance(database_name, index_name)
+    params = cbir_core.load_params()
+    data_dependent_params = cbir_core.load_params()
+
+    if des_type:
+        if des_type != params['des_type']:
+            raise ValueError('Another des_type')
+        params['des_type'] = des_type
+
+    if max_keypoints:
+        if max_keypoints != params['max_keypoints']:
+            raise ValueError('Another max_keypoints')
+        params['max_keypoints'] = max_keypoints
+
+    logger.info('Setting new params')
+    params['K'] = K
+    params['L'] = L
+    params['n_words'] = K ** L
+
+    data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
+    data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
+    data_dependent_params['most_frequent'] = []
+    data_dependent_params['least_frequent'] = []
+
+    CBIRCore._save_params(database_name, index_name, params)
+    CBIRCore._save_data_dependent_params(database_name, index_name, data_dependent_params)
+    clusterer = None
+    CBIRCore._save_clusterer(database_name, index_name, clusterer)
+
+    cbir_core.clean_bow_and_inv()
+    cbir_core.train_clusterer()
+    cbir_core.add_images_to_index()
+
+
+def search(
+        database_name, index_name, query,
+        n_candidates, topk,
+        sv, qe,
+        **kwargs):
+    search_params = {}
+    if n_candidates:
+        search_params['n_candidates'] = n_candidates
+    if topk:
+        search_params['topk'] = topk
+    if sv is None:
+        search_params['sv_enable'] = sv
+    if qe is None:
+        search_params['qe_enable'] = qe
+
+    cbir_core = CBIRCore.get_instance(database_name, index_name)
+    result = cbir_core.search(
+        query,
+        **search_params)
+    print(result)
