@@ -81,8 +81,11 @@ sample 10 5
 
 `...`
 
+__________________
+Specifying max_images
+
 100k 10 4
-`python cbir_main.py --log_prefix logs/100k_10_4 create_index --K 10 --L 4 d-100k i-1 data/Buildings/Original/Oxford/jpg`
+`python cbir_main.py --log_prefix logs/100k_10_4 create_index --K 10 --L 4 d-100k i-1 data/Buildings/Original/Oxford/jpg 8`
 
 `python cbir_main.py --log_prefix logs/100k_10_4 search d-100k i-1 data/Buildings/Original/Oxford/jpg/all_souls_000013.jpg --topk 10` 
 

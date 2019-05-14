@@ -7,7 +7,7 @@ import cbir
 import cbir_evaluation.start_evaluation
 from cbir import DATABASES
 from cbir.cbir_core import CBIRCore
-from cbir.legacy_utils import find_image_files
+from cbir.legacy_utils import find_image_files, find_image_files_distractor_aware
 from cbir.utils.basic import timeit_my
 
 
@@ -119,8 +119,11 @@ def create_empty_if_needed(
 
 def compute_descriptors(
         database_name, index_name, path_to_images,
+        max_images,
         **kwargs):
-    list_paths_to_images = find_image_files(path_to_images, ['jpg'], recursive=True)
+    # list_paths_to_images = find_image_files(path_to_images, ['jpg'], recursive=True)
+    list_paths_to_images = find_image_files_distractor_aware(
+        path_to_images, ['jpg'], recursive=True, max_images=max_images)
     cbir_core = CBIRCore.get_instance(database_name, index_name)
     cbir_core.compute_descriptors(list_paths_to_images,
                                   to_index=True,
@@ -143,6 +146,7 @@ def compute_bow_and_inv(
 
 def create_index(
         database_name, index_name, path_to_images,
+        max_images,
         des_type, max_keypoints,
         K, L,
         **kwargs):
@@ -151,7 +155,8 @@ def create_index(
         des_type, max_keypoints,
         K, L, )
     elapsed, _ = timeit_my(compute_descriptors)(
-        database_name, index_name, path_to_images)
+        database_name, index_name, path_to_images,
+        max_images)
     logging.getLogger('profile.computing_descriptors').info(f'{elapsed}')
 
     train_clusterer(database_name, index_name)

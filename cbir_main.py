@@ -56,6 +56,7 @@ def create_parser():
     create_index_parser.add_argument('database_name')
     create_index_parser.add_argument('index_name')
     create_index_parser.add_argument('path_to_images')
+    create_index_parser.add_argument('max_images', type=int)
     create_index_parser.add_argument('--des_type', required=False)
     create_index_parser.add_argument('--max_keypoints', type=int, required=False)
     create_index_parser.add_argument('--K', type=int, required=True)
