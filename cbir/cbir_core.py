@@ -248,13 +248,13 @@ class CBIRCore:
         Trains clusterer on images which's descriptors
         have already been computed and marked for_training.
         """
-        logger.info(f'Training clusterer on previously computed descriptors for index {self.name} of database {self.database}')
+        logger.info(f'Training clusterer for index {self.name} of database {self.database}')
         SIZE_DESCRIPTOR = 128
 
         count_photos_for_training_expected = database_service.count_for_training(self.db)
         COUNT_DESCRIPTORS_EXPECTED = self.max_keypoints * count_photos_for_training_expected
 
-        PLACEHOLDER_SIZE = 10000
+        PLACEHOLDER_SIZE = 100000
 
         path_to_mmap_descriptors = Path(CBIRCore.get_storage_path(self.database, self.name)) / 'mmap_descriptors'
         mmap_descriptos = np.memmap(path_to_mmap_descriptors,
