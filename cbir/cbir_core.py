@@ -508,7 +508,7 @@ class CBIRCore:
         candidates = [(None, rank[0]) for rank in ranks[:n_candidates]]
         time_preliminary_sorting = round(time.time() - start, 3)
         logger.info("Short list got in {}".format(time_preliminary_sorting))
-        profile_preliminary_sorting_logger.info(f"{time_retrieving_candidates},{new_query is not None}")
+        profile_preliminary_sorting_logger.info(f"{time_preliminary_sorting},{new_query is not None}")
 
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
