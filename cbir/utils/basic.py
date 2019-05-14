@@ -1,8 +1,19 @@
+import functools
 import os
 import time
 import rapidjson
 import shutil
 from pathlib import Path
+
+
+def timeit_my(func):
+    @functools.wraps(func)
+    def timed(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        elapsed = round(time.time() - start, 3)
+        return elapsed, result
+    return timed
 
 
 def generate_timestamp():
