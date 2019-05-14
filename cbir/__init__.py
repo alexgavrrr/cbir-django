@@ -14,3 +14,6 @@ CONFIG = {
     'cpu_required': not cuda_enabled,
     'use_cuda': cuda_enabled,
 }
+
+DES_TYPE = 'HardNetAll'
+MAX_KEYPOINTS = 2000
