@@ -14,16 +14,13 @@ class VocabularyTree:
         self.K = K
         self.max_clusters = K ** L
         self.ca = None
-
-        # TODO: Ensure that this is redundant and delete.
-        self.inverted_index = [[[], []] for i in range(self.max_clusters)]
-
         self.n_images = None
 
     def fit(self, data):
+        batch_size = max(1000, self.K * 100)
         self.ca = []
         self.ca.append(MiniBatchKMeans(n_clusters=self.K,
-                                       batch_size=1000).fit(data))
+                                       batch_size=batch_size).fit(data))
         labels = self.ca[0].predict(data).astype(np.int32)
 
         for l in range(1, self.L):
@@ -35,7 +32,7 @@ class VocabularyTree:
 
                 if len(idx) > self.K * 3:
                     ca_l.append(MiniBatchKMeans(n_clusters=self.K,
-                                                batch_size=1000,
+                                                batch_size=batch_size,
                                                 init_size=self.K * 3).fit(data[idx, :]))
                     labels[idx] = labels[idx] * self.K + ca_l[i].predict(data[idx, :]).astype(np.int32)
                 else:
