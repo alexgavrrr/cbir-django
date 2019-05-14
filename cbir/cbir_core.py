@@ -20,7 +20,7 @@ from cbir.models.learned_descriptors import L2net_des
 from cbir.models.learned_descriptors import SURF, SIFT
 from cbir.vocabulary_tree import VocabularyTree
 
-logger = logging.getLogger('cbir.photo_storage_inverted_file')
+logger = logging.getLogger('cbir.cbir_core')
 
 
 class CBIRCore:
@@ -130,6 +130,7 @@ class CBIRCore:
         params['K'] = K
         params['L'] = L
         params['n_words'] = K ** L
+        logger.info(f'Initing cbir index with params: {params}')
 
         data_dependent_params = {}
         data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
@@ -265,6 +266,7 @@ class CBIRCore:
         begin_mmap_descriptors = 0
         logger.info('Saving descriptors from database to disk')
 
+        start = time.time()
         count_photos_for_training = 0
         count_descriptors_flattened_for_training = 0
         for descriptor in tqdm(database_service.get_photos_descriptors_for_training_iterator(self.db),
@@ -289,6 +291,7 @@ class CBIRCore:
                     f'Count photos used for training: {count_photos_for_training}\n'
                     f'Average count of descriptors - keypoints on one photo: '
                     f'{int(count_descriptors_flattened_for_training / count_photos_for_training)})')
+        time_copying_descriptors_to_memmap = round(time.time() - start, 3)
 
         def loader(indices):
             if len(indices) > placeholder.shape[0]:
@@ -296,8 +299,16 @@ class CBIRCore:
             placeholder[:len(indices)] = mmap_descriptos[indices]
             return placeholder
 
+        start = time.time()
         ca = VocabularyTree(L=self.L, K=self.K).fit(mmap_descriptos)
+        time_fitting_vocabulary_tree = round(time.time() - start, 3)
+
+        start = time.time()
         CBIRCore._save_clusterer(self.database, self.name, ca)
+        time_saving_vocabulary_tree = round(time.time() - start, 3)
+
+        logging.getLogger('profile.training_clusterer').info(
+            f'{time_copying_descriptors_to_memmap},{time_fitting_vocabulary_tree},{time_saving_vocabulary_tree}')
 
     @decorator_load_ca_if_needed
     def add_images_to_index(self):
@@ -308,12 +319,15 @@ class CBIRCore:
         """
         logger.info(f'Adding photos to index {self.name} in database {self.database}')
 
+        profile_add_images_to_index_logger = logging.getLogger('profile.add_images_to_index')
+
         database_service.create_if_needed_word_photo_relations_table(self.db)
         database_service.delete_index_if_needed_in_word_photo_relations(self.db)
 
         data_dependent_params = self.load_data_dependent_params()
         freqs = data_dependent_params['freqs']
 
+        start = time.time()
         for photo in tqdm(database_service
                                   .get_photos_descriptors_needed_to_add_to_index_iterator(self.db),
                           desc='Applying clusterer, updaing bow and inverted index '
@@ -337,12 +351,15 @@ class CBIRCore:
             }
             database_service.write_bows(self.db, [photo_bow])
 
+        time_writing_bows = round(time.time() - start, 3)
+
         logger.info(f'Sorting word_photo relations')
         start = time.time()
         database_service.sort_word_photo_relations_table(self.db)
         finish = time.time()
         logger.info(f'Finished sorting word_photo relations over {round(finish - start, 1)} sec = '
                     f'{round((finish - start) / 60, 1)} min')
+        time_creating_index_by_word = round(finish - start, 3)
 
         def _prepare_word_photos(word_, word_photos_):
             word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
@@ -357,6 +374,7 @@ class CBIRCore:
         # Sort by word and get word photo relations
         word_now = None
         word_photos_now = set()
+        start = time.time()
         for ind, word_photo_relation in enumerate(tqdm(database_service.get_word_photo_relations_sorted(self.db),
                                                        desc='Collecting word to photos and writing to database')):
             word_next = word_photo_relation['word']
@@ -372,7 +390,11 @@ class CBIRCore:
             word_to_insert = _prepare_word_photos(word_now, word_photos_now)
             database_service.insert_or_replace_words(self.db, [word_to_insert])
 
+        time_building_inv = round(time.time() - start)
+
         database_service.clean_word_photo_relations_table(self.db)
+
+        profile_add_images_to_index_logger.info(f'{time_writing_bows},{time_creating_index_by_word},{time_building_inv}')
 
         five_percent = int(0.085 * self.n_words)
         freqs = np.argsort(freqs)
@@ -388,6 +410,10 @@ class CBIRCore:
         data_dependent_params['most_frequent'] = most_frequent
         data_dependent_params['least_frequent'] = least_frequent
         CBIRCore._save_data_dependent_params(self.database, self.name, data_dependent_params)
+
+    def clean_bow_and_inv(self):
+        database_service.clean_bow(self.db)
+        database_service.clean_word(self.db)
 
     def get_candidates_raw(self, query, filter=True):
         """
@@ -422,10 +448,13 @@ class CBIRCore:
         """
         logger.info(f'Performing search in database {self.database} on index {self.name}. '
                     f'Path to query: {img_path}')
-        logger.info(f'Search params: , topk: {topk}, '
+        logger.info(f'Search params: topk: {topk}, '
                      f'n_candidates: {n_candidates}, max_verified: {max_verified}, '
                      f'similarity_threshold: {similarity_threshold}, '
                      f'sv_enable: {sv_enable}, qe_enable: {qe_enable}')
+
+        profile_retrieving_logger = logging.getLogger('profile.retrieving_candidates')
+        profile_preliminary_sorting_logger = logging.getLogger('profile.preliminary_sorting')
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
         if new_query is not None:
@@ -439,7 +468,7 @@ class CBIRCore:
                 message = f'Could not get descriptor for image {img_path}'
                 raise ValueError(message)
             img_descriptor, img_bovw, kp = result_tuple
-            logger.info("Descriptor for query got in {}".format(time.time() - start))
+            logger.info("Descriptor for query got in {}".format(round(time.time() - start, 3)))
 
         start = time.time()
         candidates_raw = self.get_candidates_raw(img_bovw[:-1])
@@ -448,7 +477,10 @@ class CBIRCore:
         candidates = set()
         for candidate_raw in candidates_raw:
             candidates |= self.deserialize_word_photos(candidate_raw)
-        logger.info(f"{len(candidates)} candidates by words got in {time.time() - start}")
+        time_retrieving_candidates = round(time.time() - start, 3)
+        logger.info(f"{len(candidates)} candidates by words got in {time_retrieving_candidates}")
+
+        profile_retrieving_logger.info(f"{len(candidates)},{time_retrieving_candidates},{new_query is not None}")
 
         # TODO: In the future make candidates an iterator. Now Algorithm keeps all candidates in RAM
         # because it applies sorting. But algorithm needs only top n_candidates.
@@ -474,7 +506,9 @@ class CBIRCore:
 
         # TODO: Get rid of redundant None here `(None, rank[0])` which is for backward-compatibility now.
         candidates = [(None, rank[0]) for rank in ranks[:n_candidates]]
-        logger.info("Short list got in {}".format(time.time() - start))
+        time_preliminary_sorting = round(time.time() - start, 3)
+        logger.info("Short list got in {}".format(time_preliminary_sorting))
+        profile_preliminary_sorting_logger.info(f"{time_retrieving_candidates},{new_query is not None}")
 
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
@@ -491,7 +525,7 @@ class CBIRCore:
          descriptors_kp] = self.ransac(img_descriptor, kp, candidates,
                                        n_inliners_thr, max_verified)
 
-        logger.info('Spatial verification got in {}s'.format(time.time() - start))
+        logger.info('Spatial verification got in {}s'.format(round(time.time() - start), 3))
         if debug:
             n = 1
             draw_params = dict(matchColor=(0, 255, 0),
@@ -556,7 +590,7 @@ class CBIRCore:
                                    key=lambda x: x[1], reverse=True)
 
         if qe_enable and new_query is None:
-            logger.info("Query Expansion got in {}s".format(time.time() - start))
+            logger.info("Query Expansion got in {}s".format(round(time.time() - start), 3))
 
         return sv_candidates[:topk]
 
