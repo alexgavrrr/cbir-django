@@ -65,3 +65,32 @@ n_candidatesl, elapsed, whether_qe_stage
 
 **preliminary_sorting.txt**
 elapsed, whether_qe_stage
+
+## commands
+sample 10 4
+`python cbir_main.py --log_prefix logs/sample_10_4 create_index --K 10 --L 4 d-sample i-1 data/Buildings/Original/Oxford_sample/jpg`
+
+`python cbir_main.py --log_prefix logs/sample_10_4 search d-sample i-1 data/Buildings/Original/Oxford_sample/jpg/all_souls_000013.jpg --topk 10` 
+
+`...`
+
+sample 10 5
+`python cbir_main.py --log_prefix logs/sample_10_5 change_params --K 10 --L 5 d-sample i-1`
+
+`python cbir_main.py --log_prefix logs/sample_10_5 search d-sample i-1 data/Buildings/Original/Oxford_sample/jpg/all_souls_000013.jpg --topk 10` 
+
+`...`
+
+100k 10 4
+`python cbir_main.py --log_prefix logs/100k_10_4 create_index --K 10 --L 4 d-100k i-1 data/Buildings/Original/Oxford/jpg`
+
+`python cbir_main.py --log_prefix logs/100k_10_4 search d-100k i-1 data/Buildings/Original/Oxford/jpg/all_souls_000013.jpg --topk 10` 
+
+`...`
+
+100k 10 5
+`python cbir_main.py --log_prefix logs/100k_10_5 change_params --K 10 --L 5 d-100k i-1`
+
+`python cbir_main.py --log_prefix logs/100k_10_5 search d-100k i-1 data/Buildings/Original/Oxford/jpg/all_souls_000013.jpg --topk 10` 
+
+`...`
