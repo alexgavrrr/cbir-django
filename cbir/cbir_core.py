@@ -133,6 +133,7 @@ class CBIRCore:
         logger.info(f'Initing cbir index with params: {params}')
 
         data_dependent_params = {}
+        data_dependent_params['count_images'] = None
         data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
         data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
         data_dependent_params['most_frequent'] = []
@@ -405,6 +406,7 @@ class CBIRCore:
         idf = compute_idf_lazy(freqs, total_count_photos_indexed)
 
         data_dependent_params = {}
+        data_dependent_params['count_images'] = total_count_photos_indexed
         data_dependent_params['freqs'] = freqs
         data_dependent_params['idf'] = idf
         data_dependent_params['most_frequent'] = most_frequent
