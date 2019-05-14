@@ -28,6 +28,22 @@ def clean_word_photo_relations_table(db):
             WordPhoto.create_table()
 
 
+def clean_bow(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([PhotoBow]):
+            if db.table_exists('photobow'):
+                PhotoBow.drop_table()
+            PhotoBow.create_table()
+
+
+def clean_word(db):
+    with MODELS_LOCK:
+        with db.bind_ctx([Word]):
+            if db.table_exists('word'):
+                Word.drop_table()
+            Word.create_table()
+
+
 def create_if_needed_word_photo_relations_table(db):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
