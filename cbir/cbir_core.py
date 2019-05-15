@@ -338,10 +338,10 @@ class CBIRCore:
             photo_words = self.ca.predict(photo_descriptor[0])
             photo_bow = np.zeros((self.n_words + 1,), dtype=np.int16)
             for word in photo_words:
-                word_photo_relations += [{'word': word, 'photo': photo.name}]
                 photo_bow[word] += 1
                 photo_bow[self.n_words] += 1
                 if photo_bow[word] == 1:
+                    word_photo_relations += [{'word': word, 'photo': photo.name}]
                     freqs[word] += 1
 
             # TODO: photo.pk instead of photo.name must be in the future.
