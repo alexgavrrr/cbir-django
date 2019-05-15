@@ -398,9 +398,9 @@ class CBIRCore:
         profile_add_images_to_index_logger.info(f'{time_writing_bows},{time_creating_index_by_word},{time_building_inv}')
 
         five_percent = int(0.085 * self.n_words)
-        freqs = np.argsort(freqs)
-        most_frequent = freqs[-five_percent:]
-        least_frequent = freqs[:five_percent]
+        words_sorted_by_freqs = np.argsort(freqs)
+        most_frequent = words_sorted_by_freqs[-five_percent:]
+        least_frequent = words_sorted_by_freqs[:five_percent]
 
         total_count_photos_indexed = database_service.count_for_indexing(self.db)
         idf = compute_idf_lazy(freqs, total_count_photos_indexed)
@@ -918,7 +918,8 @@ class CBIRCore:
 
 
 def compute_idf_lazy(freqs, total_count_documents):
-    not_zero = np.where(freqs != 0)[0]
-    idf = np.zeros(freqs.shape[0])
-    idf[not_zero] = np.log(total_count_documents / freqs[not_zero])
+    # not_zero = np.where(freqs != 0)[0]
+    # idf = np.zeros(freqs.shape[0])
+    # idf[not_zero] = np.log(total_count_documents / freqs[not_zero])
+    idf = np.log(total_count_documents / (1 + freqs))
     return idf
