@@ -201,6 +201,7 @@ def change_params(
     CBIRCore._save_data_dependent_params(database_name, index_name, data_dependent_params)
     clusterer = None
     CBIRCore._save_clusterer(database_name, index_name, clusterer)
+    cbir_core = CBIRCore.get_instance(database_name, index_name)
 
     cbir_core.clean_bow_and_inv()
     cbir_core.train_clusterer()
