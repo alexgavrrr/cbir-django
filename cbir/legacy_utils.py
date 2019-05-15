@@ -76,9 +76,9 @@ def find_image_files_distractor_aware(root, extensions, recursive=True, max_imag
                 break
 
         if len(files) >= max_images:
-            return sorted(files)
+            return sorted(files)[:max_images]
 
-    return sorted(files)  # sort files in ascend order to keep relations
+    return sorted(files)[:max_images]  # sort files in ascend order to keep relations
 
 
 def draw_patches(patches, nc=5):
