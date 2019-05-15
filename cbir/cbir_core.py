@@ -483,6 +483,7 @@ class CBIRCore:
         start = time.time()
         candidates_raw = self.get_candidates_raw(img_bovw[:-1])
         if len(candidates_raw) == 0:
+            logger.warning('0 candidates if filter most frequent. Trying without filtering')
             candidates_raw = self.get_candidates_raw(img_bovw[:-1], filter=False)
         candidates = set()
         for candidate_raw in candidates_raw:
