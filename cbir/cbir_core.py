@@ -444,7 +444,7 @@ class CBIRCore:
     def search(self,
                img_path,
                n_candidates=100,
-               topk=5, n_inliners_thr=20, max_verified=20,
+               topk=5, n_inliners_thr=20, max_verified=50,
                qe_avg=50, qe_limit=30, new_query=None,
                sv_enable=True, qe_enable=True, debug=False,
                similarity_threshold=None,
