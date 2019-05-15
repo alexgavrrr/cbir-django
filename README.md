@@ -68,7 +68,7 @@ elapsed, whether_qe_stage
 
 ## commands
 sample 10 4
-`python cbir_main.py --log_prefix logs/sample_10_4 create_index --K 10 --L 4 d-sample i-1 data/Buildings/Original/Oxford_sample/jpg`
+`python cbir_main.py --log_prefix logs/sample_10_4 create_index --K 10 --L 4 d-sample i-1 data/Buildings/Original/Oxford_sample/jpg 14`
 
 `python cbir_main.py --log_prefix logs/sample_10_4 search d-sample i-1 data/Buildings/Original/Oxford_sample/jpg/all_souls_000013.jpg --topk 10` 
 
@@ -81,8 +81,6 @@ sample 10 5
 
 `...`
 
-__________________
-Specifying max_images
 
 100k 10 4
 `python cbir_main.py --log_prefix logs/100k_10_4 create_index --K 10 --L 4 d-100k i-1 data/Buildings/Original/Oxford/jpg 8`
@@ -97,3 +95,5 @@ Specifying max_images
 `python cbir_main.py --log_prefix logs/100k_10_5 search d-100k i-1 data/Buildings/Original/Oxford/jpg/all_souls_000013.jpg --topk 10` 
 
 `...`
+
+scp -r data/Buildings/Original/Oxford_sample/jpg/distractor gavr@40.114.26.173:~/main/cbir-django/data/Buildings/Original/Oxford_sample/jpg/distractor
