@@ -12,7 +12,7 @@ from cbir.cbir_core import CBIRCore
 from cbir.legacy_utils import find_image_files
 
 
-def load_gt(images_path, gt_path):
+def load_gt(images_path, gt_path, return_queries_names=None):
     all_files_in_gt_path = find_image_files(gt_path, ['txt'])
     ok = [img for img in all_files_in_gt_path if img.find('ok') != -1]
     good = [img for img in all_files_in_gt_path if img.find('good') != -1]
@@ -23,6 +23,7 @@ def load_gt(images_path, gt_path):
     ok_answers = [[] for i in range(5)]
     good_answers = [[] for i in range(5)]
     junk_answers = [[] for i in range(5)]
+    queries_names = [[] for i in range(5)]
 
     label = None
     if gt_path.find('paris') != -1 or gt_path.find('Paris') != -1:
@@ -55,6 +56,7 @@ def load_gt(images_path, gt_path):
                 print(f'cv2.imread on `{f_name}` read None')
             else:
                 queries[n].append(img[y1:y2, x1:x2])
+                queries_names[n].append(f_name)
 
         with open(ok[i], 'r') as ok_f:
             tmp = []
@@ -77,7 +79,10 @@ def load_gt(images_path, gt_path):
                 tmp.append(f_name)
             junk_answers[n].append(tmp)
 
-    return queries, ok_answers, good_answers, junk_answers
+    if return_queries_names:
+        return queries, ok_answers, good_answers, junk_answers, queries_names
+    else:
+        return queries, ok_answers, good_answers, junk_answers
 
 
 def AP(query_and_gt_images, answer_images, debug=False):
@@ -219,32 +224,34 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
     cbir_core.set_fd(cbir_core.load_fd())
     cbir_core.set_ca(cbir_core.load_ca())
 
-    queries, ok_answers, good_answers, junk_answers = load_gt(database_photos_dir, gt_dir)
+    queries, ok_answers, good_answers, junk_answers, queries_names = load_gt(database_photos_dir, gt_dir, return_queries_names=True)
     scores = []
     scores_new = []
     answers = []
     for trial in range(5):
+        queries_names_trial = queries_names[trial]
         answers_trial = []
         queries_trial = queries[trial]
         ok_answers_trial = ok_answers[trial]
         good_answers_trial = good_answers[trial]
         right_answers_trial = [ok_answers_trial[j] + good_answers_trial[j] for j, _ in enumerate(ok_answers_trial)]
-        queries_gt_trial = list(zip(queries_trial, right_answers_trial))
 
-        for query_gt_now in tqdm(queries_gt_trial):
+        # queries_gt_trial = list(zip(queries_trial, right_answers_trial))
+        for query_now, query_name_now, gt_now in tqdm(zip(queries_trial, queries_names_trial, right_answers_trial)):
             similar_images = cbir_core.search(
-                query_gt_now[0],
+                query_now,
                 n_candidates=n_test_candidates,
                 topk=topk,
                 sv_enable=sv_enable,
-                qe_enable=qe_enable, )
+                qe_enable=qe_enable,
+                query_name=query_name_now)
 
             # TODO DEBUG
             print(f'similar_images: {similar_images}')
 
-            scores.append(AP(query_gt_now, similar_images))
-            scores_new.append(AP_new(query_gt_now, similar_images))
-            answers_trial.append([query_gt_now[0], [s[0][1] for s in similar_images]])
+            scores.append(AP((query_now, gt_now), similar_images))
+            scores_new.append(AP_new((query_now, gt_now), similar_images))
+            answers_trial.append([query_name_now, [s[0][1] for s in similar_images]])
 
         answers.append(answers_trial)
 
