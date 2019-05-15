@@ -33,3 +33,8 @@ To get oxford paris datasets execute script
 `data/Buildings/Original/get_oxford_paris.sh`
 It will create `Paris` and `Oxford` dirs in current working dir.
 Based on https://github.com/figitaki/deep-retrieval
+
+
+python cbir_main.py evaluate_only d-sample i-1 data/Buildings/Original/Oxford_sample/jpg data/Buildings/Original/Oxford/gt --sv
+
+python cbir_main.py evaluate_only d-10k i-1 data/Buildings/Original/Oxford/jpg data/Buildings/Original/Oxford/gt
