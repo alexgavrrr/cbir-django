@@ -451,13 +451,15 @@ class CBIRCore:
                qe_avg=50, qe_limit=30, new_query=None,
                sv_enable=True, qe_enable=True, debug=False,
                similarity_threshold=None,
-               precomputed_img_descriptor=None, precomputed_kp=None):
+               precomputed_img_descriptor=None, precomputed_kp=None,
+               query_name=None):
         """
         :param list_paths_to_images: query images
         :return: list paths images most similar to the query
         """
+        query_name = query_name or img_path
         logger.info(f'Performing search in database {self.database} on index {self.name}. '
-                    f'Path to query: {img_path}')
+                    f'Query_name: {query_name}')
         logger.info(f'Search params: topk: {topk}, '
                      f'n_candidates: {n_candidates}, max_verified: {max_verified}, '
                      f'similarity_threshold: {similarity_threshold}, '
@@ -475,7 +477,7 @@ class CBIRCore:
             start = time.time()
             result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
             if len(result_tuple) != 3 or result_tuple[0] is None:
-                message = f'Could not get descriptor for image {img_path}'
+                message = f'Could not get descriptor for image {query_name}'
                 raise ValueError(message)
             img_descriptor, img_bovw, kp = result_tuple
             logger.info("Descriptor for query got in {}".format(round(time.time() - start, 3)))
@@ -525,7 +527,7 @@ class CBIRCore:
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
-            self.log_answers(img_path, candidates[:topk], sv_enable, qe_enable)
+            self.log_answers(query_name, candidates[:topk], sv_enable, qe_enable)
             return candidates[:topk]
 
         start = time.time()
@@ -591,7 +593,8 @@ class CBIRCore:
                                             qe_enable=qe_enable, sv_enable=sv_enable,
                                             debug=debug,
                                             precomputed_img_descriptor=img_descriptor,
-                                            precomputed_kp=kp)
+                                            precomputed_kp=kp,
+                                            query_name=query_name)
 
             old = set(sv_candidates[i][0][0] for i in range(len(sv_candidates)))
             new = set(new_sv_candidates[i][0][0] for i in range(len(new_sv_candidates)))
@@ -604,7 +607,7 @@ class CBIRCore:
         if qe_enable and new_query is None:
             logger.info("Query Expansion got in {}s".format(round(time.time() - start), 3))
 
-        self.log_answers(img_path, sv_candidates[:topk], sv_enable, qe_enable)
+        self.log_answers(query_name, sv_candidates[:topk], sv_enable, qe_enable)
         return sv_candidates[:topk]
 
     def ransac(self, img_descriptor, kp, candidates,
