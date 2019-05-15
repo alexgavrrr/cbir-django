@@ -31,6 +31,8 @@ def configure_logging(
     training_clusterer = str(Path(prefix) / 'training_clusterer.txt')
     add_images_to_index = str(Path(prefix) / 'add_images_to_index.txt')
 
+    answers = str(Path(prefix) / 'answers.txt')
+
 
     if not os.path.exists(prefix):
         os.makedirs(prefix, exist_ok=True)
@@ -77,6 +79,11 @@ def configure_logging(
                 'class': 'logging.FileHandler',
                 'filename': add_images_to_index
             },
+            'profile.answers': {
+                'level': 'DEBUG',
+                'class': 'logging.FileHandler',
+                'filename': answers
+            },
 
             'console': {
                 'level': 'DEBUG',
@@ -122,6 +129,11 @@ def configure_logging(
             },
             'profile.add_images_to_index': {
                 'handlers': ['profile.add_images_to_index'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+            'profile.answers': {
+                'handlers': ['profile.answers'],
                 'level': 'DEBUG',
                 'propagate': True,
             },

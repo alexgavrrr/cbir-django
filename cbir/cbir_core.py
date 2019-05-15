@@ -434,6 +434,11 @@ class CBIRCore:
         candidates_iterator_modified = (candidate['photos'] for candidate in candidates_iterator)
         return list(candidates_iterator_modified)
 
+    def log_answers(self, query, result, sv, qe):
+        answers_logger = logging.getLogger('profile.answers')
+        for rank, row in enumerate(result):
+            answers_logger.info(f'{query},{row[0][1]},{rank + 1},{row[1]},{sv},{qe}')
+
     @decorator_load_fd_if_needed
     @decorator_load_ca_if_needed
     def search(self,
@@ -516,6 +521,7 @@ class CBIRCore:
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
+            self.log_answers(img_path, candidates[:topk], sv_enable, qe_enable)
             return candidates[:topk]
 
         start = time.time()
@@ -594,6 +600,7 @@ class CBIRCore:
         if qe_enable and new_query is None:
             logger.info("Query Expansion got in {}s".format(round(time.time() - start), 3))
 
+        self.log_answers(img_path, sv_candidates[:topk], sv_enable, qe_enable)
         return sv_candidates[:topk]
 
     def ransac(self, img_descriptor, kp, candidates,
