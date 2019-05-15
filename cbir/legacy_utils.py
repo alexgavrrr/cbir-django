@@ -62,7 +62,7 @@ def find_image_files(root, extensions, recursive=True):
     return sorted(files)  # sort files in ascend order to keep relations
 
 
-def find_image_files_distractor_aware(root, extensions, recursive=True, max_images=10000):
+def find_image_files_bounded(root, extensions, recursive=True, max_images=10000):
     files = []
     for file_dir in os.listdir(root):
         full_path = os.path.join(root, file_dir)
