@@ -363,9 +363,12 @@ class CBIRCore:
         time_creating_index_by_word = round(finish - start, 3)
 
         def _prepare_word_photos(word_, word_photos_):
-            word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
-            word_photos_old = (set() if not word_photos_old_raw
-                               else self.deserialize_word_photos(word_photos_old_raw[0]['photos']))
+
+            # TODO: Consider about this if adding new photo to index is needed.
+            # word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
+            # word_photos_old = (set() if not word_photos_old_raw
+            #                    else self.deserialize_word_photos(word_photos_old_raw[0]['photos']))
+            word_photos_old = set()
             prepared = {
                 'word': word_,
                 'photos': self.serialize_word_photos(word_photos_ | word_photos_old)
