@@ -218,10 +218,8 @@ def search(
         search_params['n_candidates'] = n_candidates
     if topk:
         search_params['topk'] = topk
-    if sv is None:
-        search_params['sv_enable'] = sv
-    if qe is None:
-        search_params['qe_enable'] = qe
+    search_params['sv_enable'] = sv
+    search_params['qe_enable'] = qe
 
     cbir_core = CBIRCore.get_instance(database_name, index_name)
     result = cbir_core.search(

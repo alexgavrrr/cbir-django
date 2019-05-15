@@ -78,8 +78,8 @@ def create_parser():
     search_parser.add_argument('query')
     search_parser.add_argument('--n_candidates', type=int, required=False)
     search_parser.add_argument('--topk', type=int, required=False)
-    search_parser.add_argument('--sv', action='store_true', default=None)
-    search_parser.add_argument('--qe', action='store_true', default=None)
+    search_parser.add_argument('--sv', action='store_true', default=False)
+    search_parser.add_argument('--qe', action='store_true', default=False)
 
     return parser
 
