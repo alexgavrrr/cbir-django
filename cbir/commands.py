@@ -229,7 +229,9 @@ def search(
         database_name, index_name, query,
         n_candidates, topk,
         sv, qe,
+        p_fine_max,
         **kwargs):
+
     search_params = {}
     if n_candidates:
         search_params['n_candidates'] = n_candidates
@@ -237,6 +239,7 @@ def search(
         search_params['topk'] = topk
     search_params['sv_enable'] = sv
     search_params['qe_enable'] = qe
+    search_params['p_fine_max'] = p_fine_max
 
     cbir_core = CBIRCore.get_instance(database_name, index_name)
     result = cbir_core.search(

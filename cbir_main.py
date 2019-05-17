@@ -80,6 +80,7 @@ def create_parser():
     search_parser.add_argument('--topk', type=int, required=False)
     search_parser.add_argument('--sv', action='store_true', default=False)
     search_parser.add_argument('--qe', action='store_true', default=False)
+    search_parser.add_argument('--p_fine_max', type=float, required=False, default=None)
 
     return parser
 
