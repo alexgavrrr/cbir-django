@@ -461,7 +461,7 @@ class CBIRCore:
         :param list_paths_to_images: query images
         :return: list paths images most similar to the query
         """
-        p_fine_max = p_fine_max or 1.0
+        p_fine_max = p_fine_max if p_fine_max is not None else 1.0
         query_name = query_name or img_path
         logger.info(f'Performing search in database {self.database} on index {self.name}. '
                     f'Query_name: {query_name}')
