@@ -50,6 +50,7 @@ def create_parser():
     evaluate_only_parser.add_argument('gt_dir')
     evaluate_only_parser.add_argument('--sv', action='store_true', default=False)
     evaluate_only_parser.add_argument('--qe', action='store_true', default=False)
+    evaluate_only_parser.add_argument('--p_fine_max', type=float, required=False, default=None)
 
     create_index_parser = subparsers.add_parser('create_index',
                                                  help='Create CBIR Index')

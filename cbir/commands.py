@@ -98,10 +98,12 @@ def evaluate(
 def evaluate_only(
         database_name, index_name, database_photos_dir, gt_dir,
         sv, qe,
+        p_fine_max,
         **kwargs):
     cbir_evaluation.start_evaluation.start_test(
         database_name, index_name, database_photos_dir, gt_dir,
-        sv, qe)
+        sv, qe,
+        p_fine_max)
 
 
 def create_empty_if_needed(

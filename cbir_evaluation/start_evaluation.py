@@ -99,7 +99,7 @@ def start_train_test_all_descriptors_and_modes(
 
 def start_test(
         database_name, index_name, database_photos_dir, gt_dir,
-        sv, qe):
+        sv, qe, p_fine_max=None):
     results_file = str(Path(cbir.BASE_DIR) / 'results'
                        / '{database_name}_{index_name}_{sv}_{qe}.txt'.format(database_name=database_name,
                                                                              index_name=index_name,
@@ -109,7 +109,7 @@ def start_test(
         os.mkdir(str(Path(cbir.BASE_DIR) / 'results'))
 
     mAP, mAP_new = evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
-                                 sv_enable=sv, qe_enable=qe)
+                                 sv_enable=sv, qe_enable=qe, p_fine_max=p_fine_max)
 
     info = f'{(mAP, mAP_new)}'
     with open(results_file, 'a') as fout:

@@ -219,7 +219,8 @@ def evaluate(train_dir, test_dir, gt_dir,
 
 def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
                   sv_enable=True, qe_enable=True,
-                  topk=5, n_test_candidates=100, ):
+                  topk=5, n_test_candidates=100,
+                  p_fine_max=None):
     cbir_core = CBIRCore.get_instance(database_name, index_name)
     cbir_core.set_fd(cbir_core.load_fd())
     cbir_core.set_ca(cbir_core.load_ca())
@@ -244,7 +245,8 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
                 topk=topk,
                 sv_enable=sv_enable,
                 qe_enable=qe_enable,
-                query_name=query_name_now)
+                query_name=query_name_now,
+                p_fine_max=p_fine_max)
 
             # TODO DEBUG
             print(f'similar_images: {similar_images}')
