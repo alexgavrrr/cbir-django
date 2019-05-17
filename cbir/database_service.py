@@ -168,7 +168,7 @@ def get_photos_by_words_iterator(
         with db.bind_ctx([Photo, Word]):
             query = (Word
                      .select(Word.photos)
-                     .where(Word.word in words))
+                     .where(Word.word << words))
             return query.dicts().iterator()
 
 
