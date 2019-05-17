@@ -606,7 +606,8 @@ class CBIRCore:
                                             debug=debug,
                                             precomputed_img_descriptor=img_descriptor,
                                             precomputed_kp=kp,
-                                            query_name=query_name)
+                                            query_name=query_name,
+                                            p_fine_max=p_fine_max)
 
             old = set(sv_candidates[i][0][0] for i in range(len(sv_candidates)))
             new = set(new_sv_candidates[i][0][0] for i in range(len(new_sv_candidates)))
