@@ -466,7 +466,8 @@ class CBIRCore:
         logger.info(f'Search params: topk: {topk}, '
                      f'n_candidates: {n_candidates}, max_verified: {max_verified}, '
                      f'similarity_threshold: {similarity_threshold}, '
-                     f'sv_enable: {sv_enable}, qe_enable: {qe_enable}')
+                     f'sv_enable: {sv_enable}, qe_enable: {qe_enable}, '
+                    f'p_fine_max: {p_fine_max}')
 
         profile_retrieving_logger = logging.getLogger('profile.retrieving_candidates')
         profile_preliminary_sorting_logger = logging.getLogger('profile.preliminary_sorting')
@@ -475,9 +476,7 @@ class CBIRCore:
         data_dependent_params = self.load_data_dependent_params()
         idf = data_dependent_params['idf']
         freqs = data_dependent_params['freqs']
-        bad_words = np.where(np.logical_and(
-            freqs > p_fine_max * data_dependent_params['count_images'],
-        ))[0]
+        bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
 
         if new_query is not None:
             img_descriptor = precomputed_img_descriptor
