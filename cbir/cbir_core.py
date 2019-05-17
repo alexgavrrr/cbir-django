@@ -420,7 +420,7 @@ class CBIRCore:
         database_service.clean_bow(self.db)
         database_service.clean_word(self.db)
 
-    def get_candidates_raw(self, query, filter=True):
+    def get_candidates_raw(self, query, filter=True, bad_words=[]):
         """
         :param query:  `[(visual_word, freq), ...]` query as a bow(BoVW)
         :param filter:
@@ -431,7 +431,8 @@ class CBIRCore:
                                       for word, freq
                                       in enumerate(query)
                                       if (freq > 1e-7
-                                          and (not filter or word not in most_frequent))]
+                                          and (not filter or (word not in most_frequent
+                                                              and word not in bad_words)))]
 
         candidates_iterator = database_service.get_photos_by_words_iterator(self.db, interesting_words_in_query)
         candidates_iterator_modified = (candidate['photos'] for candidate in candidates_iterator)
@@ -452,11 +453,13 @@ class CBIRCore:
                sv_enable=True, qe_enable=True, debug=False,
                similarity_threshold=None,
                precomputed_img_descriptor=None, precomputed_kp=None,
-               query_name=None):
+               query_name=None,
+               p_fine_max=None):
         """
         :param list_paths_to_images: query images
         :return: list paths images most similar to the query
         """
+        p_fine_max = p_fine_max or 1.0
         query_name = query_name or img_path
         logger.info(f'Performing search in database {self.database} on index {self.name}. '
                     f'Query_name: {query_name}')
@@ -468,6 +471,13 @@ class CBIRCore:
         profile_retrieving_logger = logging.getLogger('profile.retrieving_candidates')
         profile_preliminary_sorting_logger = logging.getLogger('profile.preliminary_sorting')
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
+
+        data_dependent_params = self.load_data_dependent_params()
+        idf = data_dependent_params['idf']
+        freqs = data_dependent_params['freqs']
+        bad_words = np.where(np.logical_and(
+            freqs > p_fine_max * data_dependent_params['count_images'],
+        ))[0]
 
         if new_query is not None:
             img_descriptor = precomputed_img_descriptor
@@ -483,7 +493,7 @@ class CBIRCore:
             logger.info("Descriptor for query got in {}".format(round(time.time() - start, 3)))
 
         start = time.time()
-        candidates_raw = self.get_candidates_raw(img_bovw[:-1])
+        candidates_raw = self.get_candidates_raw(img_bovw[:-1], bad_words=bad_words)
         if len(candidates_raw) == 0:
             logger.warning('0 candidates if filter most frequent. Trying without filtering')
             candidates_raw = self.get_candidates_raw(img_bovw[:-1], filter=False)
@@ -502,7 +512,7 @@ class CBIRCore:
         # STEP 2. PRELIMINARY RANKING
         start = time.time()
 
-        idf = self.load_data_dependent_params()['idf']
+
 
         # TODO: Use heapq to obtain preliminary top n_candidates
         # Getting all candidates in ram and sorting can be infeasible.
