@@ -136,8 +136,8 @@ class CBIRCore:
         data_dependent_params['count_images'] = None
         data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
         data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
-        data_dependent_params['most_frequent'] = []
-        data_dependent_params['least_frequent'] = []
+        data_dependent_params['most_frequent'] = set()
+        data_dependent_params['least_frequent'] = set()
 
         cls._save_params(database, name, params)
         cls._save_data_dependent_params(database, name, data_dependent_params)
@@ -402,8 +402,8 @@ class CBIRCore:
 
         five_percent = int(0.085 * self.n_words)
         words_sorted_by_freqs = np.argsort(freqs)
-        most_frequent = words_sorted_by_freqs[-five_percent:]
-        least_frequent = words_sorted_by_freqs[:five_percent]
+        most_frequent = set(words_sorted_by_freqs[-five_percent:])
+        least_frequent = set(words_sorted_by_freqs[:five_percent])
 
         total_count_photos_indexed = database_service.count_for_indexing(self.db)
         idf = compute_idf_lazy(freqs, total_count_photos_indexed)
