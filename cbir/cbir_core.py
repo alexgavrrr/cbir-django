@@ -433,6 +433,8 @@ class CBIRCore:
                                       if (freq > 1e-7
                                           and (not filter or (word not in most_frequent
                                                               and word not in bad_words)))]
+        print(f'AAA len(interesting_words_in_query): {len(interesting_words_in_query)}')
+        print(f'AAA len(bad_words): {len(bad_words)}')
 
         candidates_iterator = database_service.get_photos_by_words_iterator(self.db, interesting_words_in_query)
         candidates_iterator_modified = (candidate['photos'] for candidate in candidates_iterator)
@@ -477,6 +479,7 @@ class CBIRCore:
         idf = data_dependent_params['idf']
         freqs = data_dependent_params['freqs']
         bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
+        print(f'AAA len(bad_words): {len(bad_words)}, bad_words: {bad_words}')
 
         if new_query is not None:
             img_descriptor = precomputed_img_descriptor
@@ -495,7 +498,7 @@ class CBIRCore:
         candidates_raw = self.get_candidates_raw(img_bovw[:-1], bad_words=bad_words)
         if len(candidates_raw) == 0:
             logger.warning('0 candidates if filter most frequent. Trying without filtering')
-            candidates_raw = self.get_candidates_raw(img_bovw[:-1], filter=False)
+            candidates_raw = self.get_candidates_raw(img_bovw[:-1], filter=False, bad_words=bad_words)
         candidates = set()
         for candidate_raw in candidates_raw:
             candidates |= self.deserialize_word_photos(candidate_raw)
