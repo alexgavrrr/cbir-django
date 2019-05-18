@@ -145,7 +145,9 @@ def get_photos_descriptors_for_training_iterator(db):
         with db.bind_ctx([Photo, Word]):
             query = (Photo
                      .select(Photo.descriptor)
-                     .where(Photo.for_training == True))
+                     # TODO: Uncomment this! Now it is commented because I needed to do the experiment.
+                     # .where(Photo.for_training == True)
+                     )
             return query.dicts().iterator()
 
 
