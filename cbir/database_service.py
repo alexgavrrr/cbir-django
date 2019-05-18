@@ -197,7 +197,8 @@ def count_for_training(db):
         with db.bind_ctx([Photo, Word]):
             return (Photo
                     .select()
-                    .where(Photo.for_training == True)
+                    # TODO: Uncomment this! Now it is commented because I needed to do the experiment.
+                    # .where(Photo.for_training == True)
                     .count())
 
 
