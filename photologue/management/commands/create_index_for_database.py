@@ -28,8 +28,11 @@ class Command(BaseCommand):
         cbir_index, created = models.CBIRIndex.objects.get_or_create(database=database,
                                                                      name=cbir_index_name,
                                                                      slug=cbir_index_name,
-                                                                     title=cbir_index_name)
-
+                                                                     title=cbir_index_name,
+                                                                     count_photos_indexed=0,
+                                                                     count_photos_for_training_from_database=0,
+                                                                     count_photos_for_training_external=0,
+                                                                     )
         logger.info('Saved not yet built index')
         cbir_index.build_using_dataset_for_training(dataset_directory=dataset_directory,
                                                     use_database_photos_for_training=use_database_photos_for_training)

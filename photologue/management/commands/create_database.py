@@ -24,24 +24,21 @@ class Command(BaseCommand):
         directory = options['directory']
 
         database = models.Database(title=database_name,
-                                   slug=database_name, )
+                                   slug=database_name,
+                                   count=0)
         database.save()
 
         # Handling files
         logger.info('Handling files')
-        count_files = 1
+        count_files = 0
         list_paths_to_photos = find_image_files(directory, extensions=['jpg'], recursive=True)
+        print(f'list_paths_to_photos: {list_paths_to_photos}')
         for path_to_photo in tqdm(list_paths_to_photos):
-            while True:
-                slug = f'{database.slug}-{count_files}'
-                if models.DatabasePhoto.objects.filter(slug=slug).exists():
-                    count_files += 1
-                    continue
-                break
-
-            database_photo = models.DatabasePhoto(slug=slug,
-                                                  database=database, )
+            database_photo = models.DatabasePhoto(database=database, )
             full_path_to_original_photo = os.path.join(settings.BASE_DIR, path_to_photo)
             database_photo.copy_photo_and_assign_image_field(full_path_to_original_photo)
             database_photo.name = Path(database_photo.image.name).name
             database_photo.save()
+            count_files += 1
+        database.count = count_files
+        database.save()

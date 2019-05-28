@@ -382,6 +382,10 @@ class CBIRIndex(models.Model):
         list_paths_to_images_to_index = find_image_files(path_to_database_photos, ['jpg'], recursive=False)
         list_paths_to_dataset_images = find_image_files(dataset_directory, ['jpg'], recursive=True)
 
+        self.count_photos_indexed = len(list_paths_to_images_to_index)
+        self.count_photos_for_training_from_database = 0 if not use_database_photos_for_training else len(list_paths_to_images_to_index)
+        self.count_photos_for_training_external = len(list_paths_to_dataset_images)
+
         database_name = self.database.slug
         cbir_index_name = self.name
         CBIRCore.create_empty_if_needed(database_name, cbir_index_name,
@@ -488,7 +492,7 @@ class Event(models.Model):
                               choices=EVENT_STATUS_CHOICES)
 
     def __str__(self):
-        return self.title
+        return self.title or '-'
 
     def get_absolute_url(self):
         return reverse('photologue:event_detail', args=[self.slug])
