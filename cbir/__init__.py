@@ -17,3 +17,5 @@ CONFIG = {
 
 DES_TYPE = 'HardNetAll'
 MAX_KEYPOINTS = 2000
+
+IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png']

@@ -126,14 +126,14 @@ def compute_descriptors(
 
     list_paths_to_good_images = find_image_files_bounded(
         path_to_images,
-        ['jpg'],
+        cbir.IMAGE_EXTENSIONS,
         recursive=False,
         max_images=max_images)
 
     distractor_max_images = max_images - len(list_paths_to_good_images)
     list_paths_to_distractor_images = find_image_files_bounded(
         str(Path(path_to_images) / 'distractor'),
-        ['jpg'],
+        cbir.IMAGE_EXTENSIONS,
         recursive=True,
         max_images=distractor_max_images)
 

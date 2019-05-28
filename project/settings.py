@@ -20,6 +20,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from cbir import BASE_DIR as CBIR_BASE_DIR
 assert Path(BASE_DIR) == Path(CBIR_BASE_DIR)
 
+IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png']
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 

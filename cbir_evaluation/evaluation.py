@@ -149,8 +149,8 @@ def evaluate(train_dir, test_dir, gt_dir,
     cbir_core = CBIRCore.get_instance(test_database_name, test_index_name)
     cbir_core.set_fd(cbir_core.load_fd())
 
-    list_paths_to_images_to_train_clusterer = find_image_files(train_dir, ['jpg'], recursive=False)
-    list_paths_to_images_to_index = find_image_files(test_dir, ['jpg'], recursive=False)
+    list_paths_to_images_to_train_clusterer = find_image_files(train_dir, cbir.IMAGE_EXTENSIONS, recursive=False)
+    list_paths_to_images_to_index = find_image_files(test_dir, cbir.IMAGE_EXTENSIONS, recursive=False)
 
     cbir_core.compute_descriptors(list_paths_to_images_to_index,
                                   to_index=True,

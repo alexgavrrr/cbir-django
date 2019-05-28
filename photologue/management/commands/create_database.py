@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from tqdm import tqdm
 
+import cbir
 from cbir.legacy_utils import find_image_files
 from photologue import models
 
@@ -31,7 +32,7 @@ class Command(BaseCommand):
         # Handling files
         logger.info('Handling files')
         count_files = 0
-        list_paths_to_photos = find_image_files(directory, extensions=['jpg'], recursive=True)
+        list_paths_to_photos = find_image_files(directory, extensions=cbir.IMAGE_EXTENSIONS, recursive=True)
         print(f'list_paths_to_photos: {list_paths_to_photos}')
         for path_to_photo in tqdm(list_paths_to_photos):
             database_photo = models.DatabasePhoto(database=database, )

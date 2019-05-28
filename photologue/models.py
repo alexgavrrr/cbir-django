@@ -357,7 +357,7 @@ class CBIRIndex(models.Model):
         Not recommended.
         """
         path_to_database_photos = self.database.get_path_to_all_photos()
-        list_paths_to_images_to_train_clusterer = find_image_files(path_to_database_photos, ['jpg'], recursive=False)
+        list_paths_to_images_to_train_clusterer = find_image_files(path_to_database_photos, settings.IMAGE_EXTENSIONS, recursive=False)
         list_paths_to_images_to_index = list_paths_to_images_to_train_clusterer
 
         database_name = self.database.slug
@@ -379,8 +379,8 @@ class CBIRIndex(models.Model):
 
     def build_using_dataset_for_training(self, dataset_directory, use_database_photos_for_training):
         path_to_database_photos = self.database.get_path_to_all_photos()
-        list_paths_to_images_to_index = find_image_files(path_to_database_photos, ['jpg'], recursive=False)
-        list_paths_to_dataset_images = find_image_files(dataset_directory, ['jpg'], recursive=True)
+        list_paths_to_images_to_index = find_image_files(path_to_database_photos, settings.IMAGE_EXTENSIONS, recursive=False)
+        list_paths_to_dataset_images = find_image_files(dataset_directory, settings.IMAGE_EXTENSIONS, recursive=True)
 
         self.count_photos_indexed = len(list_paths_to_images_to_index)
         self.count_photos_for_training_from_database = 0 if not use_database_photos_for_training else len(list_paths_to_images_to_index)

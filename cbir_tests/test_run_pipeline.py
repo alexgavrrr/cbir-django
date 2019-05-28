@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+import cbir
 from cbir import BASE_DIR
 from cbir.cbir_core import CBIRCore
 
@@ -24,7 +25,7 @@ def test_CBIR():
     K = 10
     L = 4
 
-    list_paths_to_images_to_train_clusterer = find_image_files(WHERE_PHOTOS, ['jpg'], recursive=False)
+    list_paths_to_images_to_train_clusterer = find_image_files(WHERE_PHOTOS, cbir.IMAGE_EXTENSIONS, recursive=False)
     list_paths_to_images_to_index = list_paths_to_images_to_train_clusterer
 
     CBIRCore.create_empty_if_needed(database, name,
