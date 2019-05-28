@@ -292,7 +292,7 @@ class SIFT:
         kp = self.sift.detect(image)
         return sorted(kp,
                       key=lambda x: x.response,
-                      reverse=True)
+                      reverse=True)[:self.max_keypoints]
 
     def compute(self, image, kp):
         if len(kp) <= 1:
