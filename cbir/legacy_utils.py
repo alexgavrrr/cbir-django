@@ -62,11 +62,11 @@ def find_image_files(root, extensions, recursive=True):
     return sorted(files)  # sort files in ascend order to keep relations
 
 
-def find_image_files_bounded(root, extensions, recursive=True, max_images=10000):
+def find_image_files_bounded(root, extensions, recursive=True, max_images=None):
     files = []
     for file_dir in os.listdir(root):
         full_path = os.path.join(root, file_dir)
-        if os.path.isdir(full_path) and recursive and len(files) < max_images:
+        if os.path.isdir(full_path) and recursive and (max_images is None or len(files) < max_images):
             files += find_image_files(full_path, extensions, recursive)
 
         # TODO: Consider whether this code can add dir to list of files.
@@ -75,7 +75,7 @@ def find_image_files_bounded(root, extensions, recursive=True, max_images=10000)
                 files.append(full_path)
                 break
 
-        if len(files) >= max_images:
+        if max_images is not None and len(files) >= max_images:
             return sorted(files)[:max_images]
 
     return sorted(files)[:max_images]  # sort files in ascend order to keep relations
