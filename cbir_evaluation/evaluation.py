@@ -163,32 +163,35 @@ def evaluate(train_dir, test_dir, gt_dir,
     cbir_core.train_clusterer()
     cbir_core.add_images_to_index()
 
-    queries, ok_answers, good_answers, junk_answers = load_gt(test_dir, gt_dir)
+    queries, ok_answers, good_answers, junk_answers, queries_names = load_gt(test_dir, gt_dir, return_queries_names=True)
     scores = []
     scores_new = []
     answers = []
     for trial in range(5):
+        queries_names_trial = queries_names[trial]
         answers_trial = []
         queries_trial = queries[trial]
         ok_answers_trial = ok_answers[trial]
         good_answers_trial = good_answers[trial]
         right_answers_trial = [ok_answers_trial[j] + good_answers_trial[j] for j, _ in enumerate(ok_answers_trial)]
-        queries_gt_trial = list(zip(queries_trial, right_answers_trial))
 
-        for query_gt_now in tqdm(queries_gt_trial):
+        # queries_gt_trial = list(zip(queries_trial, right_answers_trial))
+        for query_now, query_name_now, gt_now in tqdm(zip(queries_trial, queries_names_trial, right_answers_trial)):
             similar_images = cbir_core.search(
-                query_gt_now[0],
+                query_now,
                 n_candidates=n_test_candidates,
                 topk=topk,
                 sv_enable=sv_enable,
-                qe_enable=qe_enable, )
+                qe_enable=qe_enable,
+                query_name=query_name_now,
+                p_fine_max=None)
 
             # TODO DEBUG
             print(f'similar_images: {similar_images}')
 
-            scores.append(AP(query_gt_now, similar_images))
-            scores_new.append(AP_new(query_gt_now, similar_images))
-            answers_trial.append([query_gt_now[0], [s[0][1] for s in similar_images]])
+            scores.append(AP((query_now, gt_now), similar_images))
+            scores_new.append(AP_new((query_now, gt_now), similar_images))
+            answers_trial.append([query_name_now, [s[0][1] for s in similar_images]])
 
         answers.append(answers_trial)
 
