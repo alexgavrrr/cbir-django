@@ -435,3 +435,10 @@ def database_photo_detail_view(request, slug):
 
 def event_photo_detail_view(requst, event_slug, pk):
     return HttpResponse('AAA event_photo' + event_slug + str(pk))
+
+def event_list_view(request):
+    return HttpResponse('EVENT LIST')
+
+
+def database_index_list_view(request):
+    return HttpResponse('DATABASE INDEX LIST')
