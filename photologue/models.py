@@ -1163,8 +1163,6 @@ def init_size_method_map():
 
 
 class DatabasePhoto(ImageModel):
-    slug = models.SlugField('slug',
-                            unique=False, )
     name = models.CharField('name',
                             max_length=250,
                             help_text='Name equal to corresponding filename',
@@ -1182,11 +1180,10 @@ class DatabasePhoto(ImageModel):
     database = models.ForeignKey(to=Database, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = (('database', 'name'),
-                           ('database', 'slug'))
+        unique_together = (('database', 'name'),)
 
     def __str__(self):
-        return f'{self.slug} from {self.database}'
+        return f'{self.name} from {self.database}'
 
     def save(self):
         super().save()
@@ -1198,13 +1195,10 @@ class DatabasePhoto(ImageModel):
         super().save()
 
     def get_absolute_url(self):
-        return reverse('photologue:database_photo_detail', args=[self.database.slug, self.slug])
+        return reverse('photologue:database_photo_detail', args=[self.database.slug, self.pk])
 
 
 class EventPhoto(ImageModel):
-    # TODO: Make slug unique?
-    slug = models.SlugField('slug',
-                            unique=False, )
     description = models.TextField('description',
                                    blank=True)
 
@@ -1225,11 +1219,10 @@ class EventPhoto(ImageModel):
                                    blank=True)
 
     class Meta:
-        unique_together = (('event', 'database_photo'),
-                           ('event', 'slug'))
+        unique_together = (('event', 'database_photo', 'is_query'),)
 
     def get_absolute_url(self):
-        return reverse('photologue:event_photo_detail', args=[self.event.slug, self.slug])
+        return reverse('photologue:event_photo_detail', args=[self.event.slug, self.pk])
 
     def __str__(self):
         return f'{self.database_photo.name} from {self.event}'

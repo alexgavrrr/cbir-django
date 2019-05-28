@@ -56,7 +56,6 @@ def database_create_view(request):
             total_count_files = 0
 
             zip_file = form.cleaned_data['zip_file']
-            count_files_from_zip = 0
             if zip_file:
                 # Handling files from zip
                 logger.info('Handling files from zip archive')
@@ -95,14 +94,7 @@ def database_create_view(request):
                                              fail_silently=True)
                         continue
 
-                    while True:
-                        slug = f'{database.slug}-fromzip-{count_files_from_zip}'
-                        if models.DatabasePhoto.objects.filter(slug=slug).exists():
-                            count_files_from_zip += 1
-                            continue
-                        break
-                    database_photo = models.DatabasePhoto(slug=slug,
-                                                          database=database)
+                    database_photo = models.DatabasePhoto(database=database)
                     contentfile = ContentFile(data)
                     database_photo.image.save(filename, contentfile)
                     database_photo.name = Path(database_photo.image.name).name
@@ -118,17 +110,8 @@ def database_create_view(request):
 
             # Handling files
             logger.info('Handling files')
-            count_files = 0
             for file_image in tqdm(request.FILES.getlist('photos')):
-                while True:
-                    slug = f'{database.slug}-{count_files}'
-                    if models.DatabasePhoto.objects.filter(slug=slug).exists():
-                        count_files += 1
-                        continue
-                    break
-
-                database_photo = models.DatabasePhoto(slug=slug,
-                                                      database=database,
+                database_photo = models.DatabasePhoto(database=database,
                                                       image=file_image)
                 database_photo.save_when_name_not_inited()
                 total_count_files += 1
@@ -153,18 +136,9 @@ def database_edit_view(request, slug):
         if form.is_valid():
             database = form.save(commit=False)
 
-            count = 1
             count_new_photos = 0
             for file_image in request.FILES.getlist('photos'):
-                while True:
-                    slug = f'{database.slug}-{count}'
-                    if models.DatabasePhoto.objects.filter(slug=slug).exists():
-                        count += 1
-                        continue
-                    break
-
-                database_photo = models.DatabasePhoto(slug=slug,
-                                                      database=database,
+                database_photo = models.DatabasePhoto(database=database,
                                                       image=file_image)
                 database_photo.save_when_name_not_inited()
                 count_new_photos += 1
@@ -215,7 +189,6 @@ def event_detail_view(request, slug):
                 logger.info(f'len(descriptions): {len(descriptions)}, len(chosen_photos): {len(chosen_photos)}')
                 for index_chosen_photo, chosen_photo in enumerate(chosen_photos):
                     event_photo = models.EventPhoto(
-                        slug='',
                         description=descriptions[index_chosen_photo],
                         is_query=False,
                         event=event,
@@ -267,17 +240,8 @@ def event_create_view(request):
 
             # Handling images chosen from existing ones in a database
             query_photos_from_database = form.cleaned_data.get('query_photos_from_database')
-            count_event_photo = 1
             for query_photo_from_database in query_photos_from_database:
-                while True:
-                    event_photo_slug = f'{event.slug}-{count_event_photo}'
-                    if models.EventPhoto.objects.filter(slug=event_photo_slug).exists():
-                        count_event_photo += 1
-                        continue
-                    break
-
-                event_photo = models.EventPhoto(slug=event_photo_slug,
-                                                event=event,
+                event_photo = models.EventPhoto(event=event,
                                                 is_query=True,
                                                 # description=...,
                                                 # description_file=...,
@@ -285,37 +249,19 @@ def event_create_view(request):
                 event_photo.save()
 
             # Handling new uploaded images
-            count_uploaded_photos = 0
+            count_new_photos = 0
             for file_image in request.FILES.getlist('query_photos'):
-                while True:
-                    event_photo_slug = f'{event.slug}-{count_event_photo}'
-                    if models.EventPhoto.objects.filter(slug=event_photo_slug).exists():
-                        count_event_photo += 1
-                        continue
-                    break
-
-                database_photo_slug_base = f'{database.slug}-{event_photo_slug}'
-                count_database_photo = 1
-                while True:
-                    database_photo_slug = f'{database_photo_slug_base}-{count_database_photo}'
-                    if models.DatabasePhoto.objects.filter(slug=database_photo_slug).exists():
-                        count_database_photo += 1
-                        continue
-                    break
-
-                database_photo = models.DatabasePhoto(slug=database_photo_slug,
-                                                      database=database,
+                database_photo = models.DatabasePhoto(database=database,
                                                       image=file_image)
                 database_photo.save_when_name_not_inited()
 
-                event_photo = models.EventPhoto(slug=event_photo_slug,
-                                                event=event,
+                event_photo = models.EventPhoto(event=event,
                                                 is_query=True,
                                                 database_photo=database_photo, )
                 event_photo.save()
-                count_uploaded_photos += 1
+                count_new_photos += 1
 
-            database.count = database.count + count_uploaded_photos
+            database.count = database.count + count_new_photos
             database.save()
 
             qe = form.cleaned_data.get('qe')
@@ -414,9 +360,9 @@ def database_index_create_view(request):
     return render(request, 'photologue/database_index_create.html', context)
 
 
-def database_photo_detail_view(request, database_slug, slug):
+def database_photo_detail_view(request, database_slug, pk):
     database = get_object_or_404(models.Database, slug=database_slug)
-    database_photo = get_object_or_404(models.DatabasePhoto, database=database, slug=slug)
+    database_photo = get_object_or_404(models.DatabasePhoto, database=database, pk=pk)
 
     events = [event_photo.event for event_photo in database_photo.eventphoto_set.all()]
     event_id_to_element_id = dict()
@@ -434,10 +380,10 @@ def database_photo_detail_view(request, database_slug, slug):
     return render(request, 'photologue/database_photo_detail.html', context)
 
 
-def event_photo_detail_view(requst, event_slug, slug):
+def event_photo_detail_view(requst, event_slug, pk):
     event = get_object_or_404(models.Event, slug=event_slug)
-    event_photo = get_object_or_404(models.EventPhoto, event=event, slug=slug)
-    return HttpResponse('AAA event_photo' + '--' + event_slug + '--' + slug)
+    event_photo = get_object_or_404(models.EventPhoto, event=event, pk=pk)
+    return HttpResponse('AAA event_photo' + '--' + event_slug + '--' + pk)
 
 
 def event_list_view(request):
