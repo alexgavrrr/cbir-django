@@ -10,6 +10,10 @@
     <p class="muted">
         <small>{% trans "Published" %} {{ database_index.date_added }}</small>
     </p>
+
+    <h4>Status</h4>
+    <p style="text-indent: 3%">{{status|upper}}</p>
+
     {% if database_index.description %}
     <h4>Description</h4>
     <p style="text-indent: 3%">{{ database_index.description }}</p>
