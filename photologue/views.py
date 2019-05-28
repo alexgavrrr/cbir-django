@@ -383,10 +383,6 @@ def database_index_detail_view(request, slug):
     return render(request, 'photologue/database_index_detail_ready.html', context)
 
 
-def database_index_management_view(request):
-    pass
-
-
 def database_index_create_view(request):
     context = {}
 

@@ -20,11 +20,6 @@ urlpatterns = [
     # parameter ?database=slug
     path('database/index/create/', views.database_index_create_view, name='database_index_create'),
 
-    # Management of indexes for concrete database. For example, change default.
-    # If no database parameter provided then show list of databases
-    # parameter ?database=slug
-    path('database/index/management/', views.database_index_management_view, name='database_index_management'),
-
     # Info about concrete index: which database, how many objects indexed,
     # list of events which used this index...
     path('database/index/<slug:slug>/', views.database_index_detail_view, name='database_index_detail'),
