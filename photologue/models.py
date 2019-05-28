@@ -324,6 +324,7 @@ class CBIRIndex(models.Model):
                                                                      null=False,
                                                                      blank=True, )
 
+    # status
     built = models.BooleanField('built',
                                 null=False,
                                 blank=False,

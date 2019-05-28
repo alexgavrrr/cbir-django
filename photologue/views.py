@@ -365,9 +365,14 @@ def database_index_info_view(request):
 def database_index_detail_view(request, slug):
     database_index = get_object_or_404(models.CBIRIndex, slug=slug)
     context = {}
+    context['status'] = 'ready' if database_index.built else 'build'
     context['database_index'] = database_index
-    context['difference'] = database_index.database.count - database_index.count_photos_indexed
-    return render(request, 'photologue/database_index_detail_ready.html', context)
+
+    if database_index.built:
+        context['difference'] = database_index.database.count - database_index.count_photos_indexed
+        return render(request, 'photologue/database_index_detail_ready.html', context)
+    else:
+        return render(request, 'photologue/database_index_detail_build.html', context)
 
 
 def database_index_create_view(request):
