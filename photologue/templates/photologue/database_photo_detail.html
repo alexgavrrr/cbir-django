@@ -43,7 +43,7 @@
     </ul>
 
 
-    <div><a href="{% url 'photologue:database_detail' photo.database.slug %}" class="btn btn-default">{% trans "Database "%}</a></div>
+    <div><a href="{% url 'photologue:database_detail' photo.database.slug %}" class="btn btn-default">Database {{ photo.database }}</a></div>
 </div>
 
 {% endblock %}

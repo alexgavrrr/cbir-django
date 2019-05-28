@@ -6,7 +6,7 @@
 {% block content %}
 
 <div class="row col-lg-12">
-    <h1 class="page-header">{% trans "All databases" %}</h1>
+    <h1 class="page-header">{% trans "Databases" %}</h1>
 </div>
 
 <h4>
@@ -43,7 +43,7 @@
 </div>
 {% endfor %}
 {% else %}
-<div class="row col-lg-12">{% trans "No databases were found" %}.</div>
+<div class="row col-lg-12">{% trans "No databases yet" %}.</div>
 {% endif %}
 
 <!--TODO: Research how paginator works-->
