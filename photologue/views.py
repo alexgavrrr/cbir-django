@@ -165,9 +165,9 @@ def database_edit_view(request, slug):
 
         if validation_successful:
             database = form.save(commit=False)
-            database.save()
 
             count = 1
+            count_new_photos = 0
             for file_image in request.FILES.getlist('photos'):
                 while True:
                     slug = f'{database.slug}-{count}'
@@ -180,7 +180,10 @@ def database_edit_view(request, slug):
                                                       database=database,
                                                       image=file_image)
                 database_photo.save_when_name_not_inited()
+                count_new_photos += 1
 
+            database.count = database.count + count_new_photos
+            database.save()
             return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
     else:
         logger.info('GET')
