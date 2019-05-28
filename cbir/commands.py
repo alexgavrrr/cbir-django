@@ -56,9 +56,9 @@ def _init_dirs(train_dir, test_dir, gt_dir, is_sample):
 
         # data_building_root = str(Path(cbir.BASE_DIR) / 'data' / 'Buildings' / 'Original')
         data_building_root = str(Path('data') / 'Buildings' / 'Original')
-        train_dir = str(Path(data_building_root) / paris / 'jpg')
-        test_dir = str(Path(data_building_root) / oxford / 'jpg')
-        gt_dir = str(Path(data_building_root) / oxford / 'gt')
+        train_dir = str(Path(data_building_root) / oxford / 'jpg')
+        test_dir = str(Path(data_building_root) / paris / 'jpg')
+        gt_dir = str(Path(data_building_root) / paris / 'gt')
 
     return train_dir, test_dir, gt_dir
 
