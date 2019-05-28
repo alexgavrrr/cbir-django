@@ -1250,7 +1250,7 @@ class EventBasketPhoto(models.Model):
                                    blank=True)
 
     def __str__(self):
-        return f'{self.database_photo}'
+        return f'{self.database_photo} for {self.event}'
 
 
 class EventBasketChosenPhoto(models.Model):
@@ -1266,4 +1266,4 @@ class EventBasketChosenPhoto(models.Model):
         unique_together = (('event', 'database_photo'),)
 
     def __str__(self):
-        return f'{self.database_photo}'
+        return f'{self.database_photo} for {self.event}'
