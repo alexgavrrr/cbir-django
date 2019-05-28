@@ -375,6 +375,7 @@ class CBIRIndex(models.Model):
         cbir_core.train_clusterer()
         cbir_core.add_images_to_index()
         self.built = True
+        self.save()
 
     def build_using_dataset_for_training(self, dataset_directory, use_database_photos_for_training):
         path_to_database_photos = self.database.get_path_to_all_photos()
@@ -399,6 +400,7 @@ class CBIRIndex(models.Model):
         cbir_core.train_clusterer()
         cbir_core.add_images_to_index()
         self.built = True
+        self.save()
 
     def being_built(self):
         # TODO: Delete it or begin using it, for example, for async call.
@@ -447,6 +449,7 @@ class CBIRIndex(models.Model):
         cbir_core.train_clusterer()
         cbir_core.add_images_to_index()
         self.built = True
+        self.save()
 
         raise NotImplementedError('list_paths_to_photos_from_database_whose_descriptors_not_computed_yet must find')
 
