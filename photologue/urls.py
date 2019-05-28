@@ -31,7 +31,7 @@ urlpatterns = [
     path('event/<slug:slug>/', views.event_detail_view, name='event_detail'),
     path('event_by_id/<int:id>/', views.event_detail_by_id_view, name='event_detail_by_id'),
 
-    path('photo/<slug:slug>/', views.database_photo_detail_view, name='database_photo_detail'),
-    path('event/<slug:event_slug>/photo/<int:pk>/', views.event_photo_detail_view, name='event_photo_detail'),
+    path('database/<slug:database_slug>/photo/<slug:slug>/', views.database_photo_detail_view, name='database_photo_detail'),
+    path('event/<slug:event_slug>/photo/<slug:slug>/', views.event_photo_detail_view, name='event_photo_detail'),
 
 ]

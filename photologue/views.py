@@ -414,8 +414,9 @@ def database_index_create_view(request):
     return render(request, 'photologue/database_index_create.html', context)
 
 
-def database_photo_detail_view(request, slug):
-    database_photo = get_object_or_404(models.DatabasePhoto, slug=slug)
+def database_photo_detail_view(request, database_slug, slug):
+    database = get_object_or_404(models.Database, slug=database_slug)
+    database_photo = get_object_or_404(models.DatabasePhoto, database=database, slug=slug)
 
     events = [event_photo.event for event_photo in database_photo.eventphoto_set.all()]
     event_id_to_element_id = dict()
@@ -433,8 +434,11 @@ def database_photo_detail_view(request, slug):
     return render(request, 'photologue/database_photo_detail.html', context)
 
 
-def event_photo_detail_view(requst, event_slug, pk):
-    return HttpResponse('AAA event_photo' + event_slug + str(pk))
+def event_photo_detail_view(requst, event_slug, slug):
+    event = get_object_or_404(models.Event, slug=event_slug)
+    event_photo = get_object_or_404(models.EventPhoto, event=event, slug=slug)
+    return HttpResponse('AAA event_photo' + '--' + event_slug + '--' + slug)
+
 
 def event_list_view(request):
     return HttpResponse('EVENT LIST')
