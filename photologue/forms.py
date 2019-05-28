@@ -22,7 +22,18 @@ class DatabaseForm(ModelForm):
 
     class Meta:
         model = Database
-        fields = ['date_added', 'title', 'slug', 'description']
+        fields = ['date_added', 'title', 'slug', 'description', 'cbir_index_default']
+
+    def __init__(self, *args, **kwargs):
+        my_params = kwargs.pop('my_params', {})
+        my_mode = my_params.get('my_mode')
+
+        super().__init__(*args, **kwargs)
+
+        if my_mode == 'edit':
+            self.fields.pop('slug')
+        elif my_mode == 'create':
+            self.fields.pop('cbir_index_default')
 
     def clean_zip_file(self):
         """Open the zip file a first time, to check that it is a valid zip archive.
@@ -42,6 +53,15 @@ class DatabaseForm(ModelForm):
             raise forms.ValidationError('"%s" in the .zip archive is corrupt.' % bad_file)
         zip.close()  # Close file in all cases.
         return zip_file
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        cbir_index_default = cleaned_data.get('cbir_index_default')
+        if cbir_index_default:
+            database = self.instance
+            if cbir_index_default.database != database:
+                self.add_error('cbir_index_default', f'Chosen cbir_index {cbir_index_default} corresponds to another database')
 
 
 class EventForm(ModelForm):

@@ -48,7 +48,7 @@ def database_create_view(request):
     context = {}
 
     if request.method == 'POST':
-        form = forms.DatabaseForm(request.POST, request.FILES)
+        form = forms.DatabaseForm(request.POST, request.FILES, my_params={'my_mode': 'create'})
         if form.is_valid():
             database = form.save(commit=False)
             database.count = 0
@@ -137,7 +137,7 @@ def database_create_view(request):
             database.save()
             return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
     else:
-        form = forms.DatabaseForm()
+        form = forms.DatabaseForm(my_params={'my_mode': 'create'})
 
     context['form'] = form
     return render(request, 'photologue/database_create.html', context)
@@ -149,21 +149,8 @@ def database_edit_view(request, slug):
     logger = logging.getLogger('photologue.database.edit')
 
     if request.method == 'POST':
-        form = forms.DatabaseForm(request.POST, request.FILES, instance=database)
-
-        validation_successful = True
-        if 'slug' in form.changed_data or 'title' in form.changed_data:
-            validation_successful = False
-            message = f'slug or title is changed wihich is bad'
-            logger.info(message)
-
-            if 'slug' in form.changed_data:
-                form.add_error('slug', 'Can not modify slug')
-            if 'title' in form.changed_data:
-                form.add_error('title', 'Can not modify title')
-        # ... next validation steps
-
-        if validation_successful:
+        form = forms.DatabaseForm(request.POST, request.FILES, instance=database, my_params={'my_mode': 'edit'})
+        if form.is_valid():
             database = form.save(commit=False)
 
             count = 1
@@ -187,7 +174,7 @@ def database_edit_view(request, slug):
             return HttpResponseRedirect(reverse('photologue:database_detail', kwargs={'slug': database.slug}))
     else:
         logger.info('GET')
-        form = forms.DatabaseForm(instance=database)
+        form = forms.DatabaseForm(instance=database, my_params={'my_mode': 'edit'})
 
     context['form'] = form
     context['database'] = database
