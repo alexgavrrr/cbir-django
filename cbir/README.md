@@ -34,6 +34,12 @@ To get oxford paris datasets execute script
 It will create `Paris` and `Oxford` dirs in current working dir.
 Based on https://github.com/figitaki/deep-retrieval
 
+To get oxford flickr distractor:
+```
+cd data/Buildings/Original/Oxford/jpg/distractor
+./download_flickr_100k.sh
+unrar x -y oxc1_100k.part01.rar  # not sure
+```
 
 python cbir_main.py evaluate_only d-sample i-1 data/Buildings/Original/Oxford_sample/jpg data/Buildings/Original/Oxford/gt --sv
 
