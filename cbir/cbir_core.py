@@ -695,7 +695,6 @@ class CBIRCore:
             return bows.dot(query)
 
         start = time.time()
-        print(f'AAA candidates: {candidates}')
         bow_candidates_without_last_col = self.bow[candidates, :-1]
         bow_candidates_last_col = self.bow[candidates, -1].toarray().squeeze()
         time_taking_bow_candidates = round(time.time() - start, 3)
@@ -721,20 +720,13 @@ class CBIRCore:
             divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
             (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
         ranks = ranks.reshape((-1,))
-        print(f'AAA ranks: {ranks}')
         time_computing_ranks = round(time.time() - start, 3)
         times += [('time_computing_ranks', time_computing_ranks)]
 
         start = time.time()
-
         # TODO: np.topk_arg try.
         ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
-
-        print(f'AAA ranks_args: {ranks_sorted_args}')
         candidates_chosen = np.array(candidates)[ranks_sorted_args]
-        print(f'AAA all candidates: {candidates}')
-        print(f'AAA candiates_chosen: {candidates_chosen}')
-
         candidates = [(candidate_chosen_now, None) for candidate_chosen_now in candidates_chosen]
         time_preliminary_sorting = round(time.time() - start, 3)
         times += [('time_preliminary_sorting', time_preliminary_sorting)]
