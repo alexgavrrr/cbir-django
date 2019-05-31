@@ -153,13 +153,16 @@ class CBIRCore:
         :param max_keypoints:
         :param K:
         :param L:
-        :return:
+        :return: whether created_now
         """
         if not cls.exists(database, name):
             cls.prepare_place_for_database_if_needed(database)
             cls.prepare_place_for_cbir_index_if_needed(database, name)
             cls._init_search_structures(database, name,
                                         des_type, max_keypoints, K, L)
+            return True
+        return False
+
 
     @classmethod
     def exists(cls, database, name):
