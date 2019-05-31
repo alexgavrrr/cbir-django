@@ -24,15 +24,13 @@ def configure_logging(
 
     prefix = prefix or 'logs/default/'
     root_profile = str(Path(prefix) / 'profile.txt')
-    retrieving_candidates = str(Path(prefix) / 'retrieving_candidates.txt')
-    preliminary_sorting = str(Path(prefix) / 'preliminary_sorting.txt')
+    search = str(Path(prefix) / 'search.txt')
 
     computing_descriptors = str(Path(prefix) / 'computing_descriptors.txt')
     training_clusterer = str(Path(prefix) / 'training_clusterer.txt')
     add_images_to_index = str(Path(prefix) / 'add_images_to_index.txt')
 
     answers = str(Path(prefix) / 'answers.txt')
-
 
     if not os.path.exists(prefix):
         os.makedirs(prefix, exist_ok=True)
@@ -53,17 +51,11 @@ def configure_logging(
                 'class': 'logging.FileHandler',
                 'filename': root_profile
             },
-            'profile.retrieving_candidates': {
+            'profile.search': {
                 'level': 'DEBUG',
                 'class': 'logging.FileHandler',
-                'filename': retrieving_candidates
+                'filename': search
             },
-            'profile.preliminary_sorting': {
-                'level': 'DEBUG',
-                'class': 'logging.FileHandler',
-                'filename': preliminary_sorting
-            },
-
             'profile.computing_descriptors': {
                 'level': 'DEBUG',
                 'class': 'logging.FileHandler',
@@ -106,13 +98,8 @@ def configure_logging(
                 'level': 'DEBUG',
                 'propagate': False,
             },
-            'profile.retrieving_candidates': {
-                'handlers': ['profile.retrieving_candidates'],
-                'level': 'DEBUG',
-                'propagate': True,
-            },
-            'profile.preliminary_sorting': {
-                'handlers': ['profile.preliminary_sorting'],
+            'profile.search': {
+                'handlers': ['profile.search'],
                 'level': 'DEBUG',
                 'propagate': True,
             },
