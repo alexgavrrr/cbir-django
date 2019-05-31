@@ -80,6 +80,20 @@ class CBIRCore:
 
         return wrap
 
+    # staticmethod. Look bottom of the class
+    def decorator_load_most_frequent_if_needed(func):
+        @functools.wraps(func)
+        def wrap(self, *args, **kwargs):
+            most_frequent_loaded_before = self.most_frequent is not None
+            if not most_frequent_loaded_before:
+                self.set_most_frequent(self.load_most_frequent())
+            result = func(self, *args, **kwargs)
+            if not most_frequent_loaded_before:
+                self.unset_most_frequent()
+            return result
+
+        return wrap
+
 
     @classmethod
     def get_instance(cls, database, name, dummy=False):
@@ -108,6 +122,7 @@ class CBIRCore:
         instance.ca = None
         instance.bow = None
         instance.inv = None
+        instance.most_frequent = None
 
         return instance
 
@@ -277,7 +292,7 @@ class CBIRCore:
             buffered_new_photos = []
 
         time_computing_and_writing_descriptors = round(time.time() - start, 3)
-        average_time_computing_and_writing_descriptors = round(time_computing_and_writing_descriptors / count_new, 3)
+        average_time_computing_and_writing_descriptors = None if not count_new else round(time_computing_and_writing_descriptors / count_new, 3)
 
         logger.info(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
         logging.getLogger('profile.computing_descriptors').info(
@@ -313,22 +328,39 @@ class CBIRCore:
         else:
             return self.get_bow_vector(des, total_count_coordinate_for_bow), kp
 
-    def get_bow_vector(self, img_des, total_count=True):
-        res = np.zeros(self.n_words
-                       if not total_count
-                       else self.n_words + 1)
-
+    def get_bow_vector(self, img_des, total_count=True, csr_matrix_format=False):
         if img_des.ndim == 1:
             img_des = img_des.reshape(img_des.shape[0], -1)
-        pred = self.ca.predict(img_des)
 
-        for p in pred:
-            res[p] += 1
+        if csr_matrix_format:
+            col_indices = np.empty(
+                shape=(img_des.shape[0] + (1 if total_count else 0),),
+                dtype='uint32')
+            col_indices[:img_des.shape[0]] = self.ca.predict(img_des)
+            if total_count:
+                col_indices[img_des.shape[0]] = self.n_words
 
-        if total_count:
-            res[self.n_words] = len(pred)
+            values = np.ones(
+                (img_des.shape[0] + (1 if total_count else 0),),
+                dtype='uint16')
+            if total_count:
+                values[img_des.shape[0]] = img_des.shape[0]
 
-        return res / float(img_des.shape[0])
+            # uint 16 is enough for max_kp < 64000
+            return sparse.csr_matrix(
+                (values, col_indices, [0, len(col_indices)]),
+                shape=(1, self.n_words + 1),
+                dtype='uint16')
+        else:
+            res = np.zeros(
+                shape=(self.n_words + (1 if total_count else 0),),
+                dtype='uint16')
+            pred = self.ca.predict(img_des)
+            for p in pred:
+                res[p] += 1
+            if total_count:
+                res[self.n_words] = len(pred)
+            return res
 
     def train_clusterer(self):
         """
@@ -506,6 +538,11 @@ class CBIRCore:
 
         start = time.time()
         little_percent = int(0.085 * self.n_words)
+
+        #  Костыль нужный для тестовых ситуаций, когда little_percent = 0
+        if little_percent == 0:
+            little_percent = 1
+
         words_sorted_by_freqs = np.argsort(freqs)
         most_frequent = set(words_sorted_by_freqs[-little_percent:])
         least_frequent = set(words_sorted_by_freqs[:little_percent])
@@ -534,31 +571,39 @@ class CBIRCore:
             f'time_storing_data_dependent_params={time_storing_data_dependent_params},'
         )
 
-    def get_candidates_raw(self, query, filter=True, bad_words=[]):
+    def get_candidates(self, query, filter=True, bad_words=[]):
         """
         :param query:  `[(visual_word, freq), ...]` query as a bow(BoVW)
         :param filter:
         """
-        most_frequent = self.load_data_dependent_params()['most_frequent']
-
         interesting_words_in_query = [word
                                       for word, freq
                                       in enumerate(query)
                                       if (freq > 1e-7
-                                          and (not filter or (word not in most_frequent
+                                          and (not filter or (word not in self.most_frequent
                                                               and word not in bad_words)))]
-
-        candidates_iterator = database_service.get_photos_by_words_iterator(self.db, interesting_words_in_query)
-        candidates_iterator_modified = (candidate['photos'] for candidate in candidates_iterator)
-        return list(candidates_iterator_modified)
+        candidates = set()
+        for word in interesting_words_in_query:
+            candidates |= self.inv[word]
+        return list(candidates)
 
     def log_answers(self, query, result, sv, qe):
         answers_logger = logging.getLogger('profile.answers')
         for rank, row in enumerate(result):
             answers_logger.info(f'{query},{row[0][1]},{rank + 1},{row[1]},{sv},{qe}')
 
+    def log_search_times(self, times):
+        search_times_logger = logging.getLogger('profile.search')
+        string_parts = []
+        for time_now in times:
+            string_parts += [f'{time_now[0]}={time_now[1]}']
+        search_times_logger.info(','.join(string_parts))
+
     @decorator_load_fd_if_needed
     @decorator_load_ca_if_needed
+    @decorator_load_bow_if_needed
+    @decorator_load_inv_if_needed
+    @decorator_load_most_frequent_if_needed
     def search(self,
                img_path,
                n_candidates=100,
@@ -581,21 +626,28 @@ class CBIRCore:
                      f'n_candidates: {n_candidates}, max_verified: {max_verified}, '
                      f'similarity_threshold: {similarity_threshold}, '
                      f'sv_enable: {sv_enable}, qe_enable: {qe_enable}, '
-                    f'p_fine_max: {p_fine_max}')
+                     f'p_fine_max: {p_fine_max}')
 
-        profile_retrieving_logger = logging.getLogger('profile.retrieving_candidates')
-        profile_preliminary_sorting_logger = logging.getLogger('profile.preliminary_sorting')
+        times = []  # [(time_name, time_value), ...]
+
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
+        start = time.time()
         data_dependent_params = self.load_data_dependent_params()
+        time_loading_dependent_params = round(time.time() - start, 3)
+        times +=[('time_loading_dependent_params', time_loading_dependent_params)]
+
         idf = data_dependent_params['idf']
         freqs = data_dependent_params['freqs']
-        bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
 
+        time_getting_descriptor = None
         if new_query is not None:
             img_descriptor = precomputed_img_descriptor
             kp = precomputed_kp
-            img_bovw = new_query.astype(np.float32)
+            img_bovw = new_query
+
+            # TODO NOW: astype needed?
+            img_bovw = img_bovw.astype(np.float32)
         else:
             start = time.time()
             result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
@@ -603,61 +655,109 @@ class CBIRCore:
                 message = f'Could not get descriptor for image {query_name}'
                 raise ValueError(message)
             img_descriptor, img_bovw, kp = result_tuple
-            logger.info("Descriptor for query got in {}".format(round(time.time() - start, 3)))
+            img_bovw = img_bovw.astype(np.float32)
+
+            time_getting_descriptor = round(time.time() - start, 3)
+            logger.info("Descriptor for query got in {}".format(time_getting_descriptor))
+
+        times += [('time_getting_descriptor', time_getting_descriptor)]
 
         start = time.time()
-        candidates_raw = self.get_candidates_raw(img_bovw[:-1], bad_words=bad_words)
-        if len(candidates_raw) == 0:
-            # logger.warning('0 candidates if filter most frequent. Trying without filtering')
+
+        assert(img_bovw.shape[0] == self.n_words + 1)
+
+        start = time.time()
+        bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
+        time_computing_bad_words = round(time.time() - start, 3)
+        times += [('time_computing_bad_words', time_computing_bad_words)]
+
+        candidates = self.get_candidates(img_bovw[:-1], bad_words=bad_words)
+        if len(candidates) == 0:
             logger.warning('0 candidates if filter. Trying increasing p_fine_max *2')
             p_fine_max = min(1.0, 2 * p_fine_max)
+            # p_fine_max = 1.0
             bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
-            candidates_raw = self.get_candidates_raw(img_bovw[:-1], bad_words=bad_words)
+            candidates = self.get_candidates(img_bovw[:-1], bad_words=bad_words)
 
-        candidates = set()
-        for candidate_raw in candidates_raw:
-            candidates |= self.deserialize_word_photos(candidate_raw)
         time_retrieving_candidates = round(time.time() - start, 3)
+        times += [('len(candidates)', len(candidates))]
+        times += [('time_retrieving_candidates', time_retrieving_candidates)]
+        times += [('new_query is not None', new_query is not None)]
         logger.info(f"{len(candidates)} candidates by words got in {time_retrieving_candidates}")
 
-        profile_retrieving_logger.info(f"{len(candidates)},{time_retrieving_candidates},{new_query is not None}")
-
-        # TODO: In the future make candidates an iterator. Now Algorithm keeps all candidates in RAM
-        # because it applies sorting. But algorithm needs only top n_candidates.
-        # Thus we can apply linear algorithm with heapq or tree and iterator will be enough.
-
         # STEP 2. PRELIMINARY RANKING
+        # TODO: Use heapq to obtain preliminary top n_candidates?
+
+        def option_sim_1(bows, query):
+            return bows.dot(query)
+
+        start = time.time()
+        print(f'AAA candidates: {candidates}')
+        bow_candidates_without_last_col = self.bow[candidates, :-1]
+        bow_candidates_last_col = self.bow[candidates, -1].toarray().squeeze()
+        time_taking_bow_candidates = round(time.time() - start, 3)
+        times += [('time_taking_bow_candidates', time_taking_bow_candidates)]
+
+        def divide_sparse_on_vec(C, D):
+            r, c = C.nonzero()
+            rD_sp = sparse.csr_matrix(((1.0 / D)[r], (r, c)), shape=(C.shape))
+            out = C.multiply(rD_sp)
+            return out
+
+        # print(f'AAA bow_candidates_without_last_col.shape: {bow_candidates_without_last_col.shape}')
+        # print(f'AAA bow_candidates_last_col.shape: {bow_candidates_last_col.shape}')
+        # print(f'AAA bow_candidates_without_last_col.toarray(): {bow_candidates_without_last_col.toarray()}')
+        # print(f'AAA bow_candidates_last_col: {bow_candidates_last_col}')
+        # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).toarray()}')
+        # print(f'idf.reshape(1, -1): {idf.reshape(1, -1)}')
+        # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray()}')
+        # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
+
+        start = time.time()
+        ranks = option_sim_1(
+            divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
+            (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
+        ranks = ranks.reshape((-1,))
+        print(f'AAA ranks: {ranks}')
+        time_computing_ranks = round(time.time() - start, 3)
+        times += [('time_computing_ranks', time_computing_ranks)]
+
         start = time.time()
 
+        # TODO: np.topk_arg try.
+        ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
 
+        print(f'AAA ranks_args: {ranks_sorted_args}')
+        candidates_chosen = np.array(candidates)[ranks_sorted_args]
+        print(f'AAA all candidates: {candidates}')
+        print(f'AAA candiates_chosen: {candidates_chosen}')
 
-        # TODO: Use heapq to obtain preliminary top n_candidates
-        # Getting all candidates in ram and sorting can be infeasible.
-        ranks = []
-
-        # TODONOW: Vectorize computations? use csr_matrix * vector to get similarities
-        for candidate in candidates:
-            candidate_bow_raw = database_service.get_bow(self.db, candidate)
-            candidate_bow_raw = candidate_bow_raw['bow']
-            candidate_bow = self.deserialize_bow(candidate_bow_raw)
-            ranks.append((candidate, euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
-                                               candidate_bow[:-1] / candidate_bow[-1] * idf)))
-
-        ranks = sorted(ranks, key=lambda x: x[1])
-        logger.debug(f'Ranks[:3]: {ranks[:3]}')
-
-        # TODO: Get rid of redundant None here `(None, rank[0])` which is for backward-compatibility now.
-        candidates = [(None, rank[0]) for rank in ranks[:n_candidates]]
+        candidates = [(candidate_chosen_now, None) for candidate_chosen_now in candidates_chosen]
         time_preliminary_sorting = round(time.time() - start, 3)
-        logger.info("Short list got in {}".format(time_preliminary_sorting))
-        profile_preliminary_sorting_logger.info(f"{time_preliminary_sorting},{new_query is not None}")
+        times += [('time_preliminary_sorting', time_preliminary_sorting)]
+        logger.info("Short list got in {}".format(time_preliminary_sorting + time_computing_ranks + time_taking_bow_candidates + time_retrieving_candidates))
+
+        def get_photo_names_return_time(result):
+            start = time.time()
+            for i in range(len(result)):
+                rowid = result[i][0][0]
+                [(_, name_now)] = database_service.get_names_by_rowids(self.db, [rowid])
+                ((rowid, _), val) = result[i]
+                result[i] = ((rowid, name_now), val)
+            time_getting_names = round(time.time() - start, 3)
+            return time_getting_names
 
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
+            result = candidates[:topk]
+
+            time_getting_names = get_photo_names_return_time(result)
+            times += [('time_getting_names', time_getting_names)]
             self.log_answers(query_name, candidates[:topk], sv_enable, qe_enable)
-            return candidates[:topk]
+            self.log_search_times(times)
+            return result
 
         start = time.time()
 
@@ -705,6 +805,7 @@ class CBIRCore:
                                 for i in range(len(verified))],
                                key=lambda x: x[1], reverse=True)
 
+        # TODO NOW
         # STEP 4. QUERY EXPANSION
         if qe_enable and new_query is None and np.count_nonzero(verified) < qe_limit:
             start = time.time()
@@ -1045,6 +1146,16 @@ class CBIRCore:
     def unset_inv(self):
         self.inv = None
 
+    def load_most_frequent(self):
+        return self.load_data_dependent_params()['most_frequent']
+
+    def set_most_frequent(self, most_frequent):
+        self.most_frequent = most_frequent
+
+    def unset_most_frequent(self):
+        self.most_frequent = None
+
+
     def serialize_descriptor(self, descriptor):
         return pickle.dumps((descriptor[0],
                              [p.pt[0] for p in descriptor[1]],
@@ -1080,6 +1191,8 @@ class CBIRCore:
     decorator_load_bow_if_needed = staticmethod(decorator_load_bow_if_needed)
 
     decorator_load_inv_if_needed = staticmethod(decorator_load_inv_if_needed)
+
+    decorator_load_most_frequent_if_needed = staticmethod(decorator_load_most_frequent_if_needed)
 
 
 def compute_idf_lazy(freqs, total_count_documents):

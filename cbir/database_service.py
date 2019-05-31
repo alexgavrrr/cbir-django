@@ -195,6 +195,15 @@ def get_photos_by_words_iterator(
             return query.dicts().iterator()
 
 
+def get_names_by_rowids(db, rowids):
+    with MODELS_LOCK:
+        with db.bind_ctx([Photo]):
+            query = (Photo
+                     .select(Photo.rowid, Photo.name)
+                     .where(Photo.rowid << rowids))
+            return query.tuples().iterator()
+
+
 def is_image_descriptor_computed(db, name):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
