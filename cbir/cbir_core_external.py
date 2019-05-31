@@ -242,6 +242,7 @@ class CBIRCoreExt:
         if total_count:
             res[self.n_words] = len(pred)
 
+        # TODO: Should not divide here
         return res / float(img_des.shape[0])
 
     def train_clusterer(self):
