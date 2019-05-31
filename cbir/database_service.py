@@ -13,6 +13,17 @@ from .database_schema import (Photo,
 MODELS_LOCK = threading.Lock()
 
 
+def get_indexed_photos(db, limit=None):
+    with MODELS_LOCK:
+        with db.bind_ctx([Photo]):
+            query = (Photo
+                      .select(Photo.rowid, Photo.name)
+                      .where(Photo.to_index == True)
+                      .limit(limit)
+                      )
+            return list(query.dicts().iterator())
+
+
 def clean_word_photo_relations_table(db):
     with MODELS_LOCK:
         with db.bind_ctx([WordPhoto], bind_refs=False, bind_backrefs=False):
@@ -73,16 +84,26 @@ def get_db(path):
     return db
 
 
-def inited_properly(db):
-    with MODELS_LOCK:
-        with db.bind_ctx([Photo, PhotoBow, Word]):
-            return Photo.table_exists() and PhotoBow.table_exists() and Word.table_exists()
+def inited_properly(db, external_mode=False):
+    if external_mode:
+        with MODELS_LOCK:
+            with db.bind_ctx([Photo, PhotoBow, Word]):
+                return Photo.table_exists() and PhotoBow.table_exists() and Word.table_exists()
+    else:
+        with MODELS_LOCK:
+            with db.bind_ctx([Photo]):
+                return Photo.table_exists()
 
 
-def create_empty(db):
-    with MODELS_LOCK:
-        with db.bind_ctx([Photo, PhotoBow, Word]):
-            db.create_tables([Photo, PhotoBow, Word])
+def create_empty(db, external_mode=False):
+    if external_mode:
+        with MODELS_LOCK:
+            with db.bind_ctx([Photo, PhotoBow, Word]):
+                db.create_tables([Photo, PhotoBow, Word])
+    else:
+        with MODELS_LOCK:
+            with db.bind_ctx([Photo]):
+                db.create_tables([Photo])
     return db
 
 
@@ -151,13 +172,13 @@ def get_photos_descriptors_for_training_iterator(db):
             return query.dicts().iterator()
 
 
-def get_photos_descriptors_needed_to_add_to_index_iterator(db):
+def get_photos_descriptors_needed_to_add_to_index_iterator(db, from_id=None):
+    from_id = from_id or 1  # from 1 by default because 0th rowid does not exist
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
             query = (Photo
-                     .select(Photo.name, Photo.descriptor)
-                     # .where((Photo.to_index == True) & (Photo.indexed == False))
-                     .where((Photo.to_index == True))
+                     .select(Photo.rowid, Photo.name, Photo.descriptor)
+                     .where((Photo.to_index == True) & (Photo.rowid >= from_id))
                      )
 
             return query.iterator()
@@ -172,6 +193,15 @@ def get_photos_by_words_iterator(
                      .select(Word.photos)
                      .where(Word.word << words))
             return query.dicts().iterator()
+
+
+def get_names_by_rowids(db, rowids):
+    with MODELS_LOCK:
+        with db.bind_ctx([Photo]):
+            query = (Photo
+                     .select(Photo.rowid, Photo.name)
+                     .where(Photo.rowid << rowids))
+            return query.tuples().iterator()
 
 
 def is_image_descriptor_computed(db, name):

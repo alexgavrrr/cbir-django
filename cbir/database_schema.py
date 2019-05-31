@@ -30,9 +30,8 @@ class BaseModel(Model):
 
 
 class Photo(BaseModel):
-    # pk = PrimaryKeyField()
+    rowid = PrimaryKeyField()
     name = CharField(max_length=250,
-                     primary_key=True,
                      unique=True,
                      index=True)
     descriptor = BlobField()

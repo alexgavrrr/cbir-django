@@ -23,7 +23,7 @@ from cbir.vocabulary_tree import VocabularyTree
 logger = logging.getLogger('cbir.cbir_core')
 
 
-class CBIRCore:
+class CBIRCoreExt:
     # staticmethod. Look bottom of the class
     def decorator_load_fd_if_needed(func):
         @functools.wraps(func)
@@ -52,62 +52,16 @@ class CBIRCore:
 
         return wrap
 
-    # staticmethod. Look bottom of the class
-    def decorator_load_bow_if_needed(func):
-        @functools.wraps(func)
-        def wrap(self, *args, **kwargs):
-            bow_loaded_before = self.bow is not None
-            if not bow_loaded_before:
-                self.set_bow(self.load_bow())
-            result = func(self, *args, **kwargs)
-            if not bow_loaded_before:
-                self.unset_bow()
-            return result
-
-        return wrap
-
-    # staticmethod. Look bottom of the class
-    def decorator_load_inv_if_needed(func):
-        @functools.wraps(func)
-        def wrap(self, *args, **kwargs):
-            inv_loaded_before = self.inv is not None
-            if not inv_loaded_before:
-                self.set_inv(self.load_inv())
-            result = func(self, *args, **kwargs)
-            if not inv_loaded_before:
-                self.unset_inv()
-            return result
-
-        return wrap
-
-    # staticmethod. Look bottom of the class
-    def decorator_load_most_frequent_if_needed(func):
-        @functools.wraps(func)
-        def wrap(self, *args, **kwargs):
-            most_frequent_loaded_before = self.most_frequent is not None
-            if not most_frequent_loaded_before:
-                self.set_most_frequent(self.load_most_frequent())
-            result = func(self, *args, **kwargs)
-            if not most_frequent_loaded_before:
-                self.unset_most_frequent()
-            return result
-
-        return wrap
-
-
     @classmethod
-    def get_instance(cls, database, name, dummy=False):
-        instance = CBIRCore()
-        instance.database = database
-        instance.name = name
-
-        if dummy:
-            return instance
-
+    def get_instance(cls, database, name):
         if not cls.exists(database, name):
             message = (f'CBIRCore {name} in database {database} does not exist. First create it. For example, by calling '
                        f'`create_empty`.')
             raise ValueError(message)
+
+        instance = CBIRCore()
+        instance.database = database
+        instance.name = name
 
         params = instance.load_params()
         instance.des_type = params['des_type']
@@ -120,16 +74,8 @@ class CBIRCore:
 
         instance.fd = None
         instance.ca = None
-        instance.bow = None
-        instance.inv = None
-        instance.most_frequent = None
 
         return instance
-
-    def get_indexed_photos(self, limit=None):
-        photos = database_service.get_indexed_photos(self.db, limit)
-        return photos
-
 
     @classmethod
     def prepare_place_for_database_if_needed(cls, database):
@@ -153,16 +99,13 @@ class CBIRCore:
         :param max_keypoints:
         :param K:
         :param L:
-        :return: whether created_now
+        :return:
         """
         if not cls.exists(database, name):
             cls.prepare_place_for_database_if_needed(database)
             cls.prepare_place_for_cbir_index_if_needed(database, name)
             cls._init_search_structures(database, name,
                                         des_type, max_keypoints, K, L)
-            return True
-        return False
-
 
     @classmethod
     def exists(cls, database, name):
@@ -190,7 +133,7 @@ class CBIRCore:
         logger.info(f'Initing cbir index with params: {params}')
 
         data_dependent_params = {}
-        data_dependent_params['count_images'] = 1  # 0th image is empty. It is needed as rowid begins from 1.
+        data_dependent_params['count_images'] = None
         data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
         data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
         data_dependent_params['most_frequent'] = set()
@@ -202,50 +145,20 @@ class CBIRCore:
         db = database_service.get_db(cls.get_storage_path(database, name))
         database_service.create_empty(db)
 
-
-        clusterer = []
-
-        # 0th empty row in bow because rowid in sqlite table begins from 0.
-        bow = sparse.csr_matrix([], shape=(1, params['n_words'] + 1))
-
-        inverted_index = [set() for i in range(params['n_words'])]
-        freqs = np.zeros(params['n_words'], dtype=np.int16)
-
-        cls._save_params(database, name, params)
-        cls._save_data_dependent_params(database, name, data_dependent_params)
+        clusterer = None
         cls._save_clusterer(database, name, clusterer)
-        cls._save_bow(database, name, bow)
-        cls._save_inverted_index(database, name, inverted_index)
-        cls._save_freqs(database, name, freqs)
-
 
     @classmethod
     def _inited_properly(cls, database, name):
         params_path = cls.get_params_path(database, name)
         data_dependent_params_path = cls.get_data_dependent_params_path(database, name)
 
-        if not os.path.exists(params_path):
-            return False
-        if not os.path.exists(data_dependent_params_path):
-            return False
-
         potential_db = database_service.get_db(cls.get_storage_path(database, name))
-        database_inited_properly = database_service.inited_properly(potential_db, external_mode=False)
-
-        dummy_cbir_core = CBIRCore.get_instance(database, name, dummy=True)
-        search_structures_inited_properly = True
-        params = dummy_cbir_core.load_params()
-        n_words = params['n_words']
-        bow = dummy_cbir_core.load_bow()
-        if not isinstance(bow, sparse.csr_matrix):
-            search_structures_inited_properly = False
-        elif bow.shape[1] != n_words + 1:
-            search_structures_inited_properly = False
+        inited_properly = database_service.inited_properly(potential_db, external_mode=True)
 
         return (os.path.exists(params_path)
                 and os.path.exists(data_dependent_params_path)
-                and database_inited_properly
-                and search_structures_inited_properly)
+                and inited_properly)
 
     def __str__(self):
         return f'CBIRCore {self.database} {self.name}'
@@ -266,9 +179,6 @@ class CBIRCore:
         count_new = 0
         count_defects = 0
         count_old = 0
-        BUFFER_CAPACITY = 1000
-        buffered_new_photos = []
-        start = time.time()
         for path_to_image in tqdm(list_paths_to_images, desc='Computing descriptors for photos and saving in the database'):
             if database_service.is_image_descriptor_computed(self.db, path_to_image):
                 count_old += 1
@@ -276,32 +186,18 @@ class CBIRCore:
                 descriptor_now = self.get_descriptor(path_to_image, raw=True)
                 if descriptor_now[0] is not None:
                     count_new += 1
-                    new_photo = {
+                    new_photo_with_descriptor = {
                         'name': path_to_image,
                         'descriptor': self.serialize_descriptor(descriptor_now),
                         'to_index': to_index,
                         'for_training': for_training_clusterer
                     }
-                    buffered_new_photos += [new_photo]
-                    if len(buffered_new_photos) == BUFFER_CAPACITY:
-                        database_service.add_photos_descriptors(self.db, buffered_new_photos)
-                        buffered_new_photos = []
+                    database_service.add_photos_descriptors(self.db, [new_photo_with_descriptor])
                 else:
                     count_defects += 1
                     logger.debug("No keypoints found for {}".format(path_to_image))
 
-        if buffered_new_photos:
-            database_service.add_photos_descriptors(self.db, buffered_new_photos)
-            buffered_new_photos = []
-
-        time_computing_and_writing_descriptors = round(time.time() - start, 3)
-        average_time_computing_and_writing_descriptors = None if not count_new else round(time_computing_and_writing_descriptors / count_new, 3)
-
         logger.info(f'count_new: {count_new} ; count_defects: {count_defects} ; count_old: {count_old}')
-        logging.getLogger('profile.computing_descriptors').info(
-            f'time_computing_and_writing_descriptors={time_computing_and_writing_descriptors},'
-            f'average_time_computing_and_writing_descriptors={average_time_computing_and_writing_descriptors},'
-        )
 
     def get_descriptor(self, path_to_image, raw=False, both=False, total_count_coordinate_for_bow=True):
         if type(path_to_image) is str:
@@ -331,39 +227,23 @@ class CBIRCore:
         else:
             return self.get_bow_vector(des, total_count_coordinate_for_bow), kp
 
-    def get_bow_vector(self, img_des, total_count=True, csr_matrix_format=False):
+    def get_bow_vector(self, img_des, total_count=True):
+        res = np.zeros(self.n_words
+                       if not total_count
+                       else self.n_words + 1)
+
         if img_des.ndim == 1:
             img_des = img_des.reshape(img_des.shape[0], -1)
+        pred = self.ca.predict(img_des)
 
-        if csr_matrix_format:
-            col_indices = np.empty(
-                shape=(img_des.shape[0] + (1 if total_count else 0),),
-                dtype='uint32')
-            col_indices[:img_des.shape[0]] = self.ca.predict(img_des)
-            if total_count:
-                col_indices[img_des.shape[0]] = self.n_words
+        for p in pred:
+            res[p] += 1
 
-            values = np.ones(
-                (img_des.shape[0] + (1 if total_count else 0),),
-                dtype='uint16')
-            if total_count:
-                values[img_des.shape[0]] = img_des.shape[0]
+        if total_count:
+            res[self.n_words] = len(pred)
 
-            # uint 16 is enough for max_kp < 64000
-            return sparse.csr_matrix(
-                (values, col_indices, [0, len(col_indices)]),
-                shape=(1, self.n_words + 1),
-                dtype='uint16')
-        else:
-            res = np.zeros(
-                shape=(self.n_words + (1 if total_count else 0),),
-                dtype='uint16')
-            pred = self.ca.predict(img_des)
-            for p in pred:
-                res[p] += 1
-            if total_count:
-                res[self.n_words] = len(pred)
-            return res
+        # TODO: Should not divide here
+        return res / float(img_des.shape[0])
 
     def train_clusterer(self):
         """
@@ -422,7 +302,6 @@ class CBIRCore:
             return placeholder
 
         start = time.time()
-        logger.info('Fit voc tree')
         ca = VocabularyTree(L=self.L, K=self.K).fit(mmap_descriptos)
         time_fitting_vocabulary_tree = round(time.time() - start, 3)
 
@@ -431,10 +310,7 @@ class CBIRCore:
         time_saving_vocabulary_tree = round(time.time() - start, 3)
 
         logging.getLogger('profile.training_clusterer').info(
-            f'time_copying_descriptors_to_memmap={time_copying_descriptors_to_memmap},'
-            f'time_fitting_vocabulary_tree={time_fitting_vocabulary_tree},'
-            f'time_saving_vocabulary_tree={time_saving_vocabulary_tree},'
-        )
+            f'{time_copying_descriptors_to_memmap},{time_fitting_vocabulary_tree},{time_saving_vocabulary_tree}')
 
     @decorator_load_ca_if_needed
     def add_images_to_index(self):
@@ -447,166 +323,129 @@ class CBIRCore:
 
         profile_add_images_to_index_logger = logging.getLogger('profile.add_images_to_index')
 
+        database_service.create_if_needed_word_photo_relations_table(self.db)
+        database_service.delete_index_if_needed_in_word_photo_relations(self.db)
+
         data_dependent_params = self.load_data_dependent_params()
-        before_count_photos_indexed = data_dependent_params['count_images']
-        resulting_count_photos_indexed = database_service.count_for_indexing(self.db) + 1  # NOTE: `+ 1` as there is 0th empty obj because rowid starts from 1
-        new_count_photos_to_index = resulting_count_photos_indexed - before_count_photos_indexed
-        logger.info(f'before_count_photos_indexed: {before_count_photos_indexed}; resulting_count_photos_indexed: {resulting_count_photos_indexed}; new_count_photos_to_index: {new_count_photos_to_index}')
-
-        inverted_index_new = [set() for _ in range(self.n_words)]
-
-        count_values_expected = resulting_count_photos_indexed * self.max_keypoints
-
-        # if count_photos < 4 * 10 ** 9 then uint32 is enough
-        row_indices = np.empty(shape=(count_values_expected + resulting_count_photos_indexed,), dtype='uint32')
-
-        # if voc_size < 4 * 10 ** 9 then uint32 is enough
-        col_indices = np.empty(shape=(count_values_expected + resulting_count_photos_indexed,),
-                                   dtype='uint32')
-
-        # if max_kp < 64000 then uint16 is enough
-        values = np.empty(shape=(count_values_expected + resulting_count_photos_indexed,),
-                          dtype='uint16')
-        len_coo_values = 0
+        freqs = data_dependent_params['freqs']
 
         start = time.time()
         for photo in tqdm(database_service
-                                  .get_photos_descriptors_needed_to_add_to_index_iterator(self.db, from_id=before_count_photos_indexed),
+                                  .get_photos_descriptors_needed_to_add_to_index_iterator(self.db),
                           desc='Applying clusterer, updaing bow and inverted index '
                                'for every photo needed to add to index'):
+            word_photo_relations = []
             photo_descriptor = self.deserialize_descriptor(photo.descriptor)
             photo_words = self.ca.predict(photo_descriptor[0])
-
-            values[len_coo_values: len_coo_values + photo_words.shape[0]] = 1
-            values[len_coo_values + photo_words.shape[0]] = photo_words.shape[0]
-
-            assert(photo.rowid >= before_count_photos_indexed)
-            assert(photo.rowid < resulting_count_photos_indexed)
-
-            # `photo.rowid - before_count_photos_indexed` because we will do vstack below
-            row_indices[len_coo_values: len_coo_values + photo_words.shape[0]] = photo.rowid - before_count_photos_indexed
-            row_indices[len_coo_values + photo_words.shape[0]] = photo.rowid - before_count_photos_indexed
-
-            col_indices[len_coo_values: len_coo_values + photo_words.shape[0]] = photo_words
-            col_indices[len_coo_values + photo_words.shape[0]] = self.n_words
-
-            len_coo_values += photo_words.shape[0] + 1
-
+            photo_bow = np.zeros((self.n_words + 1,), dtype=np.int32)
             for word in photo_words:
-                inverted_index_new[word].add(photo.rowid)
+                photo_bow[word] += 1
+                photo_bow[self.n_words] += 1
+                if photo_bow[word] == 1:
+                    word_photo_relations += [{'word': word, 'photo': photo.name}]
+                    freqs[word] += 1
 
-        row_indices.resize(len_coo_values)
-        col_indices.resize(len_coo_values)
-        values.resize(len_coo_values)
-        time_creating_bow_and_inv = round(time.time() - start, 3)
+            # TODO: photo.pk instead of photo.name must be in the future.
+            database_service.add_word_photo_relations(self.db, word_photo_relations)
+            photo_bow = {
+                'name': photo.name,
+                'bow': self.serialize_bow(photo_bow)
+            }
+            database_service.write_bows(self.db, [photo_bow])
 
+        time_writing_bows = round(time.time() - start, 3)
+
+        logger.info(f'Sorting word_photo relations')
         start = time.time()
-        bow_old = self.load_bow()
-        time_loading_old_bow = round(time.time() - start, 3)
+        database_service.sort_word_photo_relations_table(self.db)
+        finish = time.time()
+        logger.info(f'Finished sorting word_photo relations over {round(finish - start, 1)} sec = '
+                    f'{round((finish - start) / 60, 1)} min')
+        time_creating_index_by_word = round(finish - start, 3)
 
+        def _prepare_word_photos(word_, word_photos_):
+
+            # TODO: Consider about this if adding new photo to index is needed.
+            # word_photos_old_raw = list(database_service.get_photos_by_words_iterator(self.db, [word_now]))
+            # word_photos_old = (set() if not word_photos_old_raw
+            #                    else self.deserialize_word_photos(word_photos_old_raw[0]['photos']))
+            word_photos_old = set()
+            prepared = {
+                'word': word_,
+                'photos': self.serialize_word_photos(word_photos_ | word_photos_old)
+            }
+            return prepared
+
+        # Sort by word and get word photo relations
+        word_now = None
+        word_photos_now = set()
         start = time.time()
-        bow_new = sparse.vstack(
-            (bow_old,
-            sparse.coo_matrix(
-                (values, (row_indices, col_indices)),
-                shape=(new_count_photos_to_index, self.n_words + 1))
-             ),
-            format='csr'
-        )
-        time_vstack = round(time.time() - start, 3)
+        for ind, word_photo_relation in enumerate(tqdm(database_service.get_word_photo_relations_sorted(self.db),
+                                                       desc='Collecting word to photos and writing to database')):
+            word_next = word_photo_relation['word']
+            photo_next = word_photo_relation['photo']
+            if word_now and word_now != word_next:
+                word_to_insert = _prepare_word_photos(word_now, word_photos_now)
+                database_service.insert_or_replace_words(self.db, [word_to_insert])
+                word_photos_now = set()
+            word_now = word_next
+            word_photos_now.add(photo_next)
 
-        start = time.time()
-        CBIRCore._save_bow(self.database, self.name, bow_new)
-        time_storing_new_bow = round(time.time() - start, 3)
-        del row_indices, col_indices, values, bow_old, bow_new
+        if word_now:
+            word_to_insert = _prepare_word_photos(word_now, word_photos_now)
+            database_service.insert_or_replace_words(self.db, [word_to_insert])
 
-        start = time.time()
-        inverted_index_old = self.load_inv()
-        time_loading_old_inv = round(time.time() - start, 3)
+        time_building_inv = round(time.time() - start)
 
-        start = time.time()
-        for word in range(len(inverted_index_new)):
-            inverted_index_new[word] |= inverted_index_old[word]
-        time_combining_invs = round(time.time() - start, 3)
+        database_service.clean_word_photo_relations_table(self.db)
 
-        freqs = data_dependent_params['freqs']
-        for word in range(len(inverted_index_new)):
-            freqs[word] = len(inverted_index_new[word])
+        profile_add_images_to_index_logger.info(f'{time_writing_bows},{time_creating_index_by_word},{time_building_inv}')
 
-        start = time.time()
-        CBIRCore._save_inverted_index(self.database, self.name, inverted_index_new)
-        time_storing_new_inv = round(time.time() - start, 3)
-        del inverted_index_new, inverted_index_old
-
-
-        start = time.time()
-        little_percent = int(0.085 * self.n_words)
-
-        #  Костыль нужный для тестовых ситуаций, когда little_percent = 0
-        if little_percent == 0:
-            little_percent = 1
-
+        five_percent = int(0.085 * self.n_words)
         words_sorted_by_freqs = np.argsort(freqs)
-        most_frequent = set(words_sorted_by_freqs[-little_percent:])
-        least_frequent = set(words_sorted_by_freqs[:little_percent])
-        time_sorting_and_finding_most_frequent_words = round(time.time() - start, 3)
+        most_frequent = set(words_sorted_by_freqs[-five_percent:])
+        least_frequent = set(words_sorted_by_freqs[:five_percent])
 
-        idf = compute_idf_lazy(freqs, resulting_count_photos_indexed)
+        total_count_photos_indexed = database_service.count_for_indexing(self.db)
+        idf = compute_idf_lazy(freqs, total_count_photos_indexed)
 
-        start = time.time()
         data_dependent_params = {}
-        data_dependent_params['count_images'] = resulting_count_photos_indexed
+        data_dependent_params['count_images'] = total_count_photos_indexed
         data_dependent_params['freqs'] = freqs
         data_dependent_params['idf'] = idf
         data_dependent_params['most_frequent'] = most_frequent
         data_dependent_params['least_frequent'] = least_frequent
         CBIRCore._save_data_dependent_params(self.database, self.name, data_dependent_params)
-        time_storing_data_dependent_params = round(time.time() - start, 3)
-        profile_add_images_to_index_logger.info(
-            f'time_creating_bow_and_inv={time_creating_bow_and_inv},'
-            f'time_loading_old_bow={time_loading_old_bow},'
-            f'time_vstack={time_vstack},'
-            f'time_storing_new_bow={time_storing_new_bow},'
-            f'time_loading_old_inv={time_loading_old_inv},'
-            f'time_combining_invs={time_combining_invs},'
-            f'time_storing_new_inv={time_storing_new_inv},'
-            f'time_sorting_and_finding_most_frequent_words={time_sorting_and_finding_most_frequent_words},'
-            f'time_storing_data_dependent_params={time_storing_data_dependent_params},'
-        )
 
-    def get_candidates(self, query, filter=True, bad_words=[]):
+    def clean_bow_and_inv(self):
+        database_service.clean_bow(self.db)
+        database_service.clean_word(self.db)
+
+    def get_candidates_raw(self, query, filter=True, bad_words=[]):
         """
         :param query:  `[(visual_word, freq), ...]` query as a bow(BoVW)
         :param filter:
         """
+        most_frequent = self.load_data_dependent_params()['most_frequent']
+
         interesting_words_in_query = [word
                                       for word, freq
                                       in enumerate(query)
                                       if (freq > 1e-7
-                                          and (not filter or (word not in self.most_frequent
+                                          and (not filter or (word not in most_frequent
                                                               and word not in bad_words)))]
-        candidates = set()
-        for word in interesting_words_in_query:
-            candidates |= self.inv[word]
-        return list(candidates)
+
+        candidates_iterator = database_service.get_photos_by_words_iterator(self.db, interesting_words_in_query)
+        candidates_iterator_modified = (candidate['photos'] for candidate in candidates_iterator)
+        return list(candidates_iterator_modified)
 
     def log_answers(self, query, result, sv, qe):
         answers_logger = logging.getLogger('profile.answers')
         for rank, row in enumerate(result):
             answers_logger.info(f'{query},{row[0][1]},{rank + 1},{row[1]},{sv},{qe}')
 
-    def log_search_times(self, times):
-        search_times_logger = logging.getLogger('profile.search')
-        string_parts = []
-        for time_now in times:
-            string_parts += [f'{time_now[0]}={time_now[1]}']
-        search_times_logger.info(','.join(string_parts))
-
     @decorator_load_fd_if_needed
     @decorator_load_ca_if_needed
-    @decorator_load_bow_if_needed
-    @decorator_load_inv_if_needed
-    @decorator_load_most_frequent_if_needed
     def search(self,
                img_path,
                n_candidates=100,
@@ -629,28 +468,21 @@ class CBIRCore:
                      f'n_candidates: {n_candidates}, max_verified: {max_verified}, '
                      f'similarity_threshold: {similarity_threshold}, '
                      f'sv_enable: {sv_enable}, qe_enable: {qe_enable}, '
-                     f'p_fine_max: {p_fine_max}')
+                    f'p_fine_max: {p_fine_max}')
 
-        times = []  # [(time_name, time_value), ...]
-
+        profile_retrieving_logger = logging.getLogger('profile.retrieving_candidates')
+        profile_preliminary_sorting_logger = logging.getLogger('profile.preliminary_sorting')
         # STEP 1. APPLY INVERTED INDEX TO GET CANDIDATES
 
-        start = time.time()
         data_dependent_params = self.load_data_dependent_params()
-        time_loading_dependent_params = round(time.time() - start, 3)
-        times +=[('time_loading_dependent_params', time_loading_dependent_params)]
-
         idf = data_dependent_params['idf']
         freqs = data_dependent_params['freqs']
+        bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
 
-        time_getting_descriptor = None
         if new_query is not None:
             img_descriptor = precomputed_img_descriptor
             kp = precomputed_kp
-            img_bovw = new_query
-
-            # TODO NOW: astype needed?
-            img_bovw = img_bovw.astype(np.float32)
+            img_bovw = new_query.astype(np.float32)
         else:
             start = time.time()
             result_tuple = self.get_descriptor(img_path, both=True, total_count_coordinate_for_bow=True)
@@ -658,109 +490,59 @@ class CBIRCore:
                 message = f'Could not get descriptor for image {query_name}'
                 raise ValueError(message)
             img_descriptor, img_bovw, kp = result_tuple
-            img_bovw = img_bovw.astype(np.float32)
-
-            time_getting_descriptor = round(time.time() - start, 3)
-            logger.info("Descriptor for query got in {}".format(time_getting_descriptor))
-
-        times += [('time_getting_descriptor', time_getting_descriptor)]
+            logger.info("Descriptor for query got in {}".format(round(time.time() - start, 3)))
 
         start = time.time()
-
-        assert(img_bovw.shape[0] == self.n_words + 1)
-
-        start = time.time()
-        bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
-        time_computing_bad_words = round(time.time() - start, 3)
-        times += [('time_computing_bad_words', time_computing_bad_words)]
-
-        candidates = self.get_candidates(img_bovw[:-1], bad_words=bad_words)
-        if len(candidates) == 0:
+        candidates_raw = self.get_candidates_raw(img_bovw[:-1], bad_words=bad_words)
+        if len(candidates_raw) == 0:
+            # logger.warning('0 candidates if filter most frequent. Trying without filtering')
             logger.warning('0 candidates if filter. Trying increasing p_fine_max *2')
             p_fine_max = min(1.0, 2 * p_fine_max)
-            # p_fine_max = 1.0
             bad_words = np.where(freqs > p_fine_max * data_dependent_params['count_images'])[0]
-            candidates = self.get_candidates(img_bovw[:-1], bad_words=bad_words)
+            candidates_raw = self.get_candidates_raw(img_bovw[:-1], bad_words=bad_words)
 
+        candidates = set()
+        for candidate_raw in candidates_raw:
+            candidates |= self.deserialize_word_photos(candidate_raw)
         time_retrieving_candidates = round(time.time() - start, 3)
-        times += [('len(candidates)', len(candidates))]
-        times += [('time_retrieving_candidates', time_retrieving_candidates)]
-        times += [('new_query is not None', new_query is not None)]
         logger.info(f"{len(candidates)} candidates by words got in {time_retrieving_candidates}")
 
+        profile_retrieving_logger.info(f"{len(candidates)},{time_retrieving_candidates},{new_query is not None}")
+
+        # TODO: In the future make candidates an iterator. Now Algorithm keeps all candidates in RAM
+        # because it applies sorting. But algorithm needs only top n_candidates.
+        # Thus we can apply linear algorithm with heapq or tree and iterator will be enough.
+
         # STEP 2. PRELIMINARY RANKING
-        # TODO: Use heapq to obtain preliminary top n_candidates?
-
-        def option_sim_1(bows, query):
-            return bows.dot(query)
-
-        start = time.time()
-        print(f'AAA candidates: {candidates}')
-        bow_candidates_without_last_col = self.bow[candidates, :-1]
-        bow_candidates_last_col = self.bow[candidates, -1].toarray().squeeze()
-        time_taking_bow_candidates = round(time.time() - start, 3)
-        times += [('time_taking_bow_candidates', time_taking_bow_candidates)]
-
-        def divide_sparse_on_vec(C, D):
-            r, c = C.nonzero()
-            rD_sp = sparse.csr_matrix(((1.0 / D)[r], (r, c)), shape=(C.shape))
-            out = C.multiply(rD_sp)
-            return out
-
-        # print(f'AAA bow_candidates_without_last_col.shape: {bow_candidates_without_last_col.shape}')
-        # print(f'AAA bow_candidates_last_col.shape: {bow_candidates_last_col.shape}')
-        # print(f'AAA bow_candidates_without_last_col.toarray(): {bow_candidates_without_last_col.toarray()}')
-        # print(f'AAA bow_candidates_last_col: {bow_candidates_last_col}')
-        # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).toarray()}')
-        # print(f'idf.reshape(1, -1): {idf.reshape(1, -1)}')
-        # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray()}')
-        # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
-
-        start = time.time()
-        ranks = option_sim_1(
-            divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
-            (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
-        ranks = ranks.reshape((-1,))
-        print(f'AAA ranks: {ranks}')
-        time_computing_ranks = round(time.time() - start, 3)
-        times += [('time_computing_ranks', time_computing_ranks)]
-
         start = time.time()
 
-        # TODO: np.topk_arg try.
-        ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
 
-        print(f'AAA ranks_args: {ranks_sorted_args}')
-        candidates_chosen = np.array(candidates)[ranks_sorted_args]
-        print(f'AAA all candidates: {candidates}')
-        print(f'AAA candiates_chosen: {candidates_chosen}')
 
-        candidates = [(candidate_chosen_now, None) for candidate_chosen_now in candidates_chosen]
+        # TODO: Use heapq to obtain preliminary top n_candidates
+        # Getting all candidates in ram and sorting can be infeasible.
+        ranks = []
+        for candidate in candidates:
+            candidate_bow_raw = database_service.get_bow(self.db, candidate)
+            candidate_bow_raw = candidate_bow_raw['bow']
+            candidate_bow = self.deserialize_bow(candidate_bow_raw)
+            ranks.append((candidate, euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
+                                               candidate_bow[:-1] / candidate_bow[-1] * idf)))
+
+        ranks = sorted(ranks, key=lambda x: x[1])
+        logger.debug(f'Ranks[:3]: {ranks[:3]}')
+
+        # TODO: Get rid of redundant None here `(None, rank[0])` which is for backward-compatibility now.
+        candidates = [(None, rank[0]) for rank in ranks[:n_candidates]]
         time_preliminary_sorting = round(time.time() - start, 3)
-        times += [('time_preliminary_sorting', time_preliminary_sorting)]
-        logger.info("Short list got in {}".format(time_preliminary_sorting + time_computing_ranks + time_taking_bow_candidates + time_retrieving_candidates))
-
-        def get_photo_names_return_time(result):
-            start = time.time()
-            for i in range(len(result)):
-                rowid = result[i][0][0]
-                [(_, name_now)] = database_service.get_names_by_rowids(self.db, [rowid])
-                ((rowid, _), val) = result[i]
-                result[i] = ((rowid, name_now), val)
-            time_getting_names = round(time.time() - start, 3)
-            return time_getting_names
+        logger.info("Short list got in {}".format(time_preliminary_sorting))
+        profile_preliminary_sorting_logger.info(f"{time_preliminary_sorting},{new_query is not None}")
 
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
-            result = candidates[:topk]
-
-            time_getting_names = get_photo_names_return_time(result)
-            times += [('time_getting_names', time_getting_names)]
             self.log_answers(query_name, candidates[:topk], sv_enable, qe_enable)
-            self.log_search_times(times)
-            return result
+            return candidates[:topk]
 
         start = time.time()
 
@@ -808,7 +590,6 @@ class CBIRCore:
                                 for i in range(len(verified))],
                                key=lambda x: x[1], reverse=True)
 
-        # TODO NOW
         # STEP 4. QUERY EXPANSION
         if qe_enable and new_query is None and np.count_nonzero(verified) < qe_limit:
             start = time.time()
@@ -952,12 +733,13 @@ class CBIRCore:
     def _save_bow(cls, database, name,
                   bow):
         with open(cls.get_bow_path(database, name), 'wb') as f:
-            sparse.save_npz(f, bow)
+            pickle.dump(bow, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def _save_inverted_index(cls, database, name,
                              inverted_index):
-        with open(cls.get_inv_path(database, name), 'wb') as f:
+        with open(cls.get_inverted_index_path(database, name), 'wb') as f:
             pickle.dump(inverted_index, f,
                         protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -996,7 +778,7 @@ class CBIRCore:
         return os.path.join(cls.get_storage_path(database, name), 'clusterer' + postfix)
 
     @classmethod
-    def get_inv_path(cls, database, name):
+    def get_inverted_index_path(cls, database, name):
         postfix = '.pkl'
         return os.path.join(cls.get_storage_path(database, name), 'inverted_index' + postfix)
 
@@ -1025,8 +807,8 @@ class CBIRCore:
             data_dependent_params = pickle.load(f)
         return data_dependent_params
 
-    def load_inv(self):
-        with open(CBIRCore.get_inv_path(self.database, self.name), 'rb') as f:
+    def load_inverted_index(self):
+        with open(CBIRCore.get_inverted_index_path(self.database, self.name), 'rb') as f:
             inverted_index = pickle.load(f)
         return inverted_index
 
@@ -1045,7 +827,7 @@ class CBIRCore:
 
     def load_bow(self):
         with open(CBIRCore.get_bow_path(self.database, self.name), 'rb') as f:
-            bow = sparse.load_npz(f)
+            bow = pickle.load(f)
         return bow
 
     def load_freqs(self):
@@ -1125,40 +907,6 @@ class CBIRCore:
     def unset_ca(self):
         self.ca = None
 
-    # Already defined
-    # def load_bow(self):
-    #     with open(CBIRCore.get_bow_path(self.database, self.name), 'rb') as f:
-    #         bow = pickle.load(f)
-    #     return bow
-
-    def set_bow(self, bow):
-        self.bow = bow
-
-    def unset_bow(self):
-        self.bow = None
-
-    # Already defined
-    # def load_inv(self):
-    #     with open(CBIRCore.get_inv_path(self.database, self.name), 'rb') as f:
-    #         inv = pickle.load(f)
-    #     return inv
-
-    def set_inv(self, inv):
-        self.inv = inv
-
-    def unset_inv(self):
-        self.inv = None
-
-    def load_most_frequent(self):
-        return self.load_data_dependent_params()['most_frequent']
-
-    def set_most_frequent(self, most_frequent):
-        self.most_frequent = most_frequent
-
-    def unset_most_frequent(self):
-        self.most_frequent = None
-
-
     def serialize_descriptor(self, descriptor):
         return pickle.dumps((descriptor[0],
                              [p.pt[0] for p in descriptor[1]],
@@ -1171,7 +919,6 @@ class CBIRCore:
         return (descriptor[0], [cv2.KeyPoint(*el) for el in zip(descriptor[1], descriptor[2], descriptor[3])])
 
     def serialize_bow(self, bow):
-        # TODONOW: change from coo_matrix to csr_matrix?
         bow_sparse = sparse.coo_matrix(bow)
         return pickle.dumps(bow_sparse)
 
@@ -1190,12 +937,6 @@ class CBIRCore:
     decorator_load_ca_if_needed = staticmethod(decorator_load_ca_if_needed)
 
     decorator_load_fd_if_needed = staticmethod(decorator_load_fd_if_needed)
-
-    decorator_load_bow_if_needed = staticmethod(decorator_load_bow_if_needed)
-
-    decorator_load_inv_if_needed = staticmethod(decorator_load_inv_if_needed)
-
-    decorator_load_most_frequent_if_needed = staticmethod(decorator_load_most_frequent_if_needed)
 
 
 def compute_idf_lazy(freqs, total_count_documents):
