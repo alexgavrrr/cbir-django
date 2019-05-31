@@ -95,10 +95,15 @@ def inited_properly(db, external_mode=False):
                 return Photo.table_exists()
 
 
-def create_empty(db):
-    with MODELS_LOCK:
-        with db.bind_ctx([Photo, PhotoBow, Word]):
-            db.create_tables([Photo, PhotoBow, Word])
+def create_empty(db, external_mode=False):
+    if external_mode:
+        with MODELS_LOCK:
+            with db.bind_ctx([Photo, PhotoBow, Word]):
+                db.create_tables([Photo, PhotoBow, Word])
+    else:
+        with MODELS_LOCK:
+            with db.bind_ctx([Photo]):
+                db.create_tables([Photo])
     return db
 
 
