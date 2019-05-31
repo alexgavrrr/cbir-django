@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 import re
@@ -142,26 +143,34 @@ def evaluate(train_dir, test_dir, gt_dir,
         f'index_{algo_params["des_type"]}_{algo_params["max_keypoints"]}'
         f'_{algo_params["K"]}_{algo_params["L"]}')
 
-    CBIRCore.create_empty_if_needed(
+    created_now = CBIRCore.create_empty_if_needed(
         test_database_name, test_index_name,
         **algo_params, )
 
     cbir_core = CBIRCore.get_instance(test_database_name, test_index_name)
     cbir_core.set_fd(cbir_core.load_fd())
 
-    list_paths_to_images_to_train_clusterer = find_image_files(train_dir, cbir.IMAGE_EXTENSIONS, recursive=False)
-    list_paths_to_images_to_index = find_image_files(test_dir, cbir.IMAGE_EXTENSIONS, recursive=False)
+    if created_now:
+        list_paths_to_images_to_train_clusterer = find_image_files(train_dir, cbir.IMAGE_EXTENSIONS, recursive=False)
+        list_paths_to_images_to_index = find_image_files(test_dir, cbir.IMAGE_EXTENSIONS, recursive=False)
+        cbir_core.compute_descriptors(list_paths_to_images_to_index,
+                                      to_index=True,
+                                      for_training_clusterer=False)
 
-    cbir_core.compute_descriptors(list_paths_to_images_to_index,
-                                  to_index=True,
-                                  for_training_clusterer=False)
+        cbir_core.compute_descriptors(list_paths_to_images_to_train_clusterer,
+                                      to_index=False,
+                                      for_training_clusterer=True)
+        cbir_core.train_clusterer()
 
-    cbir_core.compute_descriptors(list_paths_to_images_to_train_clusterer,
-                                  to_index=False,
-                                  for_training_clusterer=True)
+        cbir_core.set_ca(cbir_core.load_ca())
+        cbir_core.add_images_to_index()
+    else:
+        logging.getLogger().info('Index has already been created so we do not rebuild it here')
+
     cbir_core.set_ca(cbir_core.load_ca())
-    cbir_core.train_clusterer()
-    cbir_core.add_images_to_index()
+    cbir_core.set_bow(cbir_core.load_bow())
+    cbir_core.set_inv(cbir_core.load_inv())
+    cbir_core.set_most_frequent(cbir_core.load_most_frequent())
 
     queries, ok_answers, good_answers, junk_answers, queries_names = load_gt(test_dir, gt_dir, return_queries_names=True)
     scores = []
