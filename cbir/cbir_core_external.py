@@ -23,7 +23,7 @@ from cbir.vocabulary_tree import VocabularyTree
 logger = logging.getLogger('cbir.cbir_core')
 
 
-class CBIRCore:
+class CBIRCoreExt:
     # staticmethod. Look bottom of the class
     def decorator_load_fd_if_needed(func):
         @functools.wraps(func)
@@ -154,7 +154,7 @@ class CBIRCore:
         data_dependent_params_path = cls.get_data_dependent_params_path(database, name)
 
         potential_db = database_service.get_db(cls.get_storage_path(database, name))
-        inited_properly = database_service.inited_properly(potential_db)
+        inited_properly = database_service.inited_properly(potential_db, external_mode=True)
 
         return (os.path.exists(params_path)
                 and os.path.exists(data_dependent_params_path)
@@ -336,7 +336,7 @@ class CBIRCore:
             word_photo_relations = []
             photo_descriptor = self.deserialize_descriptor(photo.descriptor)
             photo_words = self.ca.predict(photo_descriptor[0])
-            photo_bow = np.zeros((self.n_words + 1,), dtype=np.int16)
+            photo_bow = np.zeros((self.n_words + 1,), dtype=np.int32)
             for word in photo_words:
                 photo_bow[word] += 1
                 photo_bow[self.n_words] += 1
