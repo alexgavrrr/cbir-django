@@ -122,7 +122,9 @@ def add_photos_descriptors(
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
             # with db.atomic():
-                Photo.insert_many(photos).execute()
+            (Photo
+             .insert_many(photos)
+             .on_conflict('replace')).execute()
 
 
 def write_bows(db, photos_bows):

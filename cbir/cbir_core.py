@@ -270,25 +270,22 @@ class CBIRCore:
         buffered_new_photos = []
         start = time.time()
         for path_to_image in tqdm(list_paths_to_images, desc='Computing descriptors for photos and saving in the database'):
-            if database_service.is_image_descriptor_computed(self.db, path_to_image):
-                count_old += 1
+            descriptor_now = self.get_descriptor(path_to_image, raw=True)
+            if descriptor_now[0] is not None:
+                count_new += 1
+                new_photo = {
+                    'name': path_to_image,
+                    'descriptor': self.serialize_descriptor(descriptor_now),
+                    'to_index': to_index,
+                    'for_training': for_training_clusterer
+                }
+                buffered_new_photos += [new_photo]
+                if len(buffered_new_photos) == BUFFER_CAPACITY:
+                    database_service.add_photos_descriptors(self.db, buffered_new_photos)
+                    buffered_new_photos = []
             else:
-                descriptor_now = self.get_descriptor(path_to_image, raw=True)
-                if descriptor_now[0] is not None:
-                    count_new += 1
-                    new_photo = {
-                        'name': path_to_image,
-                        'descriptor': self.serialize_descriptor(descriptor_now),
-                        'to_index': to_index,
-                        'for_training': for_training_clusterer
-                    }
-                    buffered_new_photos += [new_photo]
-                    if len(buffered_new_photos) == BUFFER_CAPACITY:
-                        database_service.add_photos_descriptors(self.db, buffered_new_photos)
-                        buffered_new_photos = []
-                else:
-                    count_defects += 1
-                    logger.debug("No keypoints found for {}".format(path_to_image))
+                count_defects += 1
+                logger.debug("No keypoints found for {}".format(path_to_image))
 
         if buffered_new_photos:
             database_service.add_photos_descriptors(self.db, buffered_new_photos)
