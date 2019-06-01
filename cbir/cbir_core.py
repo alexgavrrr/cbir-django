@@ -600,6 +600,16 @@ class CBIRCore:
             string_parts += [f'{time_now[0]}={time_now[1]}']
         search_times_logger.info(','.join(string_parts))
 
+    def put_photo_names_to_result_return_time(self, result):
+        start = time.time()
+        for i in range(len(result)):
+            rowid = result[i][0][0]
+            [(_, name_now)] = database_service.get_names_by_rowids(self.db, [rowid])
+            ((rowid, _), val) = result[i]
+            result[i] = ((rowid, name_now), val)
+        time_getting_names = round(time.time() - start, 3)
+        return time_getting_names
+
     @decorator_load_fd_if_needed
     @decorator_load_ca_if_needed
     @decorator_load_bow_if_needed
@@ -722,23 +732,13 @@ class CBIRCore:
         times += [('time_preliminary_sorting', time_preliminary_sorting)]
         logger.info("Short list got in {}".format(time_preliminary_sorting + time_computing_ranks + time_taking_bow_candidates + time_retrieving_candidates))
 
-        def get_photo_names_return_time(result):
-            start = time.time()
-            for i in range(len(result)):
-                rowid = result[i][0][0]
-                [(_, name_now)] = database_service.get_names_by_rowids(self.db, [rowid])
-                ((rowid, _), val) = result[i]
-                result[i] = ((rowid, name_now), val)
-            time_getting_names = round(time.time() - start, 3)
-            return time_getting_names
-
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
             # for compatibility with the output format
             candidates = [(c, 0) for c in candidates]
             result = candidates[:topk]
 
-            time_getting_names = get_photo_names_return_time(result)
+            time_getting_names = self.put_photo_names_to_result_return_time(result)
             times += [('time_getting_names', time_getting_names)]
             self.log_answers(query_name, candidates[:topk], sv_enable, qe_enable)
             self.log_search_times(times)
