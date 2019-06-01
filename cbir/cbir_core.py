@@ -713,22 +713,36 @@ class CBIRCore:
         # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
 
         cycle_computing_ranks = True
-        computing_sims = False
+        computing_sims = True
 
         start = time.time()
         ranks = None
         if not cycle_computing_ranks:
-            ranks = option_sim_1(
-                divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
-                (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
-            ranks = ranks.reshape((-1,))
+            if computing_sims:
+                ranks = option_sim_1(
+                    divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
+                    (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
+                ranks = ranks.reshape((-1,))
+            else:
+                raise NotImplementedError('There is no vectorized impl for dists')
         else:
-            ranks = []
-            for candidate in candidates:
-                candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
-                ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
-                                                   candidate_bow[:-1] / candidate_bow[-1] * idf))
-            ranks = np.array(ranks)
+            if computing_sims:
+                ranks = []
+                for candidate in candidates:
+                    candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
+                    ranks.append(np.sum((
+                            (img_bovw[:-1] / img_bovw[-1] * idf)
+                            * (candidate_bow[:-1] / candidate_bow[-1] * idf)
+                    )))
+                ranks = np.array(ranks)
+
+            else:
+                ranks = []
+                for candidate in candidates:
+                    candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
+                    ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
+                                                       candidate_bow[:-1] / candidate_bow[-1] * idf))
+                ranks = np.array(ranks)
 
         time_computing_ranks = round(time.time() - start, 3)
         times += [('cycle_computing_ranks', cycle_computing_ranks)]
