@@ -713,6 +713,8 @@ class CBIRCore:
         # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
 
         cycle_computing_ranks = True
+        computing_sims = False
+
         start = time.time()
         ranks = None
         if not cycle_computing_ranks:
@@ -736,7 +738,10 @@ class CBIRCore:
         # TODO: np.topk_arg try.
         print(f'AAA Candidates by inv: {candidates}')
         print(f'AAA ranks: {ranks}')
-        ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
+        if computing_sims:
+            ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
+        else:
+            ranks_sorted_args = np.argsort(ranks)[:n_candidates]
         print(f'AAA ranks_sorted_args: {ranks_sorted_args}')
 
         candidates_chosen = np.array(candidates)[ranks_sorted_args]
