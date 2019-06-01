@@ -79,7 +79,7 @@ class VocabularyTree:
     def fit(self, data):
         # batch_size = max(1000, self.K * 100)
 
-        self.encoder = pqkmeans.encoder.PQEncoder(num_subdim=M, Ks=256)
+        self.encoder = pqkmeans.encoder.PQEncoder(num_subdim=4, Ks=256)
         self.encoder.fit(data)
         print('')
 
