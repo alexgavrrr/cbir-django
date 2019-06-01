@@ -689,8 +689,11 @@ class CBIRCore:
         # STEP 2. PRELIMINARY RANKING
         # TODO: Use heapq to obtain preliminary top n_candidates?
 
-        def option_sim_1(bows, query):
-            return bows.dot(query)
+        def divide_sparse_on_vec(C, D):
+            r, c = C.nonzero()
+            rD_sp = sparse.csr_matrix(((1.0 / D)[r], (r, c)), shape=(C.shape))
+            out = C.multiply(rD_sp)
+            return out
 
         start = time.time()
         bow_candidates_without_last_col = self.bow[candidates, :-1]
@@ -698,76 +701,22 @@ class CBIRCore:
         time_taking_bow_candidates = round(time.time() - start, 3)
         times += [('time_taking_bow_candidates', time_taking_bow_candidates)]
 
-        def divide_sparse_on_vec(C, D):
-            r, c = C.nonzero()
-            rD_sp = sparse.csr_matrix(((1.0 / D)[r], (r, c)), shape=(C.shape))
-            out = C.multiply(rD_sp)
-            return out
-
-        def compute_distances(bow, query):
-            bow = (
-                divide_sparse_on_vec(
-                    bow_candidates_without_last_col, bow_candidates_last_col)
-                .multiply(idf.reshape(1, -1))
-            )
-            return euclidean_distances(bow, (query[:-1] / query[-1]).reshape(1, -1)).reshape((-1,))
-
-        cycle_computing_ranks = False
-        computing_sims = False
-        use_idf_in_cycled = True
-
         start = time.time()
-        ranks = None
-        if not cycle_computing_ranks:
-            if computing_sims:
-                ranks = option_sim_1(
-                    divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
-                    (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
-                ranks = ranks.reshape((-1,))
-            else:
-                ranks = compute_distances(self.bow, img_bovw)
-        else:
-            if computing_sims:
-                ranks = []
-                for candidate in candidates:
-                    candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
-                    if use_idf_in_cycled:
-                        ranks.append(np.sum((
-                                (img_bovw[:-1] / img_bovw[-1] * idf)
-                                * (candidate_bow[:-1] / candidate_bow[-1] * idf)
-                        )))
-                    else:
-                        ranks.append(np.sum((
-                                (img_bovw[:-1] / img_bovw[-1])
-                                * (candidate_bow[:-1] / candidate_bow[-1])
-                        )))
-                ranks = np.array(ranks)
-
-            else:
-                ranks = []
-                for candidate in candidates:
-                    candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
-                    if use_idf_in_cycled:
-                        ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
-                                                           candidate_bow[:-1] / candidate_bow[-1] * idf))
-                    else:
-                        ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1],
-                                                           candidate_bow[:-1] / candidate_bow[-1]))
-                ranks = np.array(ranks)
+        bow = (divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col)
+               .multiply(idf.reshape(1, -1)))
+        ranks = euclidean_distances(
+            bow,
+            (img_bovw[:-1] / img_bovw[-1]).reshape(1, -1)
+        )
+        ranks = ranks.reshape((-1,))
 
         time_computing_ranks = round(time.time() - start, 3)
-        times += [('cycle_computing_ranks', cycle_computing_ranks)]
         times += [('time_computing_ranks', time_computing_ranks)]
 
         start = time.time()
-        # TODO: np.topk_arg try.
-        if computing_sims:
-            ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
-        else:
-            ranks_sorted_args = np.argsort(ranks)[:n_candidates]
-
+        # TODO: try np.select_topk instead of sorting.
+        ranks_sorted_args = np.argsort(ranks)[:n_candidates]
         candidates_chosen = np.array(candidates)[ranks_sorted_args]
-
         candidates = [(candidate_chosen_now, None) for candidate_chosen_now in candidates_chosen]
         time_preliminary_sorting = round(time.time() - start, 3)
         times += [('time_preliminary_sorting', time_preliminary_sorting)]
