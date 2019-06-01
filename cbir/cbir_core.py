@@ -696,6 +696,17 @@ class CBIRCore:
         times += [('new_query is not None', new_query is not None)]
         logger.info(f"{len(candidates)} candidates by words got in {time_retrieving_candidates}")
 
+        if len(candidates) == 0:
+            # for compatibility with the output format
+            candidates = [(c, 0) for c in candidates]
+            result = candidates[:topk]
+            time_getting_names = self.put_photo_names_to_result_return_time(result)
+            times += [('time_getting_names', time_getting_names)]
+            self.log_answers(query_name, candidates[:topk], sv_enable, qe_enable)
+            self.log_search_times(times)
+            return result
+
+
         # STEP 2. PRELIMINARY RANKING
         # TODO: Use heapq to obtain preliminary top n_candidates?
 
