@@ -712,18 +712,36 @@ class CBIRCore:
         # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray()}')
         # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
 
+        cycle_computing_ranks = True
         start = time.time()
-        ranks = option_sim_1(
-            divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
-            (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
-        ranks = ranks.reshape((-1,))
+        ranks = None
+        if not cycle_computing_ranks:
+            ranks = option_sim_1(
+                divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)),
+                (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
+            ranks = ranks.reshape((-1,))
+        else:
+            ranks = []
+            for candidate in candidates:
+                candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
+                ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
+                                                   candidate_bow[:-1] / candidate_bow[-1] * idf))
+            ranks = np.array(ranks)
+
         time_computing_ranks = round(time.time() - start, 3)
+        times += [('cycle_computing_ranks', cycle_computing_ranks)]
         times += [('time_computing_ranks', time_computing_ranks)]
 
         start = time.time()
         # TODO: np.topk_arg try.
+        print(f'AAA Candidates by inv: {candidates}')
+        print(f'AAA ranks: {ranks}')
         ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
+        print(f'AAA ranks_sorted_args: {ranks_sorted_args}')
+
         candidates_chosen = np.array(candidates)[ranks_sorted_args]
+        print(f'AAA candidates_chosen: {candidates_chosen}')
+
         candidates = [(candidate_chosen_now, None) for candidate_chosen_now in candidates_chosen]
         time_preliminary_sorting = round(time.time() - start, 3)
         times += [('time_preliminary_sorting', time_preliminary_sorting)]
