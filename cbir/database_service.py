@@ -124,7 +124,9 @@ def add_photos_descriptors(
             # with db.atomic():
             (Photo
              .insert_many(photos)
-             .on_conflict('replace')).execute()
+
+              # NOTE: Be careful about `ignore` mode. Mayby change it.
+             .on_conflict('ignore')).execute()
 
 
 def write_bows(db, photos_bows):
