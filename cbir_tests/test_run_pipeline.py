@@ -10,7 +10,7 @@ from cbir.cbir_core_external import CBIRCoreExt
 logger = logging.getLogger()
 
 CBIR_DATABASE_NAME = 'd-1'
-CBIR_INDEX_NAME = 'i-1-1'
+CBIR_INDEX_NAME = 'i-exp'
 WHERE_PHOTOS = str(Path(BASE_DIR) / 'public' / 'media'
                    / 'content' / CBIR_DATABASE_NAME / 'database_all')
 WHERE_PHOTOS_RELATIVE_TO_BASE_DIR = str(Path(WHERE_PHOTOS).relative_to(BASE_DIR))
@@ -90,8 +90,8 @@ def test_CBIRCore():
         query,
         n_candidates=3,
         topk=2,
-        sv_enable=False,
-        qe_enable=False)
+        sv_enable=True,
+        qe_enable=True)
     print(result_images)
 
 
