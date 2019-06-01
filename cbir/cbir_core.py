@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import sparse
 from scipy.spatial.distance import euclidean
+from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
 import cbir
@@ -703,6 +704,14 @@ class CBIRCore:
             out = C.multiply(rD_sp)
             return out
 
+        def compute_distances(bow, query):
+            bow = (
+                divide_sparse_on_vec(
+                    bow_candidates_without_last_col, bow_candidates_last_col)
+                .multiply(idf.reshape(1, -1))
+            )
+            return euclidean_distances(bow, (query[:-1] / query[-1]).reshape(1, -1)).reshape((-1,))
+
         # print(f'AAA bow_candidates_without_last_col.shape: {bow_candidates_without_last_col.shape}')
         # print(f'AAA bow_candidates_last_col.shape: {bow_candidates_last_col.shape}')
         # print(f'AAA bow_candidates_without_last_col.toarray(): {bow_candidates_without_last_col.toarray()}')
@@ -712,9 +721,9 @@ class CBIRCore:
         # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray()}')
         # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
 
-        cycle_computing_ranks = True
-        computing_sims = True
-        use_idf_in_cycled = False
+        cycle_computing_ranks = False
+        computing_sims = False
+        use_idf_in_cycled = True
 
         start = time.time()
         ranks = None
@@ -725,7 +734,7 @@ class CBIRCore:
                     (img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1))
                 ranks = ranks.reshape((-1,))
             else:
-                raise NotImplementedError('There is no vectorized impl for dists')
+                ranks = compute_distances(self.bow, img_bovw)
         else:
             if computing_sims:
                 ranks = []
