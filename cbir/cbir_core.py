@@ -697,12 +697,12 @@ class CBIRCore:
         logger.info(f"{len(candidates)} candidates by words got in {time_retrieving_candidates}")
 
         if len(candidates) == 0:
-            # for compatibility with the output format
+            # Epilog
             candidates = [(c, 0) for c in candidates]
             result = candidates[:topk]
             time_getting_names = self.put_photo_names_to_result_return_time(result)
             times += [('time_getting_names', time_getting_names)]
-            self.log_answers(query_name, candidates[:topk], sv_enable, qe_enable)
+            self.log_answers(query_name, result, sv_enable, qe_enable)
             self.log_search_times(times)
             return result
 
@@ -745,74 +745,72 @@ class CBIRCore:
 
         # STEP 3. SPATIAL VERIFICATION
         if not sv_enable:
-            # for compatibility with the output format
+            # Epilog
             candidates = [(c, 0) for c in candidates]
             result = candidates[:topk]
-
             time_getting_names = self.put_photo_names_to_result_return_time(result)
             times += [('time_getting_names', time_getting_names)]
-            self.log_answers(query_name, candidates[:topk], sv_enable, qe_enable)
+            self.log_answers(query_name, result, sv_enable, qe_enable)
             self.log_search_times(times)
             return result
 
         start = time.time()
 
-        # TODO: Refactor ransac so that it does not return things for debug.
-        # candidates are rearranged (due to database_serivice specifics) and that is why ransac returns it.
+        # NOTE: Refactor ransac in the future so that it does not return things for debug.
+        # NOTE: candidates are rearranged (due to database_serivice specifics) and that is why ransac returns it.
         [candidates, all_matches, all_matches_masks, all_transforms,
          verified,
          descriptors_kp] = self.ransac(img_descriptor, kp, candidates,
                                        n_inliners_thr, max_verified)
+        assert(len(candidates) == len(all_matches) == len(all_matches_masks) == len(all_transforms) == len(verified) == len(descriptors_kp))
 
         logger.info('Spatial verification got in {}s'.format(round(time.time() - start), 3))
-        if debug:
-            n = 1
-            draw_params = dict(matchColor=(0, 255, 0),
-                               singlePointColor=(255, 0, 0),
-                               matchesMask=all_matches_masks[n],
-                               flags=0)
-
-            if type(img_path) is str:
-                img1 = cv2.imread(img_path, 0)
-            else:
-                img1 = img_path
-            img2 = cv2.imread(candidates[n][1])
-
-            h, w = img1.shape
-            pts = np.float32([[0, 0],
-                              [0, h - 1],
-                              [w - 1, h - 1],
-                              [w - 1, 0]]).reshape(-1, 1, 2)
-            dst = cv2.perspectiveTransform(pts, all_transforms[n])
-            img2 = cv2.polylines(img2, [np.int32(dst)],
-                                 True, (255, 50, 255), 30, cv2.LINE_AA)
-
-            img3 = cv2.drawMatches(img1, kp,
-                                   img2, descriptors_kp[n],
-                                   all_matches[n], None, **draw_params)
-            logger.debug(img3.shape)
-            img3[:, :, 0], img3[:, :, 2] = img3[:, :, 2], img3[:, :, 0]
-            plt.imshow(img3)
-            logger.debug(all_transforms)
-            plt.show()
+        # if debug:
+        #     n = 1
+        #     draw_params = dict(matchColor=(0, 255, 0),
+        #                        singlePointColor=(255, 0, 0),
+        #                        matchesMask=all_matches_masks[n],
+        #                        flags=0)
+        #
+        #     if type(img_path) is str:
+        #         img1 = cv2.imread(img_path, 0)
+        #     else:
+        #         img1 = img_path
+        #     img2 = cv2.imread(candidates[n][1])
+        #
+        #     h, w = img1.shape
+        #     pts = np.float32([[0, 0],
+        #                       [0, h - 1],
+        #                       [w - 1, h - 1],
+        #                       [w - 1, 0]]).reshape(-1, 1, 2)
+        #     dst = cv2.perspectiveTransform(pts, all_transforms[n])
+        #     img2 = cv2.polylines(img2, [np.int32(dst)],
+        #                          True, (255, 50, 255), 30, cv2.LINE_AA)
+        #
+        #     img3 = cv2.drawMatches(img1, kp,
+        #                            img2, descriptors_kp[n],
+        #                            all_matches[n], None, **draw_params)
+        #     logger.debug(img3.shape)
+        #     img3[:, :, 0], img3[:, :, 2] = img3[:, :, 2], img3[:, :, 0]
+        #     plt.imshow(img3)
+        #     logger.debug(all_transforms)
+        #     plt.show()
 
         sv_candidates = sorted([(candidates[i],
                                  np.count_nonzero(all_matches_masks[i]))
                                 for i in range(len(verified))],
                                key=lambda x: x[1], reverse=True)
 
-        # TODO NOW
         # STEP 4. QUERY EXPANSION
         if qe_enable and new_query is None and np.count_nonzero(verified) < qe_limit:
             start = time.time()
             top_res = []
             for sv_candidate in sv_candidates[:qe_avg]:
-                sv_candidate_bow_raw = database_service.get_bow(self.db, sv_candidate[0][1])
-                sv_candidate_bow_raw = sv_candidate_bow_raw['bow']
-                sv_candidate_bow = self.deserialize_bow(sv_candidate_bow_raw)
+                sv_candidate_bow = self.bow[sv_candidate[0][0]].toarray()
                 top_res.append(sv_candidate_bow)
 
             one_more_query = (sum(top_res) + img_bovw) / (len(top_res) + 1)
+            one_more_query = one_more_query.reshape((-1, ))
             new_sv_candidates = self.search(img_path, n_candidates,
                                             topk, n_inliners_thr, max_verified,
                                             qe_avg, qe_limit, one_more_query,
@@ -830,72 +828,71 @@ class CBIRCore:
                                  if el[0][0] not in duplicates]
             sv_candidates = sorted(sv_candidates + new_sv_candidates,
                                    key=lambda x: x[1], reverse=True)
-
-        if qe_enable and new_query is None:
             logger.info("Query Expansion got in {}s".format(round(time.time() - start), 3))
 
-        self.log_answers(query_name, sv_candidates[:topk], sv_enable, qe_enable)
-        return sv_candidates[:topk]
+        # Epilog
+        result = sv_candidates[:topk]
+        time_getting_names = self.put_photo_names_to_result_return_time(result)
+        times += [('time_getting_names', time_getting_names)]
+        self.log_answers(query_name, result, sv_enable, qe_enable)
+        self.log_search_times(times)
+        return result
 
     def ransac(self, img_descriptor, kp, candidates,
                min_inliners, max_verified):
 
-        photo_descriptors_raw_iterator = database_service.get_photos_descriptors_by_names_iterator(
+        photo_descriptors_raw_iterator = database_service.get_photos_descriptors_by_rowids_iterator(
             self.db,
-            # TODO: `candidate[1]` because now it is this way for backward-compatibility.
-            # In the future I will choose ind or name as the only indentifier of a photo
-            [candidate[1]
+            [candidate[0]
              for candidate
              in candidates])
-        names_descriptors_kp_pair_iterator = ((photo_descriptor_raw['name'],
+        names_descriptors_kp_pair_iterator = ((photo_descriptor_raw['rowid'],
                                                self.deserialize_descriptor(photo_descriptor_raw['descriptor']))
-                                              for photo_descriptor_raw in photo_descriptors_raw_iterator)
+                                              for photo_descriptor_raw
+                                              in photo_descriptors_raw_iterator)
 
-        # Brute force matcher
         bf = cv2.BFMatcher(cv2.NORM_L2)
 
-        MIN_MATCH_COUNT = 10
+        MIN_MATCH_COUNT = 10  # 2 NOTE: smaller value for tests is better.
         all_matches = []
         all_matches_masks = []
         all_transforms = []
         candidates_rearranged = []
-
         verified = []
         n_verified = 0
 
-        # TODO: Now it is for backward-compatibility. Remove in the future
+        # Now it is for backward-compatibility. Remove in the future.
         descriptors_kp = []
 
-        for i, name_descriptor_kp_pair in enumerate(names_descriptors_kp_pair_iterator):
-            name = name_descriptor_kp_pair[0]
-            descriptor = name_descriptor_kp_pair[1][0]
-            descriptor_kp = name_descriptor_kp_pair[1][1]
-            descriptors_kp += [descriptor_kp]
-
-            # One candidate is pair of (some_id, name) for backward-compatibility
-            candidates_rearranged += [(None, name)]
+        for i, rowid_descriptor_kp_pair in enumerate(names_descriptors_kp_pair_iterator):
+            rowid = rowid_descriptor_kp_pair[0]
+            descriptor = rowid_descriptor_kp_pair[1][0]
+            descriptor_kp = rowid_descriptor_kp_pair[1][1]
 
             matches = bf.match(img_descriptor, descriptor)
+
             if len(matches) > MIN_MATCH_COUNT:
                 src_pts = np.float32([kp[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
                 dst_pts = np.float32([descriptor_kp[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
                 M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
                 matchesMask = mask.ravel().tolist()
+
+                descriptors_kp += [descriptor_kp]
+                # One candidate is pair of (some_id, name) for backward-compatibility
+                candidates_rearranged += [(rowid, None)]
+                all_matches.append(matches)
+                all_matches_masks.append(matchesMask)
+                all_transforms.append(M)
+
+                if np.count_nonzero(matchesMask) > min_inliners:
+                    verified.append(1)
+                    n_verified += 1
+                else:
+                    verified.append(0)
             else:
-                logger.debug("Not enough matches are found - {}/{}".format(len(matches),
+                logger.info("Not enough matches are found - {}/{}".format(len(matches),
                                                                            MIN_MATCH_COUNT))
-                matchesMask = None
-
-            all_matches.append(matches)
-            all_matches_masks.append(matchesMask)
-            all_transforms.append(M)
-
-            if np.count_nonzero(matchesMask) > min_inliners:
-                verified.append(1)
-                n_verified += 1
-            else:
-                verified.append(0)
 
             if n_verified == max_verified:
                 break

@@ -165,6 +165,25 @@ def get_photos_descriptors_by_names_iterator(
             return query.dicts().iterator()
 
 
+def get_photos_descriptors_by_rowids_iterator(
+        db,
+        rowids):
+    with MODELS_LOCK:
+        with db.bind_ctx([Photo]):
+            # return ({
+            #     'descriptor': Photo
+            #         .select(Photo.descriptor)
+            #         .where(Photo.name == name)[0].descriptor}
+            #     for name
+            #     in names)
+
+            # TODO: Order of photos is important or not?
+            query = (Photo
+                     .select(Photo.rowid, Photo.descriptor)
+                     .where(Photo.rowid << rowids))
+            return query.dicts().iterator()
+
+
 def get_photos_descriptors_for_training_iterator(db):
     with MODELS_LOCK:
         with db.bind_ctx([Photo, Word]):
