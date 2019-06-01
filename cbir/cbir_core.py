@@ -713,7 +713,7 @@ class CBIRCore:
         # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
 
         cycle_computing_ranks = True
-        computing_sims = False
+        computing_sims = True
         use_idf_in_cycled = False
 
         start = time.time()
