@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -50,7 +51,18 @@ def start_train_test(
         qe=qe,
         topk=topk, )
 
-    info = f'{(mAP, mAP_new)}'
+    evaluation_logger = logging.getLogger('profile.evaluation')
+    info_parts = []
+    info_parts += [f'train_dir={train_dir}']
+    info_parts += [f'test_dir={test_dir}']
+    info_parts += [f'sv={sv}']
+    info_parts += [f'qe={qe}']
+    info_parts += [f'topk={topk}']
+    # info_parts += [f'p_fine_max={p_fine_max}']
+    info_parts += [f'mAP={mAP}']
+    info_parts += [f'mAP_new={mAP_new}']
+    info = ','.join(info_parts)
+    evaluation_logger.info(info)
 
     with open(results_file, 'a') as fout:
         print(info, file=fout)
@@ -118,7 +130,19 @@ def start_test(
                                  sv_enable=sv, qe_enable=qe, p_fine_max=p_fine_max,
                                  topk=topk)
 
-    info = f'{(mAP, mAP_new)}'
+    evaluation_logger = logging.getLogger('profile.evaluation')
+    info_parts = []
+    info_parts += [f'database_name={database_name}']
+    info_parts += [f'index_name={index_name}']
+    info_parts += [f'sv={sv}']
+    info_parts += [f'qe={qe}']
+    info_parts += [f'topk={topk}']
+    info_parts += [f'p_fine_max={p_fine_max}']
+    info_parts += [f'mAP={mAP}']
+    info_parts += [f'mAP_new={mAP_new}']
+    info = ','.join(info_parts)
+    evaluation_logger.info(info)
+
     with open(results_file, 'a') as fout:
         print(info, file=fout)
 

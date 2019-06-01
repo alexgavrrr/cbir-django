@@ -29,6 +29,7 @@ def configure_logging(
     computing_descriptors = str(Path(prefix) / 'computing_descriptors.txt')
     training_clusterer = str(Path(prefix) / 'training_clusterer.txt')
     add_images_to_index = str(Path(prefix) / 'add_images_to_index.txt')
+    evaluation = str(Path(prefix) / 'evaluation.txt')
 
     answers = str(Path(prefix) / 'answers.txt')
 
@@ -76,6 +77,11 @@ def configure_logging(
                 'class': 'logging.FileHandler',
                 'filename': answers
             },
+            'profile.evaluation': {
+                'level': 'DEBUG',
+                'class': 'logging.FileHandler',
+                'filename': evaluation
+            },
 
             'console': {
                 'level': 'DEBUG',
@@ -121,6 +127,11 @@ def configure_logging(
             },
             'profile.answers': {
                 'handlers': ['profile.answers'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+            'profile.evaluation': {
+                'handlers': ['profile.evaluation'],
                 'level': 'DEBUG',
                 'propagate': True,
             },
