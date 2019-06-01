@@ -712,15 +712,6 @@ class CBIRCore:
             )
             return euclidean_distances(bow, (query[:-1] / query[-1]).reshape(1, -1)).reshape((-1,))
 
-        # print(f'AAA bow_candidates_without_last_col.shape: {bow_candidates_without_last_col.shape}')
-        # print(f'AAA bow_candidates_last_col.shape: {bow_candidates_last_col.shape}')
-        # print(f'AAA bow_candidates_without_last_col.toarray(): {bow_candidates_without_last_col.toarray()}')
-        # print(f'AAA bow_candidates_last_col: {bow_candidates_last_col}')
-        # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).toarray()}')
-        # print(f'idf.reshape(1, -1): {idf.reshape(1, -1)}')
-        # print(f'divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray(): {divide_sparse_on_vec(bow_candidates_without_last_col, bow_candidates_last_col).multiply(idf.reshape(1, -1)).toarray()}')
-        # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
-
         cycle_computing_ranks = False
         computing_sims = False
         use_idf_in_cycled = True
@@ -770,16 +761,12 @@ class CBIRCore:
 
         start = time.time()
         # TODO: np.topk_arg try.
-        # print(f'AAA Candidates by inv: {candidates}')
-        print(f'AAA ranks: {ranks}')
         if computing_sims:
             ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
         else:
             ranks_sorted_args = np.argsort(ranks)[:n_candidates]
-        print(f'AAA ranks_sorted_args: {ranks_sorted_args}')
 
         candidates_chosen = np.array(candidates)[ranks_sorted_args]
-        print(f'AAA candidates_chosen: {candidates_chosen}')
 
         candidates = [(candidate_chosen_now, None) for candidate_chosen_now in candidates_chosen]
         time_preliminary_sorting = round(time.time() - start, 3)
