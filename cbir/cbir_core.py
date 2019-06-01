@@ -736,7 +736,7 @@ class CBIRCore:
 
         start = time.time()
         # TODO: np.topk_arg try.
-        print(f'AAA Candidates by inv: {candidates}')
+        # print(f'AAA Candidates by inv: {candidates}')
         print(f'AAA ranks: {ranks}')
         if computing_sims:
             ranks_sorted_args = np.argsort(-ranks)[:n_candidates]
