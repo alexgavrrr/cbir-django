@@ -41,6 +41,9 @@ def create_parser():
     evaluate_parser.add_argument('--des_type', required=True)
     evaluate_parser.add_argument('--sv', action='store_true', default=False)
     evaluate_parser.add_argument('--qe', action='store_true', default=False)
+    evaluate_parser.add_argument('--p_fine_max', type=float, required=False, default=None)
+    evaluate_parser.add_argument('--topk', type=int, required=False)
+
 
     evaluate_only_parser = subparsers.add_parser('evaluate_only',
                                                  help='Evaluate CBIRCore pipeline witn already built index')
@@ -51,6 +54,8 @@ def create_parser():
     evaluate_only_parser.add_argument('--sv', action='store_true', default=False)
     evaluate_only_parser.add_argument('--qe', action='store_true', default=False)
     evaluate_only_parser.add_argument('--p_fine_max', type=float, required=False, default=None)
+    evaluate_only_parser.add_argument('--topk', type=int, required=False)
+
 
     create_index_parser = subparsers.add_parser('create_index',
                                                  help='Create CBIR Index')

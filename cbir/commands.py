@@ -84,6 +84,7 @@ def evaluate(
         des_type,
         sv,
         qe,
+        topk,
         **kwargs):
     train_dir, test_dir, gt_dir = _init_dirs(train_dir, test_dir, gt_dir, is_sample)
     cbir_evaluation.start_evaluation.start_train_test(
@@ -92,18 +93,21 @@ def evaluate(
         gt_dir,
         des_type=des_type,
         sv=sv,
-        qe=qe)
+        qe=qe,
+        topk=topk)
 
 
 def evaluate_only(
         database_name, index_name, database_photos_dir, gt_dir,
         sv, qe,
         p_fine_max,
+        topk,
         **kwargs):
     cbir_evaluation.start_evaluation.start_test(
         database_name, index_name, database_photos_dir, gt_dir,
         sv, qe,
-        p_fine_max)
+        p_fine_max=p_fine_max,
+        topk=topk)
 
 
 def create_empty_if_needed(

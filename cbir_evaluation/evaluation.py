@@ -130,7 +130,8 @@ def AP_new(query_and_gt_images, answer_images, debug=False):
 def evaluate(train_dir, test_dir, gt_dir,
              algo_params,
              sv_enable=True, qe_enable=True,
-             topk=5, n_test_candidates=100, ):
+             topk=None, n_test_candidates=100, ):
+    topk = topk or 5
     def _validate_algo_params(params):
         for key in ['des_type', 'max_keypoints', 'K', 'L']:
             if key not in params.keys():
@@ -231,8 +232,9 @@ def evaluate(train_dir, test_dir, gt_dir,
 
 def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
                   sv_enable=True, qe_enable=True,
-                  topk=5, n_test_candidates=100,
+                  topk=None, n_test_candidates=100,
                   p_fine_max=None):
+    topk = topk or 5
     cbir_core = CBIRCore.get_instance(database_name, index_name)
     cbir_core.set_fd(cbir_core.load_fd())
     cbir_core.set_ca(cbir_core.load_ca())
