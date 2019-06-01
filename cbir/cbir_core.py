@@ -713,7 +713,8 @@ class CBIRCore:
         # print(f'(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1): {(img_bovw[:-1] / img_bovw[-1] * idf).reshape(-1, 1)}')
 
         cycle_computing_ranks = True
-        computing_sims = True
+        computing_sims = False
+        use_idf_in_cycled = False
 
         start = time.time()
         ranks = None
@@ -730,18 +731,28 @@ class CBIRCore:
                 ranks = []
                 for candidate in candidates:
                     candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
-                    ranks.append(np.sum((
-                            (img_bovw[:-1] / img_bovw[-1] * idf)
-                            * (candidate_bow[:-1] / candidate_bow[-1] * idf)
-                    )))
+                    if use_idf_in_cycled:
+                        ranks.append(np.sum((
+                                (img_bovw[:-1] / img_bovw[-1] * idf)
+                                * (candidate_bow[:-1] / candidate_bow[-1] * idf)
+                        )))
+                    else:
+                        ranks.append(np.sum((
+                                (img_bovw[:-1] / img_bovw[-1])
+                                * (candidate_bow[:-1] / candidate_bow[-1])
+                        )))
                 ranks = np.array(ranks)
 
             else:
                 ranks = []
                 for candidate in candidates:
                     candidate_bow = np.array(self.bow[candidate].todense(), dtype=np.float).flatten()
-                    ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
-                                                       candidate_bow[:-1] / candidate_bow[-1] * idf))
+                    if use_idf_in_cycled:
+                        ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1] * idf,
+                                                           candidate_bow[:-1] / candidate_bow[-1] * idf))
+                    else:
+                        ranks.append(euclidean(img_bovw[:-1] / img_bovw[-1],
+                                                           candidate_bow[:-1] / candidate_bow[-1]))
                 ranks = np.array(ranks)
 
         time_computing_ranks = round(time.time() - start, 3)
