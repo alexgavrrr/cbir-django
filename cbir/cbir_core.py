@@ -1150,10 +1150,13 @@ class CBIRCore:
 
 
     def serialize_descriptor(self, descriptor):
+        # return pickle.dumps((descriptor[0],
+        #                      [p.pt[0] for p in descriptor[1]],
+        #                      [p.pt[1] for p in descriptor[1]],
+        #                      [p.size for p in descriptor[1]]),
+        #                     protocol=pickle.HIGHEST_PROTOCOL)
         return pickle.dumps((descriptor[0],
-                             [p.pt[0] for p in descriptor[1]],
-                             [p.pt[1] for p in descriptor[1]],
-                             [p.size for p in descriptor[1]]),
+                             [(p.pt[0], p.pt[1], p.size) for p in descriptor[1]]),
                             protocol=pickle.HIGHEST_PROTOCOL)
 
     def deserialize_descriptor(self, descriptor):
