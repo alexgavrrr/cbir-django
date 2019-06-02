@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
-import pqkmeans
+# import pqkmeans
 
 
 # class VocabularyTree:
