@@ -89,6 +89,11 @@ def create_parser():
     search_parser.add_argument('--qe', action='store_true', default=False)
     search_parser.add_argument('--p_fine_max', type=float, required=False, default=None)
 
+    run_server_parser = subparsers.add_parser('run_server',
+                                          help='Run server')
+    run_server_parser.add_argument('--port', type=int, required=True)
+    run_server_parser.add_argument('--nthreads', type=int, required=False)
+
     return parser
 
 

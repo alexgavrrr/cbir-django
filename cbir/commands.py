@@ -258,3 +258,11 @@ def search(
         query,
         **search_params)
     print(result)
+
+
+def run_server(
+        port,
+        nthreads,
+        **kwargs, ):
+    import cbir.server
+    cbir.server.run(port, nthreads)
