@@ -1,13 +1,15 @@
 import zipfile
 from zipfile import BadZipFile
 
+from PIL import Image
 from django import forms
 from django.forms import ModelForm
 
 from .models import (Database,
                      Event,
                      DatabasePhoto,
-                     CBIRIndex, )
+                     CBIRIndex,
+                     EventPhoto)
 
 FILE_MAX_LENGTH = 100
 
@@ -67,8 +69,8 @@ class DatabaseForm(ModelForm):
 class EventForm(ModelForm):
     query_photos = forms.ImageField(required=False,
                                     label='query photos',
-                                    widget=forms.ClearableFileInput(attrs={'multiple': True}))
-    query_photos_from_database = forms.ModelMultipleChoiceField(DatabasePhoto.objects.all(),
+                                    widget=forms.ClearableFileInput())
+    query_photo_from_database = forms.ModelChoiceField(DatabasePhoto.objects.all(),
                                                                 required=False,
                                                                 label='query photos from database')
     qe = forms.BooleanField(required=False, initial=False, label='qe',
@@ -81,17 +83,25 @@ class EventForm(ModelForm):
                                               help_text='Photos with similarity value below than threshold are not returned. '
                                                         'Default is none which means -inf.')
 
+    x = forms.FloatField(widget=forms.HiddenInput(), required=False)
+    y = forms.FloatField(widget=forms.HiddenInput(), required=False)
+    width = forms.FloatField(widget=forms.HiddenInput(), required=False)
+    height = forms.FloatField(widget=forms.HiddenInput(), required=False)
+
     class Meta:
         model = Event
         fields = ['date_added', 'title', 'slug', 'description', 'database', 'cbir_index']
+        widgets = {
+            'query_photos': forms.FileInput(attrs={
+                'accept': 'image/*'  # this is not an actual validation! don't rely on that!
+            })
+        }
 
     def clean(self):
         cleaned_data = super().clean()
         database = cleaned_data.get('database')
 
-        if not database:
-            return cleaned_data
-        else:
+        if database:
             cleaned_data['cbir_index'] = cleaned_data['cbir_index'] or database.cbir_index_default
             cbir_index = cleaned_data['cbir_index']
 
@@ -100,7 +110,8 @@ class EventForm(ModelForm):
             elif cbir_index.database != database:
                 self.add_error('cbir_index', f'Chosen cbir_index {cbir_index} corresponds to another database')
 
-            return cleaned_data
+        return cleaned_data
+
 
 
 class CbirIndexForm(ModelForm):

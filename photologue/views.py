@@ -238,7 +238,8 @@ def event_create_view(request):
             query_photo_from_database = form.cleaned_data.get('query_photo_from_database')
             query_photos_uploded = request.FILES.getlist('query_photos')
             if (len(query_photos_uploded) >= 2
-                    or (len(query_photos_uploded) == 1 and query_photo_from_database)):
+                    or (len(query_photos_uploded) == 1 and query_photo_from_database)
+                    or (len(query_photos_uploded) == 0 and not query_photo_from_database)):
                 logger.warning('Must be one photo')
                 form.add_error('query_photos', 'Exactly one photo must be submitted')
                 context['form'] = form
@@ -250,9 +251,19 @@ def event_create_view(request):
             # Handling new uploaded images
             count_new_photos = 0
             for file_image in query_photos_uploded:
+                x = form.cleaned_data.get('x')
+                y = form.cleaned_data.get('y')
+                w = form.cleaned_data.get('width')
+                h = form.cleaned_data.get('height')
                 database_photo = models.DatabasePhoto(database=database,
                                                       image=file_image)
                 database_photo.save_when_name_not_inited()
+
+                if not (x is None or y is None or w is None or h is None):
+                    image = Image.open(database_photo.image)
+                    resulting_file_image = image.crop((x, y, w+x, h+y))
+                    # resulting_file_image = resulting_file_image.resize((200, 200), Image.ANTIALIAS)
+                    resulting_file_image.save(database_photo.image.path)
 
                 event_photo = models.EventPhoto(event=event,
                                                 is_query=True,
