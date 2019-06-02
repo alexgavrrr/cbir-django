@@ -1161,24 +1161,7 @@ class CBIRCore:
 
     def deserialize_descriptor(self, descriptor):
         descriptor = pickle.loads(descriptor)
-        return (descriptor[0], [cv2.KeyPoint(*el) for el in zip(descriptor[1], descriptor[2], descriptor[3])])
-
-    def serialize_bow(self, bow):
-        # TODONOW: change from coo_matrix to csr_matrix?
-        bow_sparse = sparse.coo_matrix(bow)
-        return pickle.dumps(bow_sparse)
-
-    def deserialize_bow(self, bow):
-        bow_sparse = pickle.loads(bow)
-        bow = bow_sparse.toarray().squeeze()
-        return bow
-
-    def serialize_word_photos(self, word_photos):
-        word_photos = pickle.dumps(word_photos)
-        return word_photos
-
-    def deserialize_word_photos(self, word_photos):
-        return pickle.loads(word_photos)
+        return (descriptor[0], [cv2.KeyPoint(*el) for el in descriptor[1]])
 
     decorator_load_ca_if_needed = staticmethod(decorator_load_ca_if_needed)
 

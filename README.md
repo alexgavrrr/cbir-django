@@ -102,7 +102,7 @@ sample 10 5
 
 
 100k 10 4
-`python cbir_main.py --log_prefix logs/100k_10_4 create_index --K 10 --L 4 d-100k i-1 data/Buildings/Original/Oxford/jpg 8`
+`python cbir_main.py --log_prefix logs/100k_10_4 create_index --K 10 --L 4 d-100k i-1 data/Buildings/Original/Oxford/jpg 100000`
 
 `python cbir_main.py --log_prefix logs/100k_10_4 search d-100k i-1 data/Buildings/Original/Oxford/jpg/all_souls_000013.jpg --topk 10` 
 
@@ -115,4 +115,23 @@ sample 10 5
 
 `...`
 
-scp -r data/Buildings/Original/Oxford_sample/jpg/distractor gavr@40.114.26.173:~/main/cbir-django/data/Buildings/Original/Oxford_sample/jpg/distractor
+scp -r gavr@40.114.26.173:~/main/cbir-django/logs/100k_10_4 saved_logs
+
+scp -r gavr@40.121.12.226:~/main/cbir-py-prototype/logs/hardnet_10_4 saved_logs
+
+scp -r gavr@40.121.12.226:~/main/cbir-py-prototype/logs/result* saved_logs/original
+
+scp -r gavr@13.82.228.62:~/main/cbir-django/logs/default saved_logs/my_old_10k_10_4
+
+python cbir_main.py --log_prefix logs/100k_10_5 change_params --K 10 --L 5 d-100k i-1
+
+--inspect index
+
+python cbir_main.py --log_prefix logs/100k_10_5 search d-100k i-1 data/Buildings/Original/Oxford/jpg/all_souls_000013.jpg --topk 10 --p_fine_max 0.5
+ or --p_fine_max 0.1
+ 
+--inspect answers
+
+python cbir_main.py --log_prefix logs/100k_10_5 evaluate_only d-100k i-1 data/Buildings/Original/Oxford/jpg data/Buildings/Original/Oxford/gt  --p_fine_max TODO --sv --qe
+
+scp -r gavr@40.76.75.111:~/main/cbir-django/logs/vectorized_sparse_dists_with_idf_refactored saved_logs/vectorized_sparse_dists_with_idf_refactored
