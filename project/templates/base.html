@@ -32,16 +32,9 @@
     <div class="collapse navbar-collapse navbar-ex1-collapse">
         <ul class="nav navbar-nav">
             <li class="home"><a href="/">Home</a></li>
-            <li class="dropdown">
-                <a data-target="#" href="" class="dropdown-toggle" data-toggle="dropdown">
-                    Database<b class="caret"></b>
-                </a>
-                <ul class="dropdown-menu">
-                    <li class="sub-page"><a href="{% url 'photologue:database_list' %}">Databases</a></li>
-                    <li class="sub-page"><a href="{% url 'photologue:event_list' %}">Events</a></li>
-                    <li class="sub-page"><a href="{% url 'photologue:database_index_list' %}">Indexes</a></li>
-                </ul>
-            </li>
+            <li class="home"><a href="{% url 'photologue:database_list' %}">Databases</a></li>
+            <!--<li class="home"><a href="{% url 'photologue:event_list' %}">Events</a></li>-->
+            <!--<li class="home"><a href="{% url 'photologue:database_index_list' %}">Indexed</a></li>-->
         </ul>
     </div><!-- /.navbar-collapse -->
 </nav>
