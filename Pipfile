@@ -31,6 +31,7 @@ torchvision = "==0.2.1"
 tqdm = "==4.29.1"
 Cycler = "==0.10.0"
 peewee = "==3.9.4"
+pipfile = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
