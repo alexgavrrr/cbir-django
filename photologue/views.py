@@ -235,22 +235,21 @@ def event_create_view(request):
         form = forms.EventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save(commit=False)
+            query_photo_from_database = form.cleaned_data.get('query_photo_from_database')
+            query_photos_uploded = request.FILES.getlist('query_photos')
+            if (len(query_photos_uploded) >= 2
+                    or (len(query_photos_uploded) == 1 and query_photo_from_database)):
+                logger.warning('Must be one photo')
+                form.add_error('query_photos', 'Exactly one photo must be submitted')
+                context['form'] = form
+                return render(request, 'photologue/event_create.html', context)
+
             event.status = 'search'
             event.save()
 
-            # Handling images chosen from existing ones in a database
-            query_photos_from_database = form.cleaned_data.get('query_photos_from_database')
-            for query_photo_from_database in query_photos_from_database:
-                event_photo = models.EventPhoto(event=event,
-                                                is_query=True,
-                                                # description=...,
-                                                # description_file=...,
-                                                database_photo=query_photo_from_database, )
-                event_photo.save()
-
             # Handling new uploaded images
             count_new_photos = 0
-            for file_image in request.FILES.getlist('query_photos'):
+            for file_image in query_photos_uploded:
                 database_photo = models.DatabasePhoto(database=database,
                                                       image=file_image)
                 database_photo.save_when_name_not_inited()
@@ -260,6 +259,14 @@ def event_create_view(request):
                                                 database_photo=database_photo, )
                 event_photo.save()
                 count_new_photos += 1
+
+            if query_photo_from_database:
+                event_photo = models.EventPhoto(event=event,
+                                                is_query=True,
+                                                # description=...,
+                                                # description_file=...,
+                                                database_photo=query_photo_from_database, )
+                event_photo.save()
 
             database.count = database.count + count_new_photos
             database.save()
