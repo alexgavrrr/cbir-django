@@ -76,8 +76,7 @@
 
     <h4>Photos</h4>
     <ul>
-        {% if database.sample_photos %}
-        {% for photo in database.sample_photos %}
+        {% for photo in photos_to_give %}
         <li>
             <a href="{{ photo.get_absolute_url }}">
                 {{ photo }}
@@ -87,9 +86,30 @@
 
         </li>
         {% endfor %}
-        {% else %}
-        --
-        {% endif %}
+
+        {% if photos_to_give.has_other_pages %}
+  <ul class="pagination">
+    {% if photos_to_give.has_previous %}
+      <li><a href="?page={{ photos_to_give.previous_page_number }}">&laquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&laquo;</span></li>
+    {% endif %}
+    {% for i in photos_to_give.paginator.page_range %}
+      {% if photos_to_give.number == i %}
+        <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+      {% else %}
+        <li><a href="?page={{ i }}">{{ i }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if photos_to_give.has_next %}
+      <li><a href="?page={{ photos_to_give.next_page_number }}">&raquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&raquo;</span></li>
+    {% endif %}
+  </ul>
+
+{% endif %}
+
     </ul>
 
 

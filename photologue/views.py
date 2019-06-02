@@ -13,12 +13,17 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import ListView, DetailView
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+
 from tqdm import tqdm
 
 from . import forms
 from . import models
 
+
 logger = logging.getLogger('photologue.views')
+
+PAGINATE_PHOTOS_BY = 2
 
 
 class DatabaseListView(ListView):
@@ -38,6 +43,19 @@ class DatabaseDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['events'] = context['database'].get_events(limit=None)
+        photos = models.DatabasePhoto.objects.filter(database=self.get_object())
+
+        paginator = Paginator(photos, PAGINATE_PHOTOS_BY)
+        page = self.request.GET.get('page')
+        photos_to_give = None
+        try:
+            photos_to_give = paginator.page(page)
+        except PageNotAnInteger:
+            photos_to_give = paginator.page(1)
+        except EmptyPage:
+            photos_to_give = paginator.page(paginator.num_pages)
+
+        context['photos_to_give'] = photos_to_give
         return context
 
 
@@ -209,14 +227,48 @@ def event_detail_view(request, slug):
             return render(request, 'photologue/event_detail_search.html', context)
         elif event_status == 'basket':
             context['query_photos'] = event.get_query_photos()
+
             found_photos = event.get_found_photos()
-            context['found_photos'] = found_photos
+            paginator = Paginator(found_photos, PAGINATE_PHOTOS_BY)
+            page = request.GET.get('page', 1)
+            found_photos_to_give = None
+            try:
+                found_photos_to_give = paginator.page(page)
+            except PageNotAnInteger:
+                found_photos_to_give = paginator.page(1)
+            except EmptyPage:
+                found_photos_to_give = paginator.page(paginator.num_pages)
+
             chosen_photos = event.get_chosen_photos()
-            context['chosen_photos'] = chosen_photos
+            paginator = Paginator(chosen_photos, PAGINATE_PHOTOS_BY)
+            page = request.GET.get('page', 1)
+
+            # NOTE: We do not paginate chosen_photos because we want all chosen photos to be displayed at once. Otherwise bug.
+            # chosen_photos_to_give = None
+            # try:
+            #     chosen_photos_to_give = paginator.page(page)
+            # except PageNotAnInteger:
+            #     chosen_photos_to_give = paginator.page(1)
+            # except EmptyPage:
+            #     chosen_photos_to_give = paginator.page(paginator.num_pages)
+
+
+            context['found_photos_to_give'] = found_photos_to_give
+            context['chosen_photos_to_give'] = chosen_photos
             return render(request, 'photologue/event_detail_basket.html', context)
         elif event_status == 'ready':
             result_photos = event.get_result_photos()
-            context['result_photos'] = result_photos
+            paginator = Paginator(result_photos, PAGINATE_PHOTOS_BY)
+            page = request.GET.get('page', 1)
+            result_photos_to_give = None
+            try:
+                result_photos_to_give = paginator.page(page)
+            except PageNotAnInteger:
+                result_photos_to_give = paginator.page(1)
+            except EmptyPage:
+                result_photos_to_give = paginator.page(paginator.num_pages)
+
+            context['result_photos_to_give'] = result_photos_to_give
             context['query_photos'] = event.get_query_photos()
             event_baskets = event.database.get_event_baskets()
             context['event_baskets'] = event_baskets

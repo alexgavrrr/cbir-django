@@ -12,7 +12,7 @@
             <option value="add">Add</option>
         </select>
         <br><br>
-        {% for photo in found_photos %}
+        {% for photo in found_photos_to_give %}
         <li>
             <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
             <a href="{{ photo.database_photo.get_absolute_url }}">
@@ -24,6 +24,29 @@
         {% endfor %}
         <br>
     </form>
+
+    {% if found_photos_to_give.has_other_pages %}
+  <ul class="pagination">
+    {% if found_photos_to_give.has_previous %}
+      <li><a href="?page={{ found_photos_to_give.previous_page_number }}">&laquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&laquo;</span></li>
+    {% endif %}
+    {% for i in found_photos_to_give.paginator.page_range %}
+      {% if found_photos_to_give.number == i %}
+        <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+      {% else %}
+        <li><a href="?page={{ i }}">{{ i }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if found_photos_to_give.has_next %}
+      <li><a href="?page={{ found_photos_to_give.next_page_number }}">&raquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&raquo;</span></li>
+    {% endif %}
+  </ul>
+    {% endif %}
+
 </ul>
 
 <h3>Chosen photos:</h3>
@@ -32,7 +55,7 @@
         {% csrf_token %}
         <input type="submit" value="commit"><br>
         <input type="hidden" name="do" value="commit"><br>
-        {% for photo in chosen_photos %}
+        {% for photo in chosen_photos_to_give %}
         <li>
             <a href="{{ photo.database_photo.get_absolute_url }}">
                 <p>{{ photo }}</p>
@@ -43,6 +66,29 @@
         </li>
         {% endfor %}
     </form>
+
+    {% if chosen_photos_to_give.has_other_pages %}
+  <ul class="pagination">
+    {% if chosen_photos_to_give.has_previous %}
+      <li><a href="?page={{ chosen_photos_to_give.previous_page_number }}">&laquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&laquo;</span></li>
+    {% endif %}
+    {% for i in chosen_photos_to_give.paginator.page_range %}
+      {% if chosen_photos_to_give.number == i %}
+        <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+      {% else %}
+        <li><a href="?page={{ i }}">{{ i }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if chosen_photos_to_give.has_next %}
+      <li><a href="?page={{ chosen_photos_to_give.next_page_number }}">&raquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&raquo;</span></li>
+    {% endif %}
+  </ul>
+    {% endif %}
+
 </ul>
 
 <div><a href="{% url 'photologue:database_detail' event.database.slug %}"

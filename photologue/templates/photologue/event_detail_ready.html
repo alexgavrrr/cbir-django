@@ -19,7 +19,7 @@
             {% endfor %}
         </select>
         <br><br>
-        {% for photo in result_photos %}
+        {% for photo in result_photos_to_give %}
         <li>
             <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
             <a href="{{ photo.database_photo.get_absolute_url }}">
@@ -32,7 +32,30 @@
         {% endfor %}
         <br>
     </form>
-</ul>
+
+    {% if result_photos_to_give.has_other_pages %}
+  <ul class="pagination">
+    {% if result_photos_to_give.has_previous %}
+      <li><a href="?page={{ result_photos_to_give.previous_page_number }}">&laquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&laquo;</span></li>
+    {% endif %}
+    {% for i in result_photos_to_give.paginator.page_range %}
+      {% if result_photos_to_give.number == i %}
+        <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+      {% else %}
+        <li><a href="?page={{ i }}">{{ i }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if result_photos_to_give.has_next %}
+      <li><a href="?page={{ result_photos_to_give.next_page_number }}">&raquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&raquo;</span></li>
+    {% endif %}
+  </ul>
+{% endif %}
+
+    </ul>
 
 <div><a href="{% url 'photologue:database_detail' event.database.slug %}"
         class="btn btn-default">
