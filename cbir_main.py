@@ -94,6 +94,16 @@ def create_parser():
     run_server_parser.add_argument('--port', type=int, required=True)
     run_server_parser.add_argument('--nthreads', type=int, required=False)
 
+    run_client_parser = subparsers.add_parser('run_client',
+                                          help='Run client')
+    run_client_parser.add_argument('database')
+    run_client_parser.add_argument('index')
+    run_client_parser.add_argument('query')
+    run_client_parser.add_argument('--port', type=int, required=True)
+    run_client_parser.add_argument('--sv', action='store_true', default=False)
+    run_client_parser.add_argument('--qe', action='store_true', default=False)
+    run_client_parser.add_argument('--topk', type=int, required=False)
+
     return parser
 
 

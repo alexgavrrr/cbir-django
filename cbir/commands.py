@@ -266,3 +266,20 @@ def run_server(
         **kwargs, ):
     import cbir.server
     cbir.server.run(port, nthreads)
+
+
+def run_client(
+        port,
+        database,
+        index,
+        query,
+        topk,
+        sv, qe,
+        **kwargs, ):
+    import cbir.client
+    cbir.client.run(
+        port,
+        database, index,
+        query,
+        topk,
+        sv, qe)

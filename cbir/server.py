@@ -1,10 +1,14 @@
+import logging
 import sys
 import socketserver
 import time
+from collections import defaultdict
 
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
 import xmlrpc.client
+
+from cbir.cbir_core import CBIRCore
 
 
 class RequestHandler(SimpleXMLRPCRequestHandler):
@@ -15,7 +19,7 @@ class RPCThreadingServer(socketserver.ThreadingMixIn, SimpleXMLRPCServer):
     pass
 
 
-COUNTER = 0
+CBIR_CORES = defaultdict(lambda: defaultdict(lambda: None))
 
 
 def run(port, nthreads):
@@ -24,29 +28,29 @@ def run(port, nthreads):
 
         server.register_introspection_functions()
 
-        server.register_function(pow)
-
-        @server.register_function(name='add')
-        def adder_function(x, y):
-            return x + y
-
         @server.register_function
-        def increment_counter(x):
-            global COUNTER
+        def search(database, name, query, search_params):
+            logger = logging.getLogger()
+            cbir_core = CBIR_CORES[database][name]
+            if cbir_core is None:
+                cbir_core = CBIRCore.get_instance(database, name)
 
-            COUNTER += x
-            return COUNTER
+                start = time.time()
+                logger.info(f'Loading fd, ca, bow, inv for {database}-{name}...')
+                cbir_core.set_fd(cbir_core.load_fd())
+                cbir_core.set_ca(cbir_core.load_ca())
+                cbir_core.set_bow(cbir_core.load_bow())
+                cbir_core.set_inv(cbir_core.load_inv())
+                CBIR_CORES[database][name] = cbir_core
+                time_loading = round(time.time() - start, 3)
+                logger.info(f'Loaded fd, ca, bow, inv for {time_loading} sec.')
+            else:
+                logger.info(f'cbir_core {database}-{name} already loaded')
 
-        @server.register_function
-        def sleep(x):
-            print(f'Sleep {x} sec...')
-            time.sleep(x)
-            return x
+            result = cbir_core.search(query, **search_params)
+            return result
 
-        @server.register_function
-        def mul(x, y):
-            return x * y
-
+        print(f'Listening on port {port}')
         try:
             server.serve_forever()
         except KeyboardInterrupt:
@@ -55,23 +59,7 @@ def run(port, nthreads):
 
 
 if __name__ == '__main__':
-    port = 8701
     if sys.argv[1] == 's':
-        run(port, 4)
+        pass
     elif sys.argv[1] == 'c':
-        s = xmlrpc.client.ServerProxy(f'http://localhost:{8701}')
-        print(s.increment_counter(1))
-        print(s.system.listMethods())
-    elif sys.argv[1] == 'cm':
-        s = xmlrpc.client.ServerProxy(f'http://localhost:{8701}')
-        count = int(sys.argv[2])
-        for i in range(count):
-            res = s.increment_counter(1)
-            if i == 500:
-                print(res)
-        print(res)
-    elif sys.argv[1] == 'cs':
-        s = xmlrpc.client.ServerProxy(f'http://localhost:{8701}')
-        count = int(sys.argv[2])
-        s.sleep(count)
-        print(f'Slept {count} sec')
+        pass
