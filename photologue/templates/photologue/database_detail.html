@@ -73,19 +73,15 @@
         {% endif %}
     </ul>
 
-
     <h4>Photos</h4>
     <ul>
+        <div class="row col-lg-12">
         {% for photo in photos_to_give %}
-        <li>
             <a href="{{ photo.get_absolute_url }}">
-                {{ photo }}
+                <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
             </a>
-            <br>
-            <img src="{{ photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.title }}">
-
-        </li>
         {% endfor %}
+        </div>
 
         {% if photos_to_give.has_other_pages %}
   <ul class="pagination">

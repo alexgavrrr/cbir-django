@@ -2,6 +2,9 @@
 {% load i18n %}
 
 {% block event_detail_content %}
+
+<hr width="100%" style="height:5px; background-color:black;">
+
 <h3>Found photos:</h3>
 <ul>
     <form method="post" action="" name="do">
@@ -12,16 +15,26 @@
             <option value="add">Add</option>
         </select>
         <br><br>
+        <div class="row col-lg-12">
         {% for photo in found_photos_to_give %}
-        <li>
+            <div class="col-sm-2">
+                <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
+                <br>
+            <a href="{{ photo.database_photo.get_absolute_url }}">
+                <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
+            </a>
+            </div>
+        {% endfor %}
+        </div>
+
+        {% for photo in result_photos_to_give %}
             <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
             <a href="{{ photo.database_photo.get_absolute_url }}">
-                <p>{{ photo }}</p>
+                <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
             </a>
-            <p>Similarity: {{ photo.similarity }}</p>
-            <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
-        </li>
         {% endfor %}
+
+
         <br>
     </form>
 
@@ -49,22 +62,25 @@
 
 </ul>
 
+<hr width="100%" style="height:5px; background-color:black;">
+
 <h3>Chosen photos:</h3>
 <ul>
     <form method="post" action="" name="commit">
         {% csrf_token %}
         <input type="submit" value="commit"><br>
         <input type="hidden" name="do" value="commit"><br>
+        <div class="row col-lg-12">
         {% for photo in chosen_photos_to_give %}
-        <li>
-            <a href="{{ photo.database_photo.get_absolute_url }}">
-                <p>{{ photo }}</p>
-            </a>
-            <input type="text" name="description" value="{{photo.description}}">
-            <br>
-            <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
-        </li>
+            <div class="col-sm-2">
+                <input type="text" name="description" value="{{photo.description}}">
+                <br>
+                <a href="{{ photo.database_photo.get_absolute_url }}">
+                <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
+                </a>
+            </div>
         {% endfor %}
+        </div>
     </form>
 
     {% if chosen_photos_to_give.has_other_pages %}
