@@ -1,3 +1,6 @@
+import xmlrpc
+import xmlrpc.client
+
 import numpy as np
 import os
 from pathlib import Path
@@ -242,7 +245,9 @@ def search(
         n_candidates, topk,
         sv, qe,
         p_fine_max,
+        cbir_server_port=None,
         **kwargs):
+    cbir_server_port = cbir_server_port or 8701
 
     search_params = {}
     if n_candidates:
@@ -253,10 +258,8 @@ def search(
     search_params['qe_enable'] = qe
     search_params['p_fine_max'] = p_fine_max
 
-    cbir_core = CBIRCore.get_instance(database_name, index_name)
-    result = cbir_core.search(
-        query,
-        **search_params)
+    cbir_server = xmlrpc.client.ServerProxy(f'http://localhost:{cbir_server_port}', allow_none=True)
+    result = cbir_server.search(database_name, index_name, query, search_params)
     print(result)
 
 

@@ -4,7 +4,7 @@ import xmlrpc.client
 def run(
         port,
         database,
-        name,
+        index,
         query,
         topk,
         sv,
@@ -19,7 +19,7 @@ def run(
         'n_candidates': 100,
     }
 
-    result = s.search(database, name, query, search_params)
+    result = s.search(database, index, query, search_params)
     print(f'Result: {result}')
 
 

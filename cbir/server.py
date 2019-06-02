@@ -29,23 +29,23 @@ def run(port, nthreads):
         server.register_introspection_functions()
 
         @server.register_function
-        def search(database, name, query, search_params):
+        def search(database, index, query, search_params):
             logger = logging.getLogger()
-            cbir_core = CBIR_CORES[database][name]
+            cbir_core = CBIR_CORES[database][index]
             if cbir_core is None:
-                cbir_core = CBIRCore.get_instance(database, name)
+                cbir_core = CBIRCore.get_instance(database, index)
 
                 start = time.time()
-                logger.info(f'Loading fd, ca, bow, inv for {database}-{name}...')
+                logger.info(f'Loading fd, ca, bow, inv for {database}-{index}...')
                 cbir_core.set_fd(cbir_core.load_fd())
                 cbir_core.set_ca(cbir_core.load_ca())
                 cbir_core.set_bow(cbir_core.load_bow())
                 cbir_core.set_inv(cbir_core.load_inv())
-                CBIR_CORES[database][name] = cbir_core
+                CBIR_CORES[database][index] = cbir_core
                 time_loading = round(time.time() - start, 3)
                 logger.info(f'Loaded fd, ca, bow, inv for {time_loading} sec.')
             else:
-                logger.info(f'cbir_core {database}-{name} already loaded')
+                logger.info(f'cbir_core {database}-{index} already loaded')
 
             result = cbir_core.search(query, **search_params)
             return result

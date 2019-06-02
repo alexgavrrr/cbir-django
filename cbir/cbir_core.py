@@ -606,7 +606,7 @@ class CBIRCore:
             rowid = result[i][0][0]
             [(_, name_now)] = database_service.get_names_by_rowids(self.db, [rowid])
             ((rowid, _), val) = result[i]
-            result[i] = ((rowid, name_now), val)
+            result[i] = ((int(rowid), name_now), val)
         time_getting_names = round(time.time() - start, 3)
         return time_getting_names
 

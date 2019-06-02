@@ -22,6 +22,8 @@ assert Path(BASE_DIR) == Path(CBIR_BASE_DIR)
 
 IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png']
 
+CBIR_SERVER_PORT = 8701
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
