@@ -27,6 +27,8 @@
             <div class="col-sm-2">
                 <input type="checkbox" value="{{photo.database_photo.id}}" name="chosen_photo">
                 <br>
+                {{photo.description}}
+                <br>
                 <a href="{{ photo.database_photo.get_absolute_url }}">
                     <img src="{{ photo.database_photo.get_thumbnail_url }}" class="thumbnail" alt="{{ photo.database_photo.title }}">
                 </a>
