@@ -5,6 +5,17 @@
 
 <hr width="100%" style="height:5px; background-color:black;">
 
+
+
+<script language="JavaScript">
+function toggleCurrentPage(source) {
+  checkboxes = document.getElementsByName('chosen_photo');
+  for(var i=0, n=checkboxes.length;i<n;i++) {
+    checkboxes[i].checked = source.checked;
+  }
+}
+</script>
+
 <h3>Found photos:</h3>
 <ul>
     <form method="post" action="" name="do">
@@ -15,6 +26,8 @@
             <option value="add">Add</option>
         </select>
         <br><br>
+        <input type="checkbox" onClick="toggleCurrentPage(this)" name="toggle_all" /> Toggle all from all pages<br/>
+        <input type="checkbox" onClick="toggleCurrentPage(this)" /> Toggle all on current page<br/>
         <div class="row col-lg-12">
         {% for photo in found_photos_to_give %}
             <div class="col-sm-2">

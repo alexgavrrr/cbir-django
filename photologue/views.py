@@ -190,8 +190,15 @@ def event_detail_view(request, slug):
 
         if event.status == 'basket':
             if do == 'add':
-                for photo_id in request.POST.getlist('chosen_photo'):
-                    database_photo = get_object_or_404(models.DatabasePhoto, id=photo_id)
+                database_photos_to_add = None
+                if request.POST.get('toggle_all'):
+                    found_photos = event.get_found_photos()
+                    database_photos_to_add = [found_photo.database_photo for found_photo in found_photos]
+                else:
+                    database_photos_to_add = [get_object_or_404(models.DatabasePhoto, id=photo_id)
+                                              for photo_id
+                                              in request.POST.getlist('chosen_photo')]
+                for database_photo in database_photos_to_add:
                     event_basket_chosen_photo = models.EventBasketChosenPhoto(
                         description=database_photo.description or str(database_photo),
                         event=event,
