@@ -1,6 +1,8 @@
 import logging
 import os
 import shutil
+import xmlrpc
+import xmlrpc.client
 from datetime import datetime
 from inspect import isclass
 from io import BytesIO
@@ -548,8 +550,8 @@ class Event(models.Model):
             return [], []
 
         query = str(Path(settings.MEDIA_ROOT_RELATIVE_TO_BASE_DIR) / query_photos[0].image.name)
-        cbir_core = CBIRCore.get_instance(cbir_database_name, cbir_index_name)
-        result_photos_raw = cbir_core.search(query, **search_params)
+        with xmlrpc.client.ServerProxy(f'http://localhost:{settings.CBIR_SERVER_PORT}', allow_none=True) as cbir_server_proxy:
+            result_photos_raw = cbir_server_proxy.search(cbir_database_name, cbir_index_name, query, search_params)
         logger.debug(f'result_photos: {result_photos_raw}')
         result_photos_names = [t[0][1] for t in result_photos_raw]
         result_photos_similarities = [t[1] for t in result_photos_raw]
