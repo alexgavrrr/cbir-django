@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 import cbir
-from cbir import BASE_DIR
+from cbir import BASE_DIR, database_service
 from cbir.cbir_core import CBIRCore
 from cbir.cbir_core_external import CBIRCoreExt
 
@@ -47,10 +47,7 @@ def test_CBIRCoreExt():
     print(result_images)
 
 
-def test_CBIRCore():
-    database = CBIR_DATABASE_NAME
-    name = CBIR_INDEX_NAME
-
+def test_CBIRCore(database, name):
     des_type = 'sift'
     max_keypoints = 4
     K = 10
@@ -95,6 +92,14 @@ def test_CBIRCore():
     print(result_images)
 
 
+def show_descriptors(cbir_core):
+    blobs = database_service.get_photos_descriptors_by_rowids_iterator(cbir_core.db, [1, 2, 3])
+    descriptors = [cbir_core.deserialize_descriptor(blob['descriptor']) for blob in blobs]
+    print(f'max: {(descriptors[0][0].max())}, min: {(descriptors[0][0].min())}')
+    print(f'descriptors: {descriptors}')
+    print(f'list(descriptors): {list(descriptors)}')
+
+
 def show(database, name):
     cbir_core = CBIRCore.get_instance(database, name)
     cbir_core.set_bow(cbir_core.load_bow())
@@ -109,6 +114,8 @@ def show(database, name):
     photos = cbir_core.get_indexed_photos()
     print('\n'.join(map(str, photos)))
 
+    # show_descriptors(cbir_core)
+
 
 
 if __name__ == '__main__':
@@ -119,4 +126,10 @@ if __name__ == '__main__':
     from cbir.configuration import configure_logging
     configure_logging('INFO')
 
-    test_CBIRCore()
+    # database = CBIR_DATABASE_NAME
+    database = 'd-1'
+    # name = CBIR_INDEX_NAME
+    name = 'i-1-1'
+
+    show(database, name)
+    # test_CBIRCore(database, name)
