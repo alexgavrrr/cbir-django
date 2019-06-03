@@ -3,6 +3,7 @@ import time
 
 import numpy as np
 import pqkmeans
+from tqdm import tqdm
 
 
 class VocabularyTree:
@@ -73,7 +74,7 @@ class VocabularyTree:
         start = time.time()
         pq_data_second_part = []
         n_second_part = 0
-        for vec in data_loader:
+        for vec in tqdm(data_loader, desc='Computing pqcodes_2 iteratively'):
             # vectorize via batches?
             n_second_part += 1
             pq_data_second_part += [self.encoder.transform(vec.reshape((1, -1)))]
