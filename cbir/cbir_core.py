@@ -271,22 +271,25 @@ class CBIRCore:
         buffered_new_photos = []
         start = time.time()
         for path_to_image in tqdm(list_paths_to_images, desc='Computing descriptors for photos and saving in the database'):
-            descriptor_now = self.get_descriptor(path_to_image, raw=True)
-            if descriptor_now[0] is not None:
-                count_new += 1
-                new_photo = {
-                    'name': path_to_image,
-                    'descriptor': self.serialize_descriptor(descriptor_now),
-                    'to_index': to_index,
-                    'for_training': for_training_clusterer
-                }
-                buffered_new_photos += [new_photo]
-                if len(buffered_new_photos) == BUFFER_CAPACITY:
-                    database_service.add_photos_descriptors(self.db, buffered_new_photos)
-                    buffered_new_photos = []
+            if database_service.is_image_descriptor_computed(self.db, path_to_image):
+                count_old += 1
             else:
-                count_defects += 1
-                logger.debug("No keypoints found for {}".format(path_to_image))
+                descriptor_now = self.get_descriptor(path_to_image, raw=True)
+                if descriptor_now[0] is not None:
+                    count_new += 1
+                    new_photo = {
+                        'name': path_to_image,
+                        'descriptor': self.serialize_descriptor(descriptor_now),
+                        'to_index': to_index,
+                        'for_training': for_training_clusterer
+                    }
+                    buffered_new_photos += [new_photo]
+                    if len(buffered_new_photos) == BUFFER_CAPACITY:
+                        database_service.add_photos_descriptors(self.db, buffered_new_photos)
+                        buffered_new_photos = []
+                else:
+                    count_defects += 1
+                    logger.debug("No keypoints found for {}".format(path_to_image))
 
         if buffered_new_photos:
             database_service.add_photos_descriptors(self.db, buffered_new_photos)
@@ -369,59 +372,30 @@ class CBIRCore:
         have already been computed and marked for_training.
         """
         logger.info(f'Training clusterer for index {self.name} of database {self.database}')
-        SIZE_DESCRIPTOR = 128
 
-        count_photos_for_training_expected = database_service.count_for_training(self.db)
-        COUNT_DESCRIPTORS_EXPECTED = self.max_keypoints * count_photos_for_training_expected
+        # count_photos_for_training_expected = database_service.count_for_training(self.db)
+        # COUNT_DESCRIPTORS_EXPECTED = self.max_keypoints * count_photos_for_training_expected
 
-        PLACEHOLDER_SIZE = 100000
+        # sift1b_pqcodes_path = 'sift1b_pqcodes.npy'
+        # sift1b_encoder_path = 'encoder_1.pkl'
+        sift1b_pqcodes_path = None
+        sift1b_encoder_path = None
+        if sift1b_encoder_path:
+            with open(sift1b_encoder_path, 'rb') as fin:
+                sift1b_encoder = pickle.load(fin)
+        else:
+            sift1b_encoder = None
 
-        path_to_mmap_descriptors = Path(CBIRCore.get_storage_path(self.database, self.name)) / 'mmap_descriptors'
-        mmap_descriptos = np.memmap(path_to_mmap_descriptors,
-                                    dtype='float32',
-                                    shape=(COUNT_DESCRIPTORS_EXPECTED, SIZE_DESCRIPTOR),
-                                    mode='w+')
-        placeholder = np.zeros(shape=(PLACEHOLDER_SIZE, SIZE_DESCRIPTOR), dtype='float32')
-        begin_placehoder = 0
-        begin_mmap_descriptors = 0
-        logger.info('Saving descriptors from database to disk')
-
-        start = time.time()
-        count_photos_for_training = 0
-        count_descriptors_flattened_for_training = 0
-        for descriptor in tqdm(database_service.get_photos_descriptors_for_training_iterator(self.db),
-                               desc="Saving descriptors from database to disk"):
-            descriptor = descriptor['descriptor']
-            deserialized_descriptor = self.deserialize_descriptor(descriptor)
-            deserialized_descriptor_without_kp = deserialized_descriptor[0]
-            end_now = min(begin_placehoder + deserialized_descriptor_without_kp.shape[0], placeholder.shape[0])
-
-            count_photos_for_training += 1
-            count_descriptors_flattened_for_training += deserialized_descriptor_without_kp.shape[0]
-
-            placeholder[begin_placehoder:end_now] = deserialized_descriptor_without_kp[0: end_now - begin_placehoder]
-            begin_placehoder = end_now
-            if end_now == placeholder.shape[0]:
-                mmap_descriptos[begin_mmap_descriptors: begin_mmap_descriptors + placeholder.shape[0]] = placeholder
-                begin_placehoder = 0
-                begin_mmap_descriptors += placeholder.shape[0]
-        mmap_descriptos[begin_mmap_descriptors: begin_mmap_descriptors + end_now] = placeholder[:end_now]
-
-        logger.info(f'Count descriptors flattened for training: {count_descriptors_flattened_for_training}\n'
-                    f'Count photos used for training: {count_photos_for_training}\n'
-                    f'Average count of descriptors - keypoints on one photo: '
-                    f'{int(count_descriptors_flattened_for_training / count_photos_for_training)})')
-        time_copying_descriptors_to_memmap = round(time.time() - start, 3)
-
-        def loader(indices):
-            if len(indices) > placeholder.shape[0]:
-                raise ValueError
-            placeholder[:len(indices)] = mmap_descriptos[indices]
-            return placeholder
+        def data_loader():
+            for descriptor in database_service.get_photos_descriptors_for_training_iterator(self.db):
+                yield from self.deserialize_descriptor(descriptor['descriptor'])[0]
 
         start = time.time()
         logger.info('Fit voc tree')
-        ca = VocabularyTree(L=self.L, K=self.K).fit(mmap_descriptos)
+        ca = VocabularyTree(L=self.L, K=self.K).fit(
+            data_loader(),
+            sift1b_encoder=sift1b_encoder,
+            sift1b_pqcodes_path=sift1b_pqcodes_path)
         time_fitting_vocabulary_tree = round(time.time() - start, 3)
 
         start = time.time()
@@ -429,7 +403,7 @@ class CBIRCore:
         time_saving_vocabulary_tree = round(time.time() - start, 3)
 
         logging.getLogger('profile.training_clusterer').info(
-            f'time_copying_descriptors_to_memmap={time_copying_descriptors_to_memmap},'
+            # f'time_copying_descriptors_to_memmap={time_copying_descriptors_to_memmap},'
             f'time_fitting_vocabulary_tree={time_fitting_vocabulary_tree},'
             f'time_saving_vocabulary_tree={time_saving_vocabulary_tree},'
         )

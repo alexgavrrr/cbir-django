@@ -379,7 +379,9 @@ class CBIRIndex(models.Model):
         self.built = True
         self.save()
 
-    def build_using_dataset_for_training(self, dataset_directory, use_database_photos_for_training):
+    def build_using_dataset_for_training(self,
+                                         dataset_directory, use_database_photos_for_training,
+                                         build_params):
         path_to_database_photos = self.database.get_path_to_all_photos()
         list_paths_to_images_to_index = find_image_files(path_to_database_photos, settings.IMAGE_EXTENSIONS, recursive=False)
         list_paths_to_dataset_images = find_image_files(dataset_directory, settings.IMAGE_EXTENSIONS, recursive=True)
@@ -390,10 +392,13 @@ class CBIRIndex(models.Model):
 
         database_name = self.database.slug
         cbir_index_name = self.name
+        K = build_params['K'] or CBIRIndex.K
+        L = build_params['L'] or CBIRIndex.L
+        des_type = build_params['des_type'] or CBIRIndex.DES_TYPE
         CBIRCore.create_empty_if_needed(database_name, cbir_index_name,
-                                        des_type=CBIRIndex.DES_TYPE,
+                                        des_type=des_type,
                                         max_keypoints=CBIRIndex.MAX_KEYPOINTS,
-                                        K=CBIRIndex.K, L=CBIRIndex.L)
+                                        K=K, L=L)
         cbir_core = CBIRCore.get_instance(database_name, cbir_index_name)
 
         cbir_core.compute_descriptors(list_paths_to_images_to_index,

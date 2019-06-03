@@ -23,7 +23,7 @@ from . import models
 
 logger = logging.getLogger('photologue.views')
 
-PAGINATE_PHOTOS_BY = 5
+PAGINATE_PHOTOS_BY = 50
 
 
 class DatabaseListView(ListView):
