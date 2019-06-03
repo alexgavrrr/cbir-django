@@ -39,9 +39,8 @@ class Command(BaseCommand):
         try:
             cbir_index = models.CBIRIndex.objects.get(database=database, name=cbir_index_name)
             logger.info('Already exists')
-            # print('Exiting')
-            # # TODO maybe enforce building
-            # return
+            print('Exiting')
+            return
         except ObjectDoesNotExist:
             cbir_index = models.CBIRIndex(database=database,
                                          name=cbir_index_name,
@@ -51,14 +50,16 @@ class Command(BaseCommand):
                                          count_photos_for_training_from_database=0,
                                          count_photos_for_training_external=0,
                                          )
-        build_params = {
-            'K': K,
-            'L': L,
-            'des_type': des_type,
-        }
+            cbir_index.save()
 
-        logger.info('Saved not yet built index')
-        cbir_index.build_using_dataset_for_training(dataset_directory=dataset_directory,
-                                                    use_database_photos_for_training=use_database_photos_for_training,
-                                                    build_params=build_params)
-        logger.info('Finished building index')
+            build_params = {
+                'K': K,
+                'L': L,
+                'des_type': des_type,
+            }
+
+            logger.info('Saved not yet built index')
+            cbir_index.build_using_dataset_for_training(dataset_directory=dataset_directory,
+                                                        use_database_photos_for_training=use_database_photos_for_training,
+                                                        build_params=build_params)
+            logger.info('Finished building index')
