@@ -23,11 +23,8 @@ class VocabularyTree:
             data_loader,
             sift1b_encoder,
             sift1b_pqcodes_path,
-            format=None,
+            dtype
             ):
-        format = format or 'uint8'
-        DTYPE = format
-
         logger = logging.getLogger()
 
         start_first_stage = time.time()
@@ -44,14 +41,14 @@ class VocabularyTree:
             SIZE_DESCRIPTOR = 128
             start = time.time()
             data_preloaded = np.empty(
-                [MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER, SIZE_DESCRIPTOR], dtype=DTYPE)
+                [MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER, SIZE_DESCRIPTOR], dtype=dtype)
             time_allocating_empty_array = round(time.time() - start, 3)
             logger.info(f'time_allocating_empty_array [{MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER}, {SIZE_DESCRIPTOR}]: {time_allocating_empty_array}')
 
             start = time.time()
             n_preloaded = 0
             for vec in data_loader:
-                data_preloaded[n_preloaded, :] = vec.astype(DTYPE)
+                data_preloaded[n_preloaded, :] = vec
                 n_preloaded += 1
                 if n_preloaded == MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER:
                     break

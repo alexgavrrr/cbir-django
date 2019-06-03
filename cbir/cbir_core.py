@@ -409,16 +409,19 @@ class CBIRCore:
         else:
             sift1b_encoder = None
 
+        DTYPE = 'uint8' if self.des_type == 'sift' else 'float32'
+
         def data_loader():
             for descriptor in database_service.get_photos_descriptors_for_training_iterator(self.db):
-                yield from self.deserialize_descriptor(descriptor['descriptor'])[0]
+                for vec in self.deserialize_descriptor(descriptor['descriptor'])[0]:
+                    yield vec.astype(DTYPE)
 
         start = time.time()
         ca = VocabularyTree(L=self.L, K=self.K).fit(
             data_loader(),
             sift1b_encoder=sift1b_encoder,
             sift1b_pqcodes_path=sift1b_pqcodes_path,
-            format='uint8' if self.des_type == 'sift' else 'float32')
+            dtype=DTYPE)
         time_fitting_vocabulary_tree = round(time.time() - start, 3)
 
         start = time.time()
