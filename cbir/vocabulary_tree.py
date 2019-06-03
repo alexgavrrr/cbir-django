@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
+import pqkmeans
 
 
 class VocabularyTree:
@@ -15,14 +16,23 @@ class VocabularyTree:
         self.max_clusters = K ** L
         self.ca = None
         self.n_images = None
+        self.encoder = None
 
     def fit(self, data):
-        batch_size = max(1000, self.K * 100)
-        self.ca = []
-        self.ca.append(MiniBatchKMeans(n_clusters=self.K,
-                                       batch_size=batch_size).fit(data))
-        labels = self.ca[0].predict(data).astype(np.int32)
+        # TODO: `data_loader` param instead of `data`
 
+        # batch_size = max(1000, self.K * 100)
+
+        self.encoder = pqkmeans.encoder.PQEncoder(num_subdim=4, Ks=256)
+        self.encoder.fit(data)
+        pq_data = self.encoder.transform(data)
+
+        self.ca = []
+        model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=self.K)
+        model.fit(pq_data)
+        self.ca.append(model)
+
+        labels = self.ca[0].predict(pq_data).astype(np.int32)
         for l in range(1, self.L):
             print("At level {}".format(l))
             ca_l = []
@@ -31,10 +41,10 @@ class VocabularyTree:
                 idx = np.where(labels == i)[0]
 
                 if len(idx) > self.K * 3:
-                    ca_l.append(MiniBatchKMeans(n_clusters=self.K,
-                                                batch_size=batch_size,
-                                                init_size=self.K * 3).fit(data[idx, :]))
-                    labels[idx] = labels[idx] * self.K + ca_l[i].predict(data[idx, :]).astype(np.int32)
+                    model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=self.K)
+                    model.fit(pq_data[idx, :])
+                    ca_l.append(model)
+                    labels[idx] = labels[idx] * self.K + ca_l[i].predict(pq_data[idx, :]).astype(np.int32)
                 else:
                     ca_l.append(None)
                     labels[idx] = labels[idx] * self.K
@@ -47,7 +57,8 @@ class VocabularyTree:
         if data.ndim == 1:
             data = data.reshape(1, -1)
 
-        c = self.ca[0].predict(data).astype(np.int32)
+        pq_data = self.encoder.transform(data)
+        c = self.ca[0].predict(pq_data).astype(np.int32)
 
         for l in range(1, self.L):
             c_set = set(c)
@@ -57,6 +68,6 @@ class VocabularyTree:
                 if self.ca[l][i] is None:
                     c[idx] *= self.K
                 else:
-                    c[idx] = c[idx] * self.K + self.ca[l][i].predict(data[idx, :])
+                    c[idx] = c[idx] * self.K + self.ca[l][i].predict(pq_data[idx, :])
 
         return c
