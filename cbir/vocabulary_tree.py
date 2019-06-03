@@ -71,14 +71,20 @@ class VocabularyTree:
         start = time.time()
         pq_data_second_part = []
         n_second_part = 0
-        for vec in tqdm(data_loader, desc='Computing pqcodes_2 iteratively'):
-            # vectorize via batches?
+        # for vec in tqdm(data_loader, desc='Computing pqcodes_2 iteratively'):
+        #     # vectorize via batches?
+        #     n_second_part += 1
+        #     pq_data_second_part += [self.encoder.transform(vec.reshape((1, -1)))]
+        pqcode_generator = self.encoder.transform_generator(data_loader)
+        for code in tqdm(pqcode_generator):
             n_second_part += 1
-            pq_data_second_part += [self.encoder.transform(vec.reshape((1, -1)))]
+            pq_data_second_part += [code]
+
         pq_data_second_part = np.array(pq_data_second_part) if len(pq_data_second_part) > 0 else np.empty(shape=[0, pq_data_first_part.shape[1]])
         pq_data_second_part = pq_data_second_part.astype('uint8')
         time_computing_pqcodes_2 = round(time.time() - start, 3)
         logger.info(f'time_computing_pqcodes_2: {time_computing_pqcodes_2}')
+
 
         if pq_data_first_part is not None:
             pq_data_no_sift1b = np.vstack([pq_data_first_part, pq_data_second_part])
