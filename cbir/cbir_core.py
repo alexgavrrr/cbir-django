@@ -203,7 +203,6 @@ class CBIRCore:
         db = database_service.get_db(cls.get_storage_path(database, name))
         database_service.create_empty(db)
 
-
         clusterer = []
 
         # 0th empty row in bow because rowid in sqlite table begins from 0.
@@ -219,6 +218,30 @@ class CBIRCore:
         cls._save_inverted_index(database, name, inverted_index)
         cls._save_freqs(database, name, freqs)
 
+    def set_K_L(self, K, L):
+        logger.info('Setting K, L', K, L)
+        params = self.load_params()
+        params['K'] = K
+        params['L'] = L
+        params['n_words'] = K ** L
+        CBIRCore._save_params(self.database, self.name, params)
+
+        data_dependent_params = self.load_data_dependent_params()
+        data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
+        data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
+        data_dependent_params['most_frequent'] = set()
+        data_dependent_params['least_frequent'] = set()
+        CBIRCore._save_data_dependent_params(self.database, self.name, data_dependent_params)
+
+        clusterer = []
+        # 0th empty row in bow because rowid in sqlite table begins from 0.
+        bow = sparse.csr_matrix([], shape=(1, params['n_words'] + 1))
+        inverted_index = [set() for i in range(params['n_words'])]
+        freqs = np.zeros(params['n_words'], dtype=np.int16)
+        CBIRCore._save_clusterer(self.database, self.name, clusterer)
+        CBIRCore._save_bow(self.database, self.name, bow)
+        CBIRCore._save_inverted_index(self.database, self.name, inverted_index)
+        CBIRCore._save_freqs(self.database, self.name, freqs)
 
     @classmethod
     def _inited_properly(cls, database, name):
@@ -423,7 +446,7 @@ class CBIRCore:
             return placeholder
 
         start = time.time()
-        logger.info('Fit voc tree')
+        logger.info(f'Fit voc tree L={self.L}, K={self.K}')
         ca = VocabularyTree(L=self.L, K=self.K).fit(mmap_descriptos)
         time_fitting_vocabulary_tree = round(time.time() - start, 3)
 
