@@ -227,6 +227,7 @@ class CBIRCore:
         CBIRCore._save_params(self.database, self.name, params)
 
         data_dependent_params = self.load_data_dependent_params()
+        data_dependent_params['count_images'] = 1  # 0th image is empty. It is needed as rowid begins from 1.
         data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
         data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
         data_dependent_params['most_frequent'] = set()
