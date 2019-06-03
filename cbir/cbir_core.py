@@ -414,41 +414,10 @@ class CBIRCore:
                 yield from self.deserialize_descriptor(descriptor['descriptor'])[0]
 
         start = time.time()
-        count_photos_for_training = 0
-        count_descriptors_flattened_for_training = 0
-        for descriptor in tqdm(database_service.get_photos_descriptors_for_training_iterator(self.db),
-                               desc="Saving descriptors from database to disk"):
-            descriptor = descriptor['descriptor']
-            deserialized_descriptor = self.deserialize_descriptor(descriptor)
-            deserialized_descriptor_without_kp = deserialized_descriptor[0]
-            end_now = min(begin_placehoder + deserialized_descriptor_without_kp.shape[0], placeholder.shape[0])
-
-            count_photos_for_training += 1
-            count_descriptors_flattened_for_training += deserialized_descriptor_without_kp.shape[0]
-
-            placeholder[begin_placehoder:end_now] = deserialized_descriptor_without_kp[0: end_now - begin_placehoder]
-            begin_placehoder = end_now
-            if end_now == placeholder.shape[0]:
-                mmap_descriptos[begin_mmap_descriptors: begin_mmap_descriptors + placeholder.shape[0]] = placeholder
-                begin_placehoder = 0
-                begin_mmap_descriptors += placeholder.shape[0]
-        mmap_descriptos[begin_mmap_descriptors: begin_mmap_descriptors + end_now] = placeholder[:end_now]
-
-        logger.info(f'Count descriptors flattened for training: {count_descriptors_flattened_for_training}\n'
-                    f'Count photos used for training: {count_photos_for_training}\n'
-                    f'Average count of descriptors - keypoints on one photo: '
-                    f'{int(count_descriptors_flattened_for_training / count_photos_for_training)})')
-        time_copying_descriptors_to_memmap = round(time.time() - start, 3)
-
-        def loader(indices):
-            if len(indices) > placeholder.shape[0]:
-                raise ValueError
-            placeholder[:len(indices)] = mmap_descriptos[indices]
-            return placeholder
-
-        start = time.time()
-        logger.info(f'Fit voc tree L={self.L}, K={self.K}')
-        ca = VocabularyTree(L=self.L, K=self.K).fit(mmap_descriptos)
+        ca = VocabularyTree(L=self.L, K=self.K).fit(
+            data_loader(),
+            sift1b_encoder=sift1b_encoder,
+            sift1b_pqcodes_path=sift1b_pqcodes_path)
         time_fitting_vocabulary_tree = round(time.time() - start, 3)
 
         start = time.time()
