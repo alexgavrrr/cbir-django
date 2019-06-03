@@ -22,7 +22,11 @@ class VocabularyTree:
             data_loader,
             sift1b_encoder,
             sift1b_pqcodes_path,
+            format=None,
             ):
+        format = format or 'uint8'
+        DTYPE = format
+
         logger = logging.getLogger()
 
         start_first_stage = time.time()
@@ -35,7 +39,7 @@ class VocabularyTree:
         else:
             logger.info('Building encoder')
             self.encoder = pqkmeans.encoder.PQEncoder(num_subdim=4, Ks=256)
-            MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER = 10 ** 7
+            MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER = 10 ** 6
             SIZE_DESCRIPTOR = 128
             DTYPE = 'uint8'
             start = time.time()
