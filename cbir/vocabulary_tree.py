@@ -25,6 +25,7 @@ class VocabularyTree:
             sift1b_pqcodes_path,
             dtype
             ):
+        M = 4
         logger = logging.getLogger()
 
         start_first_stage = time.time()
@@ -80,7 +81,7 @@ class VocabularyTree:
             n_second_part += 1
             pq_data_second_part += [code]
 
-        pq_data_second_part = np.array(pq_data_second_part) if len(pq_data_second_part) > 0 else np.empty(shape=[0, pq_data_first_part.shape[1]])
+        pq_data_second_part = np.array(pq_data_second_part) if len(pq_data_second_part) > 0 else np.empty(shape=[0, M])
         pq_data_second_part = pq_data_second_part.astype('uint8')
         time_computing_pqcodes_2 = round(time.time() - start, 3)
         logger.info(f'time_computing_pqcodes_2: {time_computing_pqcodes_2}')
@@ -95,9 +96,12 @@ class VocabularyTree:
         print(f'BBB pq_data.shape: {pq_data_no_sift1b.shape}')
         print(f'BBB pq_data.dtype: {pq_data_no_sift1b.dtype}')
 
-        if sift1b_pqcodes_path:
+        if sift1b_pqcodes_path is not None:
             start = time.time()
-            pq_data_sift1b = np.load(sift1b_pqcodes_path)
+            if isinstance(sift1b_pqcodes_path, str):
+                pq_data_sift1b = np.load(sift1b_pqcodes_path)
+            else:
+                pq_data_sift1b = sift1b_pqcodes_path
             pq_data = np.vstack([pq_data_no_sift1b, pq_data_sift1b])
             time_loading_sift1b_and_stacking_pq_datas = round(time.time() - start)
             logger.info(f'time_loading_sift1b_and_stacking_pq_datas: {time_loading_sift1b_and_stacking_pq_datas}')
@@ -109,6 +113,9 @@ class VocabularyTree:
         time_first_stage = round(time.time() - start_first_stage, 3)
         logger.info(f'time_first_stage: {time_first_stage}')
 
+        to_resize = min((self.K ** self.L) * 1000, pq_data.shape[0])
+        pq_data.resize((to_resize, pq_data.shape[1]))
+
         logger.info('Second stage: building tree clusterer...')
 
         sample_size_to_train_max = self.K * 1000
@@ -117,28 +124,35 @@ class VocabularyTree:
             idx = np.random.choice(
                 idx,
                 size=sample_size_to_train_max,
-                replace=False)
+                replace=True)
 
         self.ca = []
         model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=self.K)
         start = time.time()
-        model.fit(pq_data)
+        logger.info('Fitting root clusterer...')
+        model.fit(pq_data[idx, :])
         time_fitting_root_clusterer = round(time.time() - start, 3)
         logger.info(f'time_fitting_root_clusterer: {time_fitting_root_clusterer}')
         self.ca.append(model)
 
+        start = time.time()
+        logger.info(f'Predicting labels after root clusterer for all data {pq_data.shape}')
         labels = self.ca[0].predict(pq_data).astype(np.int32)
+        time_predicting_root_labels_for_all_data = round(time.time() - start, 3)
+        logger.info(f'time_predicting_root_labels_for_all_data: {time_predicting_root_labels_for_all_data}')
+
+
         for l in range(1, self.L):
             print("At level {}".format(l))
             ca_l = []
             n_c = self.K ** l
-            for i in range(n_c):
+            for i in tqdm(range(n_c), desc=f'On level {l}'):
                 idx = np.where(labels == i)[0]
                 if idx.shape[0] > sample_size_to_train_max:
                     idx = np.random.choice(
                         idx,
                         size=sample_size_to_train_max,
-                        replace=False)
+                        replace=True)
 
                 if len(idx) > self.K * 3:
                     model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=self.K)
