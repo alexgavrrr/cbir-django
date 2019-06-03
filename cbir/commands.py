@@ -127,37 +127,50 @@ def create_empty_if_needed(
 
 
 def compute_descriptors(
-        database_name, index_name, path_to_images,
+        database_name, index_name,
+        path_to_1_images,
         path_to_distractor_images,
+        path_to_2_images,
         max_images,
         **kwargs):
 
     cbir_core = CBIRCore.get_instance(database_name, index_name)
 
-    list_paths_to_good_images = find_image_files_bounded(
-        path_to_images,
+    list_paths_to_1_images = find_image_files_bounded(
+        path_to_1_images,
         cbir.IMAGE_EXTENSIONS,
         recursive=False,
         max_images=max_images)
 
-    cbir_core.compute_descriptors(list_paths_to_good_images,
+    max_images_2 = None
+    if max_images is not None:
+        max_images_2 = max_images - len(list_paths_to_1_images)
+    list_paths_to_2_images = find_image_files_bounded(
+        path_to_2_images,
+        cbir.IMAGE_EXTENSIONS,
+        recursive=False,
+        max_images=max_images_2)
+
+    distractor_max_images = None
+    if max_images is not None:
+        distractor_max_images = max_images - (len(list_paths_to_1_images) + len(list_paths_to_2_images))
+    list_paths_to_distractor_images = find_image_files_bounded(
+        path_to_distractor_images,
+        cbir.IMAGE_EXTENSIONS,
+        recursive=True,
+        max_images=distractor_max_images)
+
+    cbir_core.compute_descriptors(list_paths_to_1_images,
                                   to_index=True,
                                   for_training_clusterer=True)
 
-    if path_to_distractor_images is not None:
-        distractor_max_images = None
-        if max_images is not None:
-            distractor_max_images = max_images - len(list_paths_to_good_images)
-        list_paths_to_distractor_images = find_image_files_bounded(
-            path_to_distractor_images,
-            cbir.IMAGE_EXTENSIONS,
-            recursive=True,
-            max_images=distractor_max_images)
+    cbir_core.compute_descriptors(list_paths_to_2_images,
+                                  to_index=True,
+                                  for_training_clusterer=False)
 
-        # TODONOW: Use distractor_images for training_clusterer?
-        cbir_core.compute_descriptors(list_paths_to_distractor_images,
-                                      to_index=True,
-                                      for_training_clusterer=False)
+    cbir_core.compute_descriptors(list_paths_to_distractor_images,
+                                  to_index=True,
+                                  for_training_clusterer=True)
 
 
 def train_clusterer(
@@ -175,8 +188,10 @@ def compute_bow_and_inv(
 
 
 def create_index(
-        database_name, index_name, path_to_images,
+        database_name, index_name,
+        path_to_1_images,
         path_to_distractor_images,
+        path_to_2_images,
         max_images,
         des_type, max_keypoints,
         K, L,
@@ -186,8 +201,10 @@ def create_index(
         des_type, max_keypoints,
         K, L, )
     elapsed, _ = timeit_my(compute_descriptors)(
-        database_name, index_name, path_to_images,
+        database_name, index_name,
+        path_to_1_images,
         path_to_distractor_images,
+        path_to_2_images,
         max_images)
     logging.getLogger('profile.computing_descriptors').info(f'{elapsed}')
 
