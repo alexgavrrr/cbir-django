@@ -76,7 +76,7 @@ class VocabularyTree:
         for vec in data_loader:
             # vectorize via batches?
             n_second_part += 1
-            pq_data_second_part += [self.encoder.transform(vec)]
+            pq_data_second_part += [self.encoder.transform(vec.reshape((1, -1)))]
         pq_data_second_part = np.array(pq_data_second_part) if len(pq_data_second_part) > 0 else np.empty(shape=[0, pq_data_first_part.shape[1]])
         pq_data_second_part = pq_data_second_part.astype('uint8')
         time_computing_pqcodes_2 = round(time.time() - start, 3)
