@@ -41,7 +41,6 @@ class VocabularyTree:
             self.encoder = pqkmeans.encoder.PQEncoder(num_subdim=4, Ks=256)
             MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER = 10 ** 6
             SIZE_DESCRIPTOR = 128
-            DTYPE = 'uint8'
             start = time.time()
             data_preloaded = np.empty(
                 [MAX_COUNT_SAMPLES_FOR_TRAINING_ENCODER, SIZE_DESCRIPTOR], dtype=DTYPE)

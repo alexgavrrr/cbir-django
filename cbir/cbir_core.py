@@ -219,7 +219,7 @@ class CBIRCore:
         cls._save_freqs(database, name, freqs)
 
     def set_K_L(self, K, L):
-        logger.info('Setting K, L', K, L)
+        logger.info(f'Setting K, L: {K}, {L}')
         params = self.load_params()
         params['K'] = K
         params['L'] = L
@@ -417,7 +417,8 @@ class CBIRCore:
         ca = VocabularyTree(L=self.L, K=self.K).fit(
             data_loader(),
             sift1b_encoder=sift1b_encoder,
-            sift1b_pqcodes_path=sift1b_pqcodes_path)
+            sift1b_pqcodes_path=sift1b_pqcodes_path,
+            format='uint8' if self.des_type == 'sift' else 'float32')
         time_fitting_vocabulary_tree = round(time.time() - start, 3)
 
         start = time.time()
