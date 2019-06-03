@@ -124,7 +124,7 @@ def AP_new(query_and_gt_images, answer_images, debug=False):
         elif debug:
             print("-")
 
-    return sum_precision / float(max_gt_possible) if len(max_gt_possible) > 0 else 0
+    return sum_precision / float(max_gt_possible) if max_gt_possible > 0 else 0
 
 
 def evaluate(train_dir, test_dir, gt_dir,
