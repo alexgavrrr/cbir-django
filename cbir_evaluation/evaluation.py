@@ -245,6 +245,15 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
     scores = []
     scores_new = []
     answers = []
+
+    answers_file = str(Path(cbir.BASE_DIR) / 'answers'
+                       / '{sv_enable}_{qe_enable}'
+                         '_{database_name}.txt'.format(sv_enable=sv_enable,
+                                                       qe_enable=qe_enable,
+                                                       database_name=database_name))
+    if not os.path.exists(str(Path(cbir.BASE_DIR) / 'answers')):
+        os.mkdir(str(Path(cbir.BASE_DIR) / 'answers'))
+
     for trial in range(5):
         queries_names_trial = queries_names[trial]
         answers_trial = []
@@ -273,21 +282,17 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
 
             print(f'CCC SCORES numpy.mean(scores): {numpy.mean(scores)}')
 
+            with open(answers_file, 'w') as fout:
+                query_names_answers_scores = list(zip(scores, itertools.chain(itertools.chain(answers))))
+                fout.write('\n'.join(map(str, query_names_answers_scores)))
+
         answers.append(answers_trial)
 
     cbir_core.unset_fd()
     cbir_core.unset_ca()
 
-    answers_file = str(Path(cbir.BASE_DIR) / 'answers'
-                       / '{sv_enable}_{qe_enable}'
-                         '_{database_name}.txt'.format(sv_enable=sv_enable,
-                                                       qe_enable=qe_enable,
-                                                       database_name=database_name))
-    if not os.path.exists(str(Path(cbir.BASE_DIR) / 'answers')):
-        os.mkdir(str(Path(cbir.BASE_DIR) / 'answers'))
-    with open(answers_file, 'w') as fout:
-        query_names_answers_scores = list(zip(scores, itertools.chain(answers)))
-        fout.write('\n'.join(map(str, query_names_answers_scores)))
+
+
 
 
     mAP = numpy.mean(scores)
