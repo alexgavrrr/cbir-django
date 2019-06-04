@@ -142,7 +142,6 @@ class VocabularyTree:
         time_predicting_root_labels_for_all_data = round(time.time() - start, 3)
         logger.info(f'time_predicting_root_labels_for_all_data: {time_predicting_root_labels_for_all_data}')
 
-        # TODO AAA
         K1 = 5000
         K2 = 10
         self.L = 1
@@ -178,34 +177,17 @@ class VocabularyTree:
         if data.ndim == 1:
             data = data.reshape(1, -1)
 
-        # TODO AAA
-        K1 = 5000
-        K2 = 10
-        self.L = 1
-        self.max_clusters = K1 * K2
-
         pq_data = self.encoder.transform(data)
         c = self.ca[0].predict(pq_data).astype(np.int32)
 
-        c_set = set(c)
-        for i in c_set:
-            idx = np.where(c == i)[0]
+        for l in range(1, self.L):
+            c_set = set(c)
+            for i in c_set:
+                idx = np.where(c == i)[0]
 
-            if self.ca[1][i] is None:
-                c[idx] *= K2
-            else:
-                c[idx] = c[idx] * K2 + self.ca[1][i].predict(pq_data[idx, :])
+                if self.ca[l][i] is None:
+                    c[idx] *= self.K
+                else:
+                    c[idx] = c[idx] * self.K + self.ca[l][i].predict(pq_data[idx, :])
 
         return c
-
-        # for l in range(1, self.L):
-        #     c_set = set(c)
-        #     for i in c_set:
-        #         idx = np.where(c == i)[0]
-        #
-        #         if self.ca[l][i] is None:
-        #             c[idx] *= self.K
-        #         else:
-        #             c[idx] = c[idx] * self.K + self.ca[l][i].predict(pq_data[idx, :])
-        #
-        # return c
