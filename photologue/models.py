@@ -854,7 +854,9 @@ class ImageModel(models.Model):
             except:
                 logger.error('Failed to read EXIF DateTimeOriginal', exc_info=True)
         super(ImageModel, self).save(*args, **kwargs)
-        self.pre_cache()
+
+        if isinstance(self, DatabasePhoto):
+            self.pre_cache()
 
     def delete(self):
         assert self._get_pk_val() is not None, \
