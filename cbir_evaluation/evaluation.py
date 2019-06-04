@@ -269,6 +269,8 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
             scores_new.append(AP_new((query_now, gt_now), similar_images))
             answers_trial.append([query_name_now, [s[0][1] for s in similar_images]])
 
+            print(f'CCC SCORES numpy.mean(scores): {numpy.mean(scores)}')
+
         answers.append(answers_trial)
 
     cbir_core.unset_fd()
