@@ -55,7 +55,7 @@ def run(port, nthreads):
 
         logger = logging.getLogger()
         database_pre_cache = 'd-paris'
-        index_pre_cache = 'i-paris-1'
+        index_pre_cache = 'i-paris-1-saved'
         try:
             cache_index(database_pre_cache, index_pre_cache)
         except ValueError:
