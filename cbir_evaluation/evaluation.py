@@ -1,3 +1,5 @@
+import itertools
+import json
 import logging
 import os
 import pickle
@@ -278,13 +280,15 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
 
     answers_file = str(Path(cbir.BASE_DIR) / 'answers'
                        / '{sv_enable}_{qe_enable}'
-                         '_{database_name}.pkl'.format(sv_enable=sv_enable,
+                         '_{database_name}.txt'.format(sv_enable=sv_enable,
                                                        qe_enable=qe_enable,
                                                        database_name=database_name))
     if not os.path.exists(str(Path(cbir.BASE_DIR) / 'answers')):
         os.mkdir(str(Path(cbir.BASE_DIR) / 'answers'))
-    with open(answers_file, 'wb') as fout:
-        pickle.dump(answers, fout, pickle.HIGHEST_PROTOCOL)
+    with open(answers_file, 'w') as fout:
+        query_names_answers_scores = list(zip(scores, itertools.chain(answers)))
+        fout.write('\n'.join(map(str, query_names_answers_scores)))
+
 
     mAP = numpy.mean(scores)
     mAP_new = numpy.mean(scores_new)

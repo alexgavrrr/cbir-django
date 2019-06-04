@@ -211,12 +211,12 @@ def event_detail_view(request, slug):
             elif do == 'commit':
                 descriptions = request.POST.getlist('description')
                 chosen_photos = models.EventBasketChosenPhoto.objects.filter(event=event)
-                print(f'len(descriptions): {len(descriptions)}, len(chosen_photos): {len(chosen_photos)}')
-                print(f'AAA descriptions: {descriptions}')
-                print(f'AAA chosen_photos: {chosen_photos}')
+                # print(f'len(descriptions): {len(descriptions)}, len(chosen_photos): {len(chosen_photos)}')
+                # print(f'AAA descriptions: {descriptions}')
+                # print(f'AAA chosen_photos: {chosen_photos}')
                 while len(descriptions) < len(chosen_photos):
                     descriptions += [chosen_photos[len(descriptions)].description]
-                print(f'AAA descriptions: {descriptions}')
+                # print(f'AAA descriptions: {descriptions}')
                 for index_chosen_photo, chosen_photo in enumerate(chosen_photos):
                     event_photo = models.EventPhoto(
                         description=descriptions[index_chosen_photo],
