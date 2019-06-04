@@ -79,9 +79,6 @@ class EventForm(ModelForm):
                             help_text='Rerank by spatial verification')
     topk = forms.IntegerField(required=False, initial=10, label='topk',
                               help_text='Maximum count resulting photos')
-    similarity_threshold = forms.IntegerField(required=False, initial=None, label='similarity_threshold',
-                                              help_text='Photos with similarity value below than threshold are not returned. '
-                                                        'Default is none which means -inf.')
 
     x = forms.FloatField(widget=forms.HiddenInput(), required=False)
     y = forms.FloatField(widget=forms.HiddenInput(), required=False)
