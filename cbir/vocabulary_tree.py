@@ -120,9 +120,10 @@ class VocabularyTree:
 
         sample_size_to_train_max = self.K * 1000
         idx = np.arange(pq_data.shape[0])
-        if idx.shape[0] > sample_size_to_train_max:
-            idx = np.random.choice(
-                idx,
+        idx_to_fit = idx
+        if idx_to_fit.shape[0] > sample_size_to_train_max:
+            idx_to_fit = np.random.choice(
+                idx_to_fit,
                 size=sample_size_to_train_max,
                 replace=True)
 
@@ -130,17 +131,16 @@ class VocabularyTree:
         model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=self.K)
         start = time.time()
         logger.info('Fitting root clusterer...')
-        model.fit(pq_data[idx, :])
+        model.fit(pq_data[idx_to_fit, :])
         time_fitting_root_clusterer = round(time.time() - start, 3)
         logger.info(f'time_fitting_root_clusterer: {time_fitting_root_clusterer}')
         self.ca.append(model)
 
         start = time.time()
         logger.info(f'Predicting labels after root clusterer for all data {pq_data.shape}')
-        labels = self.ca[0].predict(pq_data).astype(np.int32)
+        labels = self.ca[0].predict(pq_data[idx, :]).astype(np.int32)
         time_predicting_root_labels_for_all_data = round(time.time() - start, 3)
         logger.info(f'time_predicting_root_labels_for_all_data: {time_predicting_root_labels_for_all_data}')
-
 
         for l in range(1, self.L):
             print("At level {}".format(l))
@@ -148,15 +148,16 @@ class VocabularyTree:
             n_c = self.K ** l
             for i in tqdm(range(n_c), desc=f'On level {l}'):
                 idx = np.where(labels == i)[0]
-                if idx.shape[0] > sample_size_to_train_max:
-                    idx = np.random.choice(
-                        idx,
+                idx_to_fit = idx
+                if idx_to_fit.shape[0] > sample_size_to_train_max:
+                    idx_to_fit = np.random.choice(
+                        idx_to_fit,
                         size=sample_size_to_train_max,
                         replace=True)
 
-                if len(idx) > self.K * 3:
+                if len(idx_to_fit) > self.K * 5:
                     model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=self.K)
-                    model.fit(pq_data[idx, :])
+                    model.fit(pq_data[idx_to_fit, :])
                     ca_l.append(model)
                     labels[idx] = labels[idx] * self.K + ca_l[i].predict(pq_data[idx, :]).astype(np.int32)
                 else:
