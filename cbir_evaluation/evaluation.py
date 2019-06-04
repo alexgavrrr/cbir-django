@@ -256,38 +256,38 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
 
     query_names_answers_scores = []
 
-    for trial in range(5):
-        queries_names_trial = queries_names[trial]
-        answers_trial = []
-        queries_trial = queries[trial]
-        ok_answers_trial = ok_answers[trial]
-        good_answers_trial = good_answers[trial]
-        right_answers_trial = [ok_answers_trial[j] + good_answers_trial[j] for j, _ in enumerate(ok_answers_trial)]
+    with open(answers_file, 'w') as fout:
 
-        # queries_gt_trial = list(zip(queries_trial, right_answers_trial))
-        for query_now, query_name_now, gt_now in tqdm(zip(queries_trial, queries_names_trial, right_answers_trial)):
-            similar_images = cbir_core.search(
-                query_now,
-                n_candidates=n_test_candidates,
-                topk=topk,
-                sv_enable=sv_enable,
-                qe_enable=qe_enable,
-                query_name=query_name_now,
-                p_fine_max=p_fine_max)
+        for trial in range(5):
+            queries_names_trial = queries_names[trial]
+            answers_trial = []
+            queries_trial = queries[trial]
+            ok_answers_trial = ok_answers[trial]
+            good_answers_trial = good_answers[trial]
+            right_answers_trial = [ok_answers_trial[j] + good_answers_trial[j] for j, _ in enumerate(ok_answers_trial)]
 
-            # TODO DEBUG
-            print(f'similar_images: {similar_images}')
+            # queries_gt_trial = list(zip(queries_trial, right_answers_trial))
+            for query_now, query_name_now, gt_now in tqdm(zip(queries_trial, queries_names_trial, right_answers_trial)):
+                similar_images = cbir_core.search(
+                    query_now,
+                    n_candidates=n_test_candidates,
+                    topk=topk,
+                    sv_enable=sv_enable,
+                    qe_enable=qe_enable,
+                    query_name=query_name_now,
+                    p_fine_max=p_fine_max)
 
-            scores.append(AP((query_now, gt_now), similar_images))
-            scores_new.append(AP_new((query_now, gt_now), similar_images))
-            answers_trial.append([query_name_now, [s[0][1] for s in similar_images]])
-            print(f'CCC SCORES numpy.mean(scores): {numpy.mean(scores)}')
+                # TODO DEBUG
+                print(f'similar_images: {similar_images}')
 
-            query_names_answers_scores += [(query_name_now, scores[-1], similar_images)]
-            with open(answers_file, 'w') as fout:
-                fout.write('\n'.join(map(str, query_names_answers_scores)))
+                scores.append(AP((query_now, gt_now), similar_images))
+                scores_new.append(AP_new((query_now, gt_now), similar_images))
+                answers_trial.append([query_name_now, [s[0][1] for s in similar_images]])
+                print(f'CCC SCORES numpy.mean(scores): {numpy.mean(scores)}')
+                query_names_answers_scores += [(query_name_now, scores[-1], similar_images)]
+                print(str(query_names_answers_scores[-1]), file=fout)
 
-        answers.append(answers_trial)
+            answers.append(answers_trial)
 
     cbir_core.unset_fd()
     cbir_core.unset_ca()
