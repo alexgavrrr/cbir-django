@@ -196,9 +196,10 @@ def create_index(
         des_type, max_keypoints,
         K, L,
         only_retrain_vocab,
+        only_bow_inv,
         **kwargs):
 
-    if not only_retrain_vocab:
+    if not (only_retrain_vocab or only_bow_inv):
         create_empty_if_needed(
             database_name, index_name,
             des_type, max_keypoints,
@@ -210,15 +211,22 @@ def create_index(
             path_to_2_images,
             max_images)
         logging.getLogger('profile.computing_descriptors').info(f'{elapsed}')
-    else:
+        train_clusterer(database_name, index_name)
+        compute_bow_and_inv(database_name, index_name)
+    elif only_retrain_vocab:
         # if only_retrain_vocab then set new K, L
         # (ignore des_type and max_keypoints)
         cbir_core = CBIRCore.get_instance(database_name, index_name)
         if cbir_core.K != K or cbir_core.L != L:
             cbir_core.set_K_L(K, L)
-
-    train_clusterer(database_name, index_name)
-    compute_bow_and_inv(database_name, index_name)
+        train_clusterer(database_name, index_name)
+        compute_bow_and_inv(database_name, index_name)
+    else:
+        # only_bow_inv
+        compute_bow_and_inv(database_name, index_name)
+        cbir_core = CBIRCore.get_instance(database_name, index_name)
+        cbir_core.reset_bow_inv()
+        compute_bow_and_inv(database_name, index_name)
 
 
 def change_params(

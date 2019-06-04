@@ -218,6 +218,26 @@ class CBIRCore:
         cls._save_inverted_index(database, name, inverted_index)
         cls._save_freqs(database, name, freqs)
 
+    def reset_bow_inv(self):
+        logger.info('Reset bow inv')
+        params = self.load_params()
+        data_dependent_params = self.load_data_dependent_params()
+        data_dependent_params['count_images'] = 1  # 0th image is empty. It is needed as rowid begins from 1.
+        data_dependent_params['idf'] = np.zeros(params['n_words'], dtype=np.float32)
+        data_dependent_params['freqs'] = np.zeros(params['n_words'], dtype=np.int32)
+        data_dependent_params['most_frequent'] = set()
+        data_dependent_params['least_frequent'] = set()
+        CBIRCore._save_data_dependent_params(self.database, self.name, data_dependent_params)
+
+        bow = sparse.csr_matrix([], shape=(1, params['n_words'] + 1))
+        inverted_index = [set() for i in range(params['n_words'])]
+        freqs = np.zeros(params['n_words'], dtype=np.int16)
+        CBIRCore._save_bow(self.database, self.name, bow)
+        CBIRCore._save_inverted_index(self.database, self.name, inverted_index)
+        CBIRCore._save_freqs(self.database, self.name, freqs)
+
+
+
     def set_K_L(self, K, L):
         logger.info('Setting K, L', K, L)
         params = self.load_params()

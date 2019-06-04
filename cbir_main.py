@@ -70,6 +70,7 @@ def create_parser():
     create_index_parser.add_argument('--K', type=int, required=True)
     create_index_parser.add_argument('--L', type=int, required=True)
     create_index_parser.add_argument('--only-retrain-vocab', action='store_true')
+    create_index_parser.add_argument('--only-bow-inv', action='store_true')
 
 
     change_params_parser = subparsers.add_parser('change_params',
