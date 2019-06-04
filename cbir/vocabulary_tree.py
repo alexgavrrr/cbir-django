@@ -142,15 +142,10 @@ class VocabularyTree:
         time_predicting_root_labels_for_all_data = round(time.time() - start, 3)
         logger.info(f'time_predicting_root_labels_for_all_data: {time_predicting_root_labels_for_all_data}')
 
-        K1 = 5000
-        K2 = 10
-        self.L = 1
-        self.max_clusters = K1 * K2
-
         for l in range(1, self.L):
             print("At level {}".format(l))
             ca_l = []
-            n_c = K1 ** l
+            n_c = self.K ** l
             for i in tqdm(range(n_c), desc=f'On level {l}'):
                 idx = np.where(labels == i)[0]
                 idx_to_fit = idx
@@ -160,14 +155,14 @@ class VocabularyTree:
                         size=sample_size_to_train_max,
                         replace=True)
 
-                if len(idx_to_fit) > K2 * 10:
-                    model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=K2)
+                if len(idx_to_fit) > self.K * 5:
+                    model = pqkmeans.clustering.PQKMeans(encoder=self.encoder, k=self.K)
                     model.fit(pq_data[idx_to_fit, :])
                     ca_l.append(model)
-                    labels[idx] = labels[idx] * K2 + ca_l[i].predict(pq_data[idx, :]).astype(np.int32)
+                    labels[idx] = labels[idx] * self.K + ca_l[i].predict(pq_data[idx, :]).astype(np.int32)
                 else:
                     ca_l.append(None)
-                    labels[idx] = labels[idx] * K2
+                    labels[idx] = labels[idx] * self.K
 
             self.ca.append(ca_l)
 
