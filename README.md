@@ -8,7 +8,12 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-`scp -r data gavr@104.45.144.192:~/main/cbir-django`
+## To run public server
+ 
+git stash apply 0
+python manage.py runserver 0.0.0.0:80
+
+go to http://137.117.96.159/photologue/database/d-paris/
 
 
 ## Development
