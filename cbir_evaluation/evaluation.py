@@ -254,6 +254,8 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
     if not os.path.exists(str(Path(cbir.BASE_DIR) / 'answers')):
         os.mkdir(str(Path(cbir.BASE_DIR) / 'answers'))
 
+    query_names_answers_scores = []
+
     for trial in range(5):
         queries_names_trial = queries_names[trial]
         answers_trial = []
@@ -279,11 +281,10 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
             scores.append(AP((query_now, gt_now), similar_images))
             scores_new.append(AP_new((query_now, gt_now), similar_images))
             answers_trial.append([query_name_now, [s[0][1] for s in similar_images]])
-
             print(f'CCC SCORES numpy.mean(scores): {numpy.mean(scores)}')
 
+            query_names_answers_scores += [(query_name_now, scores[-1], similar_images)]
             with open(answers_file, 'w') as fout:
-                query_names_answers_scores = list(zip(scores, itertools.chain(itertools.chain(answers))))
                 fout.write('\n'.join(map(str, query_names_answers_scores)))
 
         answers.append(answers_trial)
@@ -298,7 +299,7 @@ def evaluate_only(database_name, index_name, database_photos_dir, gt_dir,
     mAP = numpy.mean(scores)
     mAP_new = numpy.mean(scores_new)
 
-    print(f'answers: {answers}')
+    print(f'query_names_answers_scores: {query_names_answers_scores}')
     print(f'scores: {scores}')
     print(f'scores: {scores_new}')
     print(f'mAP: {mAP}')
