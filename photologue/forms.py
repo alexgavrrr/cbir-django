@@ -70,9 +70,9 @@ class EventForm(ModelForm):
     query_photos = forms.ImageField(required=False,
                                     label='query photos',
                                     widget=forms.ClearableFileInput())
-    query_photo_from_database = forms.ModelChoiceField(DatabasePhoto.objects.all(),
-                                                                required=False,
-                                                                label='query photos from database')
+    # query_photo_from_database = forms.ModelChoiceField(DatabasePhoto.objects.all(),
+    #                                                             required=False,
+    #                                                             label='query photos from database')
     qe = forms.BooleanField(required=False, initial=False, label='qe',
                             help_text='Query expansion')
     sv = forms.BooleanField(required=False, initial=False, label='sv',
