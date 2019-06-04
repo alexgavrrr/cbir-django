@@ -223,7 +223,6 @@ def create_index(
         compute_bow_and_inv(database_name, index_name)
     else:
         # only_bow_inv
-        compute_bow_and_inv(database_name, index_name)
         cbir_core = CBIRCore.get_instance(database_name, index_name)
         cbir_core.reset_bow_inv()
         compute_bow_and_inv(database_name, index_name)
