@@ -1,5 +1,8 @@
 # Django image storage app powered by CBIR library
 
+<img src="https://raw.githubusercontent.com/gavr97/cbir-django/master/screens/demo.gif" alt="Demonstration" width="700">
+
+
 ## Setup instructions
 ```
 pipenv shell
